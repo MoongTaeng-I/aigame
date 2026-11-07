@@ -1,3 +1,6 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Local document sync settings, logs, and runtime state
+.local/
