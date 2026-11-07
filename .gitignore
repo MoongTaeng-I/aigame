@@ -4,3 +4,4 @@
 
 # Local document sync settings, logs, and runtime state
 .local/
+/build/

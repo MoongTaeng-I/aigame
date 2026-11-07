@@ -10,12 +10,18 @@ config_version=5
 
 [application]
 
-config/name="aigame"
+config/name="나 혼자만 서바이벌"
 run/main_scene="uid://bcb6pnu0sq7sk"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
 [display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/size/resizable=false
+window/size/mode=0
 
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
