@@ -12,8 +12,9 @@ script = ExtResource("1_player")
 shape = SubResource("CircleShape_player")
 
 [node name="Camera2D" type="Camera2D" parent="."]
+enabled = true
 position_smoothing_enabled = false
-limit_left = -640
-limit_top = -360
-limit_right = 640
-limit_bottom = 360
+limit_left = -1280
+limit_top = -720
+limit_right = 1280
+limit_bottom = 720

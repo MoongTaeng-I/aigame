@@ -1,8 +1,17 @@
 extends CharacterBody2D
 
-const RADIUS := 18.0
 const PLAYER_COLOR := Color("#b18cff")
 var move_speed: float = 0.0
+var body_radius: float = 18.0
+var push_weight: float = 1.0
+
+func configure_body(radius: float, weight: float) -> void:
+    body_radius = radius
+    push_weight = weight
+    var collision_shape := get_node("CollisionShape2D") as CollisionShape2D
+    var circle := collision_shape.shape as CircleShape2D
+    circle.radius = body_radius
+    queue_redraw()
 
 func _ready() -> void:
     queue_redraw()
@@ -17,5 +26,5 @@ func _physics_process(delta: float) -> void:
     move_and_collide(direction * move_speed * delta)
 
 func _draw() -> void:
-    draw_circle(Vector2.ZERO, RADIUS, PLAYER_COLOR)
-    draw_arc(Vector2.ZERO, RADIUS, 0.0, TAU, 48, Color("#eee6ff"), 2.0)
+    draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
+    draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)

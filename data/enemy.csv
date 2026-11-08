@@ -1,0 +1,2 @@
+﻿Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note
+enemy_01,그림자 졸개,120,melee,16,1,A단계 검증용 시작값

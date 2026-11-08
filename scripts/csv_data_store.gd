@@ -3,12 +3,14 @@ class_name CsvDataStore
 
 var schemas: Dictionary = {}
 var tables: Dictionary = {}
+var source_lines: Dictionary = {}
 
 func register_schema(file_name: String, column_types: Dictionary) -> void:
-	schemas[file_name] = column_types.duplicate()
+	schemas[file_name] = column_types.duplicate(true)
 
 func load_all() -> String:
 	tables.clear()
+	source_lines.clear()
 	var data_dir := DirAccess.open("res://data")
 	if data_dir == null:
 		return _format_error("res://data", 1, "Id", "데이터 폴더를 열 수 없습니다.")
@@ -37,6 +39,12 @@ func get_row(file_name: String, row_id: String) -> Dictionary:
 	if not tables.has(file_name):
 		return {}
 	return tables[file_name].get(row_id, {})
+
+func get_table(file_name: String) -> Dictionary:
+	return tables.get(file_name, {})
+
+func get_source_line(file_name: String, row_id: String) -> int:
+	return int(source_lines.get(file_name, {}).get(row_id, 0))
 
 func _load_file(file_name: String, schema: Dictionary) -> String:
 	var path := "res://data/" + file_name
@@ -69,6 +77,7 @@ func _load_file(file_name: String, schema: Dictionary) -> String:
 		if not header_indexes.has(String(column_name)):
 			return _format_error(path, 1, String(column_name), "필요한 열이 없습니다.")
 	var records: Dictionary = {}
+	var row_source_lines: Dictionary = {}
 	for row_index in range(1, rows.size()):
 		var row: Array = rows[row_index]
 		var source_line := int(line_numbers[row_index])
@@ -81,10 +90,11 @@ func _load_file(file_name: String, schema: Dictionary) -> String:
 		for column_index in range(headers.size()):
 			var column_name := String(headers[column_index])
 			var raw_value := String(row[column_index])
-			var kind := String(schema.get(column_name, "String"))
+			var kind: Variant = schema.get(column_name, "String")
 			var conversion := _convert_value(raw_value, kind)
 			if not bool(conversion["ok"]):
-				return _format_error(path, source_line, column_name, "자료형이 %s와 맞지 않습니다: %s" % [kind, raw_value])
+				var error_detail := String(conversion.get("error", "자료형이 %s와 맞지 않습니다: %s" % [_type_label(kind), raw_value]))
+				return _format_error(path, source_line, column_name, error_detail)
 			record[column_name] = conversion["value"]
 		var row_id := String(record.get("Id", ""))
 		if row_id.is_empty():
@@ -92,11 +102,23 @@ func _load_file(file_name: String, schema: Dictionary) -> String:
 		if records.has(row_id):
 			return _format_error(path, source_line, "Id", "같은 파일 안에서 Id가 중복되었습니다: %s" % row_id)
 		records[row_id] = record
+		row_source_lines[row_id] = source_line
 	tables[file_name] = records
+	source_lines[file_name] = row_source_lines
 	return ""
 
-func _convert_value(raw_value: String, kind: String) -> Dictionary:
-	match kind:
+func _convert_value(raw_value: String, kind: Variant) -> Dictionary:
+	if kind is Dictionary and String(kind.get("type", "")) == "Enum":
+		var enum_values: Dictionary = kind.get("values", {})
+		if enum_values.has(raw_value):
+			return {"ok": true, "value": int(enum_values[raw_value])}
+		var allowed_values := PackedStringArray()
+		for value in enum_values.keys():
+			allowed_values.append(String(value))
+		allowed_values.sort()
+		return {"ok": false, "value": null, "error": "자료형이 Enum과 맞지 않습니다: %s (허용값: %s)" % [raw_value, ", ".join(allowed_values)]}
+	var kind_name := String(kind)
+	match kind_name:
 		"String":
 			return {"ok": true, "value": raw_value}
 		"Int":
@@ -114,6 +136,11 @@ func _convert_value(raw_value: String, kind: String) -> Dictionary:
 			if raw_value.begins_with("res://") and not raw_value.contains("\\"):
 				return {"ok": true, "value": raw_value}
 	return {"ok": false, "value": null}
+
+func _type_label(kind: Variant) -> String:
+	if kind is Dictionary:
+		return String(kind.get("type", "String"))
+	return String(kind)
 
 func _parse_csv(text: String, file_path: String) -> Dictionary:
 	var rows: Array = []

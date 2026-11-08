@@ -1,6 +1,8 @@
 extends Node2D
 
 const CsvDataStore = preload("res://scripts/csv_data_store.gd")
+const EnemyManagerScript = preload("res://scripts/enemy_manager.gd")
+const EnemyActorScript = preload("res://scripts/enemy.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const PlayerScene = preload("res://scenes/player.tscn")
 
@@ -11,6 +13,38 @@ func _ready() -> void:
 		"Id": "String",
 		"Name_ko": "String",
 		"Move_speed": "Float",
+		"Body_radius": "Float",
+		"Push_weight": "Float",
+		"Note": "String",
+	})
+	data_store.register_schema("enemy.csv", {
+		"Id": "String",
+		"Name_ko": "String",
+		"Move_speed": "Float",
+		"Attack_range_type": {
+			"type": "Enum",
+			"values": {
+				"melee": EnemyActorScript.AttackRangeType.MELEE,
+				"ranged": EnemyActorScript.AttackRangeType.RANGED,
+			},
+		},
+		"Body_radius": "Float",
+		"Push_weight": "Float",
+		"Note": "String",
+	})
+	data_store.register_schema("spawn.csv", {
+		"Id": "String",
+		"Time_start": "Float",
+		"Time_end": "Float",
+		"Enemy_id": "String",
+		"Spawn_interval": "Float",
+		"Spawn_count": "Int",
+		"Note": "String",
+	})
+	data_store.register_schema("spawn_rule.csv", {
+		"Id": "String",
+		"Max_alive": "Int",
+		"Offscreen_relocate_sec": "Float",
 		"Note": "String",
 	})
 	var load_error: String = data_store.load_all()
@@ -21,12 +55,65 @@ func _ready() -> void:
 	if player_record.is_empty():
 		_show_data_error("res://data/player.csv, 행 1, 열 Id: 플레이어 ID player_01이 없습니다.")
 		return
+	var spawn_rule: Dictionary = data_store.get_row("spawn_rule.csv", "rule_01")
+	if spawn_rule.is_empty():
+		_show_data_error("res://data/spawn_rule.csv, 행 1, 열 Id: 규칙 ID rule_01이 없습니다.")
+		return
+	var enemy_records: Dictionary = data_store.get_table("enemy.csv")
+	var spawn_records: Dictionary = data_store.get_table("spawn.csv")
+	var data_error := _validate_gameplay_data(data_store, player_record, enemy_records, spawn_records, spawn_rule)
+	if not data_error.is_empty():
+		_show_data_error(data_error)
+		return
 	var map = MapScene.instantiate()
 	add_child(map)
 	var player = PlayerScene.instantiate()
 	player.move_speed = float(player_record["Move_speed"])
+	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
 	map.add_child(player)
 	player.position = Vector2.ZERO
+	var enemy_manager = EnemyManagerScript.new()
+	enemy_manager.configure(
+		player,
+		map.get_map_rect(),
+		enemy_records,
+		spawn_records,
+		int(spawn_rule["Max_alive"]),
+		float(spawn_rule["Offscreen_relocate_sec"])
+	)
+	enemy_manager.name = "EnemyManager"
+	map.add_child(enemy_manager)
+
+func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
+	if float(player_record["Body_radius"]) <= 0.0:
+		return _data_field_error(data_store, "player.csv", String(player_record["Id"]), "Body_radius", "0보다 큰 값이어야 합니다.")
+	if float(player_record["Push_weight"]) <= 0.0:
+		return _data_field_error(data_store, "player.csv", String(player_record["Id"]), "Push_weight", "0보다 큰 값이어야 합니다.")
+	for enemy_id_variant in enemy_records:
+		var enemy_record: Dictionary = enemy_records[enemy_id_variant]
+		if float(enemy_record["Move_speed"]) < 0.0:
+			return _data_field_error(data_store, "enemy.csv", String(enemy_id_variant), "Move_speed", "0 이상이어야 합니다.")
+		if float(enemy_record["Body_radius"]) <= 0.0:
+			return _data_field_error(data_store, "enemy.csv", String(enemy_id_variant), "Body_radius", "0보다 큰 값이어야 합니다.")
+		if float(enemy_record["Push_weight"]) <= 0.0:
+			return _data_field_error(data_store, "enemy.csv", String(enemy_id_variant), "Push_weight", "0보다 큰 값이어야 합니다.")
+	for spawn_id_variant in spawn_records:
+		var spawn_id := String(spawn_id_variant)
+		var spawn_record: Dictionary = spawn_records[spawn_id]
+		var enemy_id := String(spawn_record["Enemy_id"])
+		if not enemy_records.has(enemy_id):
+			return _data_field_error(data_store, "spawn.csv", spawn_id, "Enemy_id", "enemy.csv에 ID %s가 없습니다." % enemy_id)
+		if float(spawn_record["Spawn_interval"]) <= 0.0:
+			return _data_field_error(data_store, "spawn.csv", spawn_id, "Spawn_interval", "0보다 큰 값이어야 합니다.")
+	if int(spawn_rule["Max_alive"]) < 0:
+		return _data_field_error(data_store, "spawn_rule.csv", String(spawn_rule["Id"]), "Max_alive", "0 이상이어야 합니다.")
+	if float(spawn_rule["Offscreen_relocate_sec"]) < 0.0:
+		return _data_field_error(data_store, "spawn_rule.csv", String(spawn_rule["Id"]), "Offscreen_relocate_sec", "0 이상이어야 합니다.")
+	return ""
+
+func _data_field_error(data_store: Variant, file_name: String, row_id: String, column_name: String, message: String) -> String:
+	var row_number: int = int(data_store.get_source_line(file_name, row_id))
+	return "res://data/%s, 행 %d, 열 %s: %s" % [file_name, row_number, column_name, message]
 
 func _configure_window() -> void:
 	var window := get_window()

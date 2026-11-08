@@ -1,0 +1,2 @@
+﻿Id,Time_start,Time_end,Enemy_id,Spawn_interval,Spawn_count,Note
+spawn_01,0,900,enemy_01,1.0,2,A단계 검증용 시작값

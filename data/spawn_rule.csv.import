@@ -1,0 +1,7 @@
+[remap]
+importer="keep"
+type="TextFile"
+
+[deps]
+source_file="res://data/spawn_rule.csv"
+dest_files=["res://data/spawn_rule.csv"]

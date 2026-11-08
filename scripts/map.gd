@@ -10,6 +10,9 @@ func _ready() -> void:
     _create_boundaries()
     queue_redraw()
 
+func get_map_rect() -> Rect2:
+    return MAP_RECT
+
 func _draw() -> void:
     draw_rect(MAP_RECT, Color("#17151f"), true)
     # 임시 눈금으로 월드 좌표를 확인한다. 실제 아트와 맵 디자인은 후속 작업에서 만든다.
