@@ -1,6 +1,12 @@
 extends CharacterBody2D
 
 const PLAYER_COLOR := Color("#b18cff")
+signal leveled_up(new_level: int)
+var level: int = 1
+var experience: int = 0
+var enhancement_points: int = 0
+var pickup_radius: float = 0.0
+var _level_requirements: Array[int] = []
 var move_speed: float = 0.0
 var body_radius: float = 18.0
 var push_weight: float = 1.0
@@ -32,6 +38,32 @@ func configure_combat(health: int, attack_data: Dictionary) -> void:
     hp = health
     _attack_data = attack_data.duplicate(true)
     _update_hp_label()
+
+func configure_progression(level_records: Dictionary, radius: float) -> void:
+    pickup_radius = radius
+    level = 1
+    experience = 0
+    enhancement_points = 0
+    _level_requirements.clear()
+    var rows: Array = level_records.values()
+    rows.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return int(a["Level"]) < int(b["Level"]))
+    for row in rows:
+        _level_requirements.append(int(row["Xp_to_next"]))
+
+func get_xp_to_next() -> int:
+    if _level_requirements.is_empty():
+        return 0
+    return _level_requirements[mini(level,_level_requirements.size())-1]
+
+func add_experience(amount: int) -> void:
+    if amount <= 0 or is_dead or _level_requirements.is_empty():
+        return
+    experience += amount
+    while experience >= get_xp_to_next():
+        experience -= get_xp_to_next()
+        level += 1
+        enhancement_points += 1
+        leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:
     if is_dead or amount <= 0:

@@ -1,6 +1,8 @@
 extends Node2D
 class_name EnemyManager
 
+signal enemy_died(enemy: EnemyActor)
+
 const EnemyScene = preload("res://scenes/enemy.tscn")
 const ProjectileScript = preload("res://scripts/projectile.gd")
 const SPAWN_CLEARANCE := 2.0
@@ -152,6 +154,7 @@ func _on_enemy_died(enemy: EnemyActor) -> void:
 		_contact_ready_at.erase(enemy.get_instance_id())
 		_dying_enemies.append(enemy)
 		_update_count_label()
+		enemy_died.emit(enemy)
 
 func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
 	if not enemy.is_active or enemy.is_logically_dead or enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:

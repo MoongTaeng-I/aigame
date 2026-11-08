@@ -18,6 +18,7 @@ var is_active: bool = false
 var is_logically_dead: bool = false
 var max_hp: int = 1
 var hp: int = 1
+var xp_value: int = 0
 var contact_damage: int = 0
 var contact_rehit_sec: float = 1.0
 var death_fade_sec: float = 0.4
@@ -43,6 +44,7 @@ func configure(record: Dictionary) -> void:
 	push_weight = float(record["Push_weight"])
 	max_hp = int(record.get("Max_hp", 1))
 	hp = max_hp
+	xp_value = int(record.get("Xp_value",0))
 	contact_damage = int(record.get("Contact_damage", 0))
 	contact_rehit_sec = float(record.get("Contact_rehit_sec", 1.0))
 	death_fade_sec = float(record.get("Death_fade_sec", 0.4))

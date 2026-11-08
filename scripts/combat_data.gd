@@ -2,6 +2,7 @@ extends RefCounted
 class_name CombatData
 
 const EnemyActorScript = preload("res://scripts/enemy.gd")
+const ExperienceData = preload("res://scripts/experience_data.gd")
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("player.csv", {
@@ -33,6 +34,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 		"Hit_effect_sec": "Float", "Interval_sec": "Float", "Range": "Float",
 		"Damage": "Int", "Knockback_distance": "Float", "Knockback_sec": "Float", "Note": "String",
 	})
+	ExperienceData.register_schemas(store)
 
 static func validate(store: CsvDataStore) -> String:
 	var projectiles: Dictionary = store.get_table("projectile.csv")

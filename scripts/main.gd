@@ -2,6 +2,8 @@ extends Node2D
 
 const CsvDataStore = preload("res://scripts/csv_data_store.gd")
 const CombatDataScript = preload("res://scripts/combat_data.gd")
+const ExperienceData = preload("res://scripts/experience_data.gd")
+const ExperienceManager = preload("res://scripts/experience_manager.gd")
 const EnemyManagerScript = preload("res://scripts/enemy_manager.gd")
 const EnemyActorScript = preload("res://scripts/enemy.gd")
 const MapScene = preload("res://scenes/map.tscn")
@@ -16,6 +18,8 @@ func _ready() -> void:
 		_show_data_error(load_error)
 		return
 	var combat_error := CombatDataScript.validate(data_store)
+	if combat_error.is_empty():
+		combat_error = ExperienceData.validate(data_store)
 	if not combat_error.is_empty():
 		_show_data_error(combat_error)
 		return
@@ -39,6 +43,7 @@ func _ready() -> void:
 	player.move_speed = float(player_record["Move_speed"])
 	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
 	player.configure_combat(int(player_record["Max_hp"]), data_store.get_row("basic_attack.csv", "attack_01"))
+	player.configure_progression(data_store.get_table("level.csv"),float(player_record["Pickup_radius"]))
 	map.add_child(player)
 	player.position = Vector2.ZERO
 	var enemy_manager = EnemyManagerScript.new()
@@ -54,6 +59,10 @@ func _ready() -> void:
 	)
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
+	var experience_manager := ExperienceManager.new()
+	experience_manager.name = "ExperienceManager"
+	experience_manager.configure(player,enemy_manager,data_store.get_row("xp_rule.csv","xp_rule_01"))
+	map.add_child(experience_manager)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:
