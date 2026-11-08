@@ -32,23 +32,48 @@ func configure(record: Dictionary, origin: Vector2, aim: Vector2, bounds: Rect2,
 func advance(delta: float) -> void:
 	if spent:
 		return
-	var movement := direction * speed * delta
+	var step := delta
+	if expire_rule == 0:
+		step = minf(step, maxf(0.0, max_distance - traveled) / speed)
+	elif expire_rule == 1:
+		step = minf(step, maxf(0.0, max_lifetime_sec - lived))
+	elif expire_rule == 2:
+		for axis in range(2):
+			var component := direction[axis] * speed
+			if component > 0.0:
+				step = minf(step, maxf(0.0, map_bounds.end[axis] - global_position[axis]) / component)
+			elif component < 0.0:
+				step = minf(step, maxf(0.0, global_position[axis] - map_bounds.position[axis]) / -component)
+	var origin := global_position
+	var movement := direction * speed * step
 	global_position += movement
-	traveled += movement.length()
-	lived += delta
-	if player != null and is_instance_valid(player) and global_position.distance_to(player.global_position) <= body_radius + float(player.body_radius):
+	traveled += speed * step
+	lived += step
+	if player != null and is_instance_valid(player) and _segment_hits_player(origin, global_position):
 		spent = true
+		visible = false
 		player.apply_damage(damage)
 		queue_free()
 		return
-	if expire_rule == 0 and traveled >= max_distance:
+	if expire_rule == 0 and traveled + 0.000000001 >= max_distance:
 		spent = true
-	elif expire_rule == 1 and lived >= max_lifetime_sec:
+	elif expire_rule == 1 and lived + 0.000000001 >= max_lifetime_sec:
 		spent = true
-	elif expire_rule == 2 and not map_bounds.has_point(global_position):
+	elif expire_rule == 2 and (global_position.x <= map_bounds.position.x or global_position.y <= map_bounds.position.y or global_position.x >= map_bounds.end.x or global_position.y >= map_bounds.end.y):
 		spent = true
 	if spent:
+		visible = false
 		queue_free()
+
+func _segment_hits_player(origin: Vector2, endpoint: Vector2) -> bool:
+	var segment := endpoint - origin
+	var length_squared := segment.length_squared()
+	var fraction := 0.0
+	if length_squared > 0.0:
+		fraction = clampf((player.global_position - origin).dot(segment) / length_squared, 0.0, 1.0)
+	var closest := origin + segment * fraction
+	var radius := body_radius + float(player.body_radius)
+	return closest.distance_squared_to(player.global_position) <= radius * radius
 
 func _draw() -> void:
 	draw_circle(Vector2.ZERO, body_radius, Color("#ffdb59"))

@@ -66,8 +66,13 @@ func _physics_process(delta: float) -> void:
 	_update_active_enemies(delta)
 	_update_dying_enemies(delta)
 	_update_projectiles(delta)
+	if _player.is_dead:
+		return
 	if _player.has_method("update_basic_attack"):
 		_player.update_basic_attack(_elapsed_seconds, _active_enemies)
+	_update_contact_damage()
+	if _player.is_dead:
+		return
 	_resolve_contact_pushes()
 	_update_count_label()
 
@@ -111,6 +116,7 @@ func _spawn_from_row(row: Dictionary) -> void:
 			if not enemy.died.is_connected(_on_enemy_died):
 				enemy.died.connect(_on_enemy_died)
 		enemy.configure(enemy_record)
+		_contact_ready_at.erase(enemy.get_instance_id())
 		_spawn_order_counter += 1
 		enemy.activate_at(spawn_position, _spawn_order_counter)
 		enemy.map_bounds = _get_map_world_rect()
@@ -143,11 +149,12 @@ func _update_dying_enemies(delta: float) -> void:
 func _on_enemy_died(enemy: EnemyActor) -> void:
 	if _active_enemies.has(enemy):
 		_active_enemies.erase(enemy)
+		_contact_ready_at.erase(enemy.get_instance_id())
 		_dying_enemies.append(enemy)
 		_update_count_label()
 
 func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
-	if enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:
+	if not enemy.is_active or enemy.is_logically_dead or enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:
 		return
 	if enemy.global_position.distance_to(_player.global_position) > enemy.shot_range:
 		return
@@ -262,15 +269,13 @@ func _resolve_contact_pushes() -> void:
 					_resolve_contact_pair(first, bodies[int(second_index)])
 
 func _resolve_contact_pair(first: Variant, second: Variant) -> void:
+	if (first is EnemyActor and not first.is_active) or (second is EnemyActor and not second.is_active):
+		return
 	var combined_radius := float(first.body_radius) + float(second.body_radius)
 	var offset: Vector2 = second.global_position - first.global_position
 	var distance_squared: float = offset.length_squared()
 	if distance_squared >= combined_radius * combined_radius:
 		return
-	if first == _player and second is EnemyActor:
-		_apply_contact_damage(second as EnemyActor)
-	elif second == _player and first is EnemyActor:
-		_apply_contact_damage(first as EnemyActor)
 	var distance := sqrt(distance_squared)
 	var direction: Vector2 = offset / distance if distance > 0.001 else Vector2.RIGHT
 	var overlap := combined_radius - distance
@@ -284,12 +289,20 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	first.global_position = _clamp_body_to_map(first_position, float(first.body_radius))
 	second.global_position = _clamp_body_to_map(second_position, float(second.body_radius))
 
+func _update_contact_damage() -> void:
+	for enemy in _active_enemies:
+		var radius := float(_player.body_radius) + float(enemy.body_radius)
+		if _player.global_position.distance_squared_to(enemy.global_position) <= radius * radius + 0.0001:
+			_apply_contact_damage(enemy)
+		if _player.is_dead:
+			return
+
 func _apply_contact_damage(enemy: EnemyActor) -> void:
-	if enemy.is_logically_dead or enemy.contact_damage <= 0:
+	if not enemy.is_active or enemy.is_logically_dead or enemy.contact_damage <= 0:
 		return
 	var key := enemy.get_instance_id()
 	var ready_at := float(_contact_ready_at.get(key, 0.0))
-	if _elapsed_seconds + 0.000001 < ready_at:
+	if _elapsed_seconds + 0.000000001 < ready_at:
 		return
 	_player.apply_damage(enemy.contact_damage)
 	_contact_ready_at[key] = _elapsed_seconds + enemy.contact_rehit_sec

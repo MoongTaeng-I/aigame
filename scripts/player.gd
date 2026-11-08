@@ -7,12 +7,13 @@ var push_weight: float = 1.0
 var max_hp: int = 100
 var hp: int = 100
 var _attack_data: Dictionary = {}
-var _attack_phase: int = 0
-var _second_hit_at: float = 0.0
+var _remaining_hits: int = 0
+var _next_hit_at: float = 0.0
 var _attack_ready_at: float = 0.0
 var is_dead: bool = false
 var _hp_label: Label
 var _death_label: Label
+var _hud_layer: CanvasLayer
 
 func configure_body(radius: float, weight: float) -> void:
     body_radius = radius
@@ -44,24 +45,25 @@ func apply_damage(amount: int) -> void:
         _death_label.position = Vector2(570.0, 320.0)
         _death_label.add_theme_font_size_override("font_size", 48)
         _death_label.add_theme_color_override("font_color", Color("#ff7b83"))
-        get_tree().root.add_child(_death_label)
+        _hud_layer.add_child(_death_label)
         get_tree().paused = true
 
 func update_basic_attack(now: float, enemies: Array) -> void:
     if is_dead or _attack_data.is_empty():
         return
-    if _attack_phase == 1 and now + 0.000001 >= _second_hit_at:
-        var second_target: Variant = choose_target(enemies)
-        if second_target != null:
-            _apply_basic_hit(second_target)
-        _attack_phase = 0
-    if _attack_phase == 0 and now + 0.000001 >= _attack_ready_at:
+    while _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
+        var target: Variant = choose_target(enemies)
+        if target != null:
+            _apply_basic_hit(target)
+        _remaining_hits -= 1
+        _next_hit_at += float(_attack_data["Hit_gap_sec"])
+    if _remaining_hits == 0 and now + 0.000000001 >= _attack_ready_at:
         var first_target: Variant = choose_target(enemies)
         if first_target != null:
             _apply_basic_hit(first_target)
-            _attack_phase = 1
-            _second_hit_at = now + float(_attack_data["Hit_gap_sec"])
-            _attack_ready_at = now + float(_attack_data["Hit_gap_sec"]) + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
+            _remaining_hits = int(_attack_data["Hits_per_attack"]) - 1
+            _next_hit_at = now + float(_attack_data["Hit_gap_sec"])
+            _attack_ready_at = now + _remaining_hits * float(_attack_data["Hit_gap_sec"]) + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
 
 func choose_target(enemies: Array) -> Variant:
     var chosen: Variant = null
@@ -74,7 +76,7 @@ func choose_target(enemies: Array) -> Variant:
         if chosen == null:
             chosen = candidate
             continue
-        if candidate.hp < chosen.hp or (candidate.hp == chosen.hp and distance < global_position.distance_to(chosen.global_position)) or (candidate.hp == chosen.hp and is_equal_approx(distance, global_position.distance_to(chosen.global_position)) and candidate.spawn_order < chosen.spawn_order):
+        if candidate.hp < chosen.hp or (candidate.hp == chosen.hp and distance < global_position.distance_to(chosen.global_position)) or (candidate.hp == chosen.hp and distance == global_position.distance_to(chosen.global_position) and candidate.spawn_order < chosen.spawn_order):
             chosen = candidate
     return chosen
 
@@ -82,6 +84,7 @@ func _apply_basic_hit(enemy: Variant) -> void:
     enemy.apply_damage(int(_attack_data["Damage"]))
     enemy.start_knockback(global_position, float(_attack_data["Knockback_distance"]), float(_attack_data["Knockback_sec"]))
     var effect := Line2D.new()
+    effect.top_level = true
     effect.width = 4.0
     effect.default_color = Color("#fff1a8")
     effect.add_point(global_position)
@@ -95,13 +98,13 @@ func _apply_basic_hit(enemy: Variant) -> void:
     timer.start()
 
 func _create_hud() -> void:
-    var layer := CanvasLayer.new()
-    add_child(layer)
+    _hud_layer = CanvasLayer.new()
+    add_child(_hud_layer)
     _hp_label = Label.new()
     _hp_label.position = Vector2(20.0, 46.0)
     _hp_label.add_theme_color_override("font_color", Color.WHITE)
     _hp_label.add_theme_font_size_override("font_size", 22)
-    layer.add_child(_hp_label)
+    _hud_layer.add_child(_hp_label)
     _update_hp_label()
 
 func _update_hp_label() -> void:

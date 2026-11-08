@@ -29,7 +29,7 @@ func load_all() -> String:
 	for file_name in file_names:
 		if not schemas.has(file_name):
 			return _format_error("res://data/" + file_name, 1, "Id", "등록된 테이블 스키마가 없습니다.")
-		var error_message := _load_file(file_name, schemas[file_name])
+		var error_message := _load_file(file_name)
 		if not error_message.is_empty():
 			tables.clear()
 			return error_message
@@ -46,13 +46,19 @@ func get_table(file_name: String) -> Dictionary:
 func get_source_line(file_name: String, row_id: String) -> int:
 	return int(source_lines.get(file_name, {}).get(row_id, 0))
 
-func _load_file(file_name: String, schema: Dictionary) -> String:
+func _load_file(file_name: String) -> String:
 	var path := "res://data/" + file_name
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
 		return _format_error(path, 1, "Id", "파일을 읽을 수 없습니다. 오류 코드: %d" % FileAccess.get_open_error())
 	var text := file.get_as_text()
 	file.close()
+	return load_text(file_name, text)
+
+func load_text(file_name: String, text: String) -> String:
+	# Use the same parser and schema validation for files and in-memory checks.
+	var path := "res://data/" + file_name
+	var schema: Dictionary = schemas[file_name]
 	if not text.is_empty() and text.unicode_at(0) == 0xFEFF:
 		text = text.substr(1)
 	var parsed := _parse_csv(text, path)

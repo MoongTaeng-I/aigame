@@ -62,7 +62,11 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	shot_elapsed = 0.0
 	_fade_elapsed = 0.0
 	knockback_direction = Vector2.ZERO
+	knockback_distance = 0.0
+	knockback_duration = 0.0
 	knockback_elapsed = 0.0
+	collision_layer = 2
+	collision_mask = 1
 	modulate.a = 1.0
 	visible = true
 	if is_node_ready():
@@ -89,6 +93,8 @@ func begin_death() -> void:
 		return
 	is_logically_dead = true
 	is_active = false
+	collision_layer = 0
+	collision_mask = 0
 	knockback_direction = Vector2.ZERO
 	knockback_distance = 0.0
 	knockback_duration = 0.0
@@ -121,18 +127,34 @@ func update_actor(delta: float, player_position: Vector2, bounds: Rect2) -> void
 		return
 	if not is_active:
 		return
-	var chase := global_position.direction_to(player_position) * move_speed
-	var knockback := Vector2.ZERO
+	var motion := global_position.direction_to(player_position) * move_speed * delta
 	if knockback_elapsed < knockback_duration and knockback_duration > 0.0:
-		var fraction := clampf(knockback_elapsed / knockback_duration, 0.0, 1.0)
-		knockback = knockback_direction * (2.0 * knockback_distance / knockback_duration) * (1.0 - fraction)
-		knockback_elapsed = minf(knockback_duration, knockback_elapsed + delta)
-	var motion := (chase + knockback) * delta
+		# Integrate the linear decay so total displacement does not depend on frame size.
+		var end_time := minf(knockback_duration, knockback_elapsed + delta)
+		var start_speed := 2.0 * knockback_distance / knockback_duration
+		var duration := end_time - knockback_elapsed
+		var displacement := start_speed * (duration - (end_time * end_time - knockback_elapsed * knockback_elapsed) / (2.0 * knockback_duration))
+		motion += knockback_direction * displacement
+		knockback_elapsed = end_time
 	if motion != Vector2.ZERO:
 		move_and_collide(motion)
-	global_position = Vector2(
-		clampf(global_position.x, bounds.position.x + body_radius, bounds.end.x - body_radius),
-		clampf(global_position.y, bounds.position.y + body_radius, bounds.end.y - body_radius)
+	global_position = clamp_position_to_map(global_position, bounds)
+
+func get_knockback_velocity() -> Vector2:
+	if is_logically_dead or knockback_duration <= 0.0 or knockback_elapsed >= knockback_duration:
+		return Vector2.ZERO
+	var fraction := clampf(knockback_elapsed / knockback_duration, 0.0, 1.0)
+	return knockback_direction * (2.0 * knockback_distance / knockback_duration) * (1.0 - fraction)
+
+func get_combined_velocity(player_position: Vector2) -> Vector2:
+	if is_logically_dead or not is_active:
+		return Vector2.ZERO
+	return global_position.direction_to(player_position) * move_speed + get_knockback_velocity()
+
+func clamp_position_to_map(world_position: Vector2, bounds: Rect2) -> Vector2:
+	return Vector2(
+		clampf(world_position.x, bounds.position.x + body_radius, bounds.end.x - body_radius),
+		clampf(world_position.y, bounds.position.y + body_radius, bounds.end.y - body_radius)
 	)
 
 func move_toward_player(player_position: Vector2, delta: float) -> void:
