@@ -1,13 +1,21 @@
 """Capture the Godot process directly, including its exit code on Windows."""
+import argparse
 import json
 from pathlib import Path
 import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[1]
-task = "s3-impl-02"
-kind = sys.argv[1]
-attempt = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+parser = argparse.ArgumentParser()
+parser.add_argument("task", help="Task ID used in output file names")
+parser.add_argument("kind", choices=("p0", "runtime"))
+parser.add_argument("attempt", type=int)
+args = parser.parse_args()
+task = args.task.lower()
+kind = args.kind
+attempt = args.attempt
+if not task or attempt < 1:
+    parser.error("task must not be empty and attempt must be positive")
 executable = Path((root / ".local/godot_path.txt").read_text(encoding="utf-8-sig").strip())
 if not executable.is_file():
     raise SystemExit("Configured Godot executable does not exist")
