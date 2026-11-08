@@ -31,6 +31,7 @@
 - 시스템 2(적 생성과 이동) A단계를 완료했다(2026-11-08). 사용자가 실행 파일에서 플레이 검증 20개 항목을 모두 통과했다.
 - 시스템 1의 이동 규칙 두 가지를 변경하고 검증했다(2026-11-08). 이동 입력을 WASD로 교체했고, 맵 경계에서 멈추던 동작을 벽을 따라 이동하는 동작으로 바꿨다. 사용자가 확인 항목 12개를 모두 통과했다.
 - 사용을 중단한 공유 폴더 동기화 프로그램 파일과 지난 시험 로그를 삭제했다 (OPS-03).
+- 시스템 3(전투와 생존) A단계를 완료했다(2026-11-09). P0 자동 검사 93개와 사용자 플레이 확인을 모두 통과했다.
 
 ## 현재 구현 상태
 
@@ -38,22 +39,23 @@
 - 구현 파일: `project.godot`, `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/map.gd`, `scripts/player.gd`, `scenes/map.tscn`, `scenes/player.tscn`, `data/player.csv`.
 - 시스템 2 A단계에서 적 생성·추적 이동·개체 간 밀어내기·화면 밖 재배치·동시 생존 상한이 동작한다. 적 200마리를 1분 유지해도 프레임 저하가 없었다.
 - 구현 파일: `scripts/enemy_manager.gd`, `scripts/enemy.gd`, `scripts/csv_data_store.gd`, `data/enemy.csv`, `data/spawn.csv`, `data/spawn_rule.csv` 및 기존 플레이어·맵 파일이다.
-- 시스템 3~10은 상세 기획 전이다.
+- 시스템 3(전투와 생존) A단계에서 자동 2타 공격·대상 재선정, 감속 넉백과 추적 합산, 체력·개체별 접촉 재피격 제한, 직선 투사체와 단일 소멸 조건, 논리 사망·흐려짐·생존 수 제외, 임시 체력·사망 표시가 동작한다.
+- 구현 파일: `scripts/combat_data.gd`, `scripts/projectile.gd`, `tests/p0_runner.gd`, `tests/run_headless.py`, `data/projectile.csv`, `data/basic_attack.csv` 및 변경된 기존 파일 `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/player.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `data/player.csv`, `data/enemy.csv`, `data/spawn.csv`다. 새 CSV의 `.import`도 포함한다.
+- 시스템 4~10은 상세 기획 전이다.
 
 ## 미해결 문제
 
 - 시스템별 세부 수치와 콘텐츠 종류가 미정이다. 전체 목록은 game_design.md의 '미정 항목'에 있다.
 - 저장소 이름이 작업명과 다르다. 사용자가 GitHub에서 바꾼다.
-- 게임 기능 자동 테스트는 수행하지 않았고 결과도 없다.
+- P0 자동 검사(tests/p0_runner.gd)가 시스템 3 규칙을 확인한다. 시스템 1·2의 규칙은 아직 P0에 포함되지 않았다.
 - Notion 메인 페이지의 소개 문장과 다음 행동은 Claude 초안이며 사용자가 다시 쓸 예정이다.
 
 ## 보류한 작업
 
 - Claude와 GitHub의 직접 연동: 선택적으로 보류함. 현재 Filesystem으로 문서를 읽을 수 있어 중복 설정을 줄이기 위한 결정이다. 오류나 미해결 문제가 아니다.
 - 시스템 2 B단계: 두 번째 적과 나머지 생성 규칙을 시스템 3 이후 일괄 추가한다.
+- 시스템 3 B단계: 정식 적 2종의 전투 수치, 임시 원거리 적·투사체 데이터의 정리 방법을 정한다.
 
 ## 다음 작업
 
-- 시스템 3(전투와 생존)의 상세 기획과 예외·누락 검토를 시작한다. 이후 우선순위 순서로 시스템 4부터 같은 절차를 반복한다.
-- 각 시스템의 A단계(시스템 구현 + 대표 콘텐츠 1종 검증)를 먼저 끝내고, 모든 A단계가 끝난 뒤 B단계(나머지 콘텐츠 추가)를 진행한다.
-- 1~3번 시스템이 끝나는 시점에 실제 소요 시간을 측정해 남은 범위를 다시 검토한다.
+- 시스템 4(경험치와 레벨업)의 상세 기획을 시작한다. 시작 전에 시스템 1~3의 실제 소요 시간을 검토한다.
