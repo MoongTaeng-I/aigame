@@ -26,11 +26,12 @@
 - 시스템 1(플레이어와 맵) A단계를 완료했다(2026-11-08). 플레이어 이동, 카메라 추적과 맵 경계 정지, 맵 경계 충돌, CSV 읽기 공통 기능이 동작한다. 사용자가 편집기와 내보낸 실행 파일에서 확인 항목을 모두 통과했다.
 - 시스템 2(적 생성과 이동)의 상세 기획과 예외·누락 검토를 사용자가 승인했다(2026-11-08). CSV 공통 자료형에 `Enum`을 추가하기로 했다. 세부는 `docs/systems/02_enemy_spawn_and_movement.md`를 따른다.
 - 시스템 2(적 생성과 이동) A단계를 완료했다(2026-11-08). 사용자가 실행 파일에서 플레이 검증 20개 항목을 모두 통과했다.
+- 시스템 1의 이동 규칙 두 가지를 변경하고 검증했다(2026-11-08). 이동 입력을 WASD로 교체했고, 맵 경계에서 멈추던 동작을 벽을 따라 이동하는 동작으로 바꿨다. 사용자가 확인 항목 12개를 모두 통과했다.
 
 ## 현재 구현 상태
 
-- 시스템 1(플레이어와 맵) A단계가 구현되어 있다. 1280×720 창 모드 고정, 2560×1440 맵, 방향키 8방향 이동(대각선 속도 정규화), 맵 경계 충돌, 카메라 추적과 맵 경계 정지, CSV 읽기 공통 기능(`scripts/csv_data_store.gd`)이다.
-- 구현 파일: `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/map.gd`, `scripts/player.gd`, `scenes/map.tscn`, `scenes/player.tscn`, `data/player.csv`.
+- 시스템 1(플레이어와 맵) A단계가 구현되어 있다. 1280×720 창 모드 고정, 2560×1440 맵, WASD 8방향 이동(대각선 속도 정규화), 맵 경계에서 벽을 따라 이동(경계를 향하는 성분만 차단), 카메라 추적과 맵 경계 정지, CSV 읽기 공통 기능(`scripts/csv_data_store.gd`)이다.
+- 구현 파일: `project.godot`, `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/map.gd`, `scripts/player.gd`, `scenes/map.tscn`, `scenes/player.tscn`, `data/player.csv`.
 - 시스템 2 A단계에서 적 생성·추적 이동·개체 간 밀어내기·화면 밖 재배치·동시 생존 상한이 동작한다. 적 200마리를 1분 유지해도 프레임 저하가 없었다.
 - 구현 파일: `scripts/enemy_manager.gd`, `scripts/enemy.gd`, `scripts/csv_data_store.gd`, `data/enemy.csv`, `data/spawn.csv`, `data/spawn_rule.csv` 및 기존 플레이어·맵 파일이다.
 - 시스템 3~10은 상세 기획 전이다.

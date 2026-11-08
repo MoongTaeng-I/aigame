@@ -17,13 +17,15 @@ func _ready() -> void:
     queue_redraw()
 
 func _physics_process(delta: float) -> void:
-    var horizontal := int(Input.is_key_pressed(KEY_RIGHT)) - int(Input.is_key_pressed(KEY_LEFT))
-    var vertical := int(Input.is_key_pressed(KEY_DOWN)) - int(Input.is_key_pressed(KEY_UP))
-    var direction := Vector2(horizontal, vertical)
+    var direction := Vector2(
+        Input.get_axis("move_left", "move_right"),
+        Input.get_axis("move_up", "move_down")
+    )
     if direction != Vector2.ZERO:
         direction = direction.normalized()
-    # move_and_collide stops this whole input vector on collision, so corner pressure never slides along a wall.
-    move_and_collide(direction * move_speed * delta)
+    # Resolve each axis independently so a blocked component does not cancel motion along the wall.
+    move_and_collide(Vector2(direction.x * move_speed * delta, 0.0))
+    move_and_collide(Vector2(0.0, direction.y * move_speed * delta))
 
 func _draw() -> void:
     draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
