@@ -1,0 +1,159 @@
+# 시스템 3. 전투와 생존
+
+- 현재 단계: 구현
+- 승인일: 2026-11-08
+- 완료일:
+- 관련 개발 일지 항목 제목: [시스템 3 전투와 생존] 기획·검토
+
+## 개요
+
+플레이어와 적의 체력, 피해 적용, 기본 공격, 공격 넉백, 플레이어 피격과 개체별 재피격 제한, 원거리 적의 투사체, 사망 처리를 만든다.
+
+경계: 경험치 드랍은 시스템 4(이 시스템의 사망 신호를 받는다), 기본 스킬과 스킬 공통 처리는 시스템 5(피해 적용·넉백을 재사용한다), 기본 공격 강화는 시스템 6, 실패 화면은 시스템 9다.
+
+설계 참고(규칙 아님): '나 혼자만 레벨업' 성진우의 양손 단검 근접 전투. 기동형 스킬과 넓은 범위 연속 베기는 시스템 5의 기본 스킬 후보다.
+
+## 규칙
+
+### 기본 공격
+
+1. 즉시 타격이다. 피해는 타격 순간 적용되고, 타격 종료는 그 타격의 연출이 끝나는 순간이다.
+2. 플레이어 중심과 적 중심의 거리가 `Range` 이하인 적만 후보다. 사망 처리된 적은 후보가 아니다.
+3. 대상: ① 현재 체력(값)이 가장 낮은 적 ② 같으면 플레이어에게 가장 가까운 적 ③ 같으면 먼저 생성된 적(등장 순서 번호, 풀 재사용 시 재등장 시점 기준). ③은 A단계 시작 규칙이다.
+4. 1회 공격은 `Hits_per_attack`타(시작값 2)다. 각 타격 시점마다 대상을 다시 고른다.
+5. 첫 타는 사거리 안에 적이 있을 때만 시작한다. 둘째 타는 첫 타 피해 시점으로부터 `Hit_gap_sec` 뒤에 실행하며, 첫 타 연출 종료를 기다리지 않는다(연출 겹침 허용).
+6. 둘째 타 시점에 후보가 없으면 둘째 타를 건너뛴다. 피해와 연출이 없고, 기다리지 않는다.
+7. 다음 공격은 둘째 타 연출 종료 시점부터 `Interval_sec`가 지난 뒤 가능하다. 둘째 타를 건너뛰었으면 정상이었다면 둘째 타 연출이 끝났을 시점(첫 타 피해 시점 + `Hit_gap_sec` + `Hit_effect_sec`)부터 센다.
+8. 다음 공격이 가능해졌는데 후보가 없으면 대기하고, 후보가 생기는 즉시 공격한다.
+
+### 넉백
+
+9. 기본 공격에 맞은 적은 플레이어에서 그 적을 향하는 방향으로 밀린다.
+10. 처음 속도는 `2 × Knockback_distance ÷ Knockback_sec`이고, `Knockback_sec` 동안 일정하게 줄어 0이 된다.
+11. 넉백 중에도 적은 플레이어 추적을 계속하며, 두 이동이 더해진다.
+12. 넉백 중에도 맵 경계에서 막힌다. 시스템 2의 접촉 밀어내기와는 별개 처리다.
+13. 플레이어는 밀리지 않는다.
+
+### 플레이어 피격
+
+14. 적과 닿는 순간 `Contact_damage`를 받는다. 그 적 개체의 접촉 피해에 `Contact_rehit_sec` 동안 재피격 제한이 걸리고, 계속 닿아 있으면 끝날 때마다 다시 받는다.
+15. 재피격 제한은 몬스터 개체별이다. 모든 적에 대한 공통 무적이 아니다.
+16. 접촉 피해와 투사체 피해는 제한을 공유하지 않는다. 서로 다른 투사체도 공유하지 않는다.
+
+### 원거리 적과 투사체
+
+17. 원거리 적은 플레이어가 `Shot_range` 안에 있을 때 `Shot_interval_sec`마다 `Projectile_id`의 투사체를 쏜다. 이동은 시스템 2 규칙대로 플레이어에게 다가간다.
+18. 투사체는 발사 순간의 플레이어 위치를 향해 직선으로 날아가고 방향을 바꾸지 않는다.
+19. 플레이어에게 명중하면 `Damage`를 한 번 주고 즉시 사라진다. 투사체는 플레이어만 맞힌다. 적, 다른 투사체, 플레이어의 공격과는 상호작용하지 않는다.
+20. 맞지 않으면 `Expire_rule` 하나에 따라 사라진다: `distance`(`Max_distance`만큼 이동), `lifetime`(`Max_lifetime_sec` 경과), `bounds`(맵 경계 도달).
+
+### 체력과 사망
+
+21. 플레이어 체력이 0이 되면 게임 진행을 멈추고 화면에 임시 사망 표시를 띄운다.
+22. 적 체력이 0이 되는 순간 논리적으로 사망한다. 이때 한 번에: 피격 판정 해제, 공격 대상 제외, 접촉 피해 중단, 밀어내기 중단, 동시 생존 수에서 제외, 재배치 대상에서 제외, 넉백 이동 중단, 사망 신호 발생.
+23. 화면의 오브젝트는 `Death_fade_sec` 동안 흐려진 뒤 제거된다. 이 동안 살아 있는 적으로 취급하지 않는다.
+24. 사망 신호와 생존 수 감소는 적 하나당 정확히 한 번이다.
+
+## 예외 처리
+
+- 넉백 중 체력이 0이 되면 그 자리에서 멈춘다.
+- 첫 타로 대상이 죽어도 둘째 타는 남은 후보로 다시 고른다. 후보가 없으면 건너뛴다.
+- CSV 오류(게임을 멈추고 화면에 표시): `Expire_rule` 허용값 아님 또는 빈칸, 고른 조건의 수치가 빈칸, 고르지 않은 조건의 수치가 채워짐, `Projectile_id`가 `projectile.csv`에 없음, ranged 적의 발사 열(`Shot_interval_sec`, `Shot_range`, `Projectile_id`)이 빈칸, melee 적의 발사 열이 채워짐.
+- 제외한 기능: 유도 투사체, 관통 투사체, 투사체 하나에 여러 소멸 조건, 플레이어 넉백.
+
+## UI
+
+임시 디버그 표시(플레이어 체력, 살아 있는 적 수), 임시 사망 표시. 정식 HUD와 실패 화면은 시스템 9.
+
+## 테이블
+
+### `player.csv`
+
+| 열 | 자료형 | 입력 시 참고 |
+| --- | --- | --- |
+| `Max_hp` | Int | 플레이어 최대 체력 |
+
+### `enemy.csv`
+
+| 열 | 자료형 | 입력 시 참고 |
+| --- | --- | --- |
+| `Max_hp` | Int | 적 최대 체력 |
+| `Contact_damage` | Int | 플레이어와 닿았을 때 주는 피해 |
+| `Contact_rehit_sec` | Float | 같은 적 개체 접촉 피해의 재피격 제한 시간(초) |
+| `Death_fade_sec` | Float | 사망 후 오브젝트가 흐려져 제거되기까지 시간(초) |
+| `Shot_interval_sec` | Float | 원거리형 투사체 발사 간격(초); 근거리형은 비움 |
+| `Shot_range` | Float | 원거리형 발사 사거리(중심 사이 픽셀); 근거리형은 비움 |
+| `Projectile_id` | String | `projectile.csv`의 `Id`; 근거리형은 비움 |
+
+### `projectile.csv`
+
+| 열 | 자료형 | 입력 시 참고 |
+| --- | --- | --- |
+| `Id` | String | 투사체 식별자. 중복 불가 |
+| `Speed` | Float | 초당 이동 픽셀 |
+| `Damage` | Int | 플레이어에게 주는 피해 |
+| `Body_radius` | Float | 충돌 판정 반경 |
+| `Expire_rule` | Enum | 허용값: `distance`, `lifetime`, `bounds` |
+| `Max_distance` | Float | `distance`일 때만 입력 |
+| `Max_lifetime_sec` | Float | `lifetime`일 때만 입력 |
+| `Note` | String | 설명용 |
+
+### `basic_attack.csv`
+
+| 열 | 자료형 | 입력 시 참고 |
+| --- | --- | --- |
+| `Id` | String | 기본 공격 설정 식별자 |
+| `Hits_per_attack` | Int | 1회 공격의 타격 수 |
+| `Hit_gap_sec` | Float | 타격 사이 간격(초) |
+| `Hit_effect_sec` | Float | 타격 연출 시간(초) |
+| `Interval_sec` | Float | 마지막 타격 연출 종료 뒤 다음 공격까지 간격(초) |
+| `Range` | Float | 플레이어와 적 중심 사이 거리(픽셀) |
+| `Damage` | Int | 타격마다 주는 피해 |
+| `Knockback_distance` | Float | 넉백 전체 이동 거리(픽셀) |
+| `Knockback_sec` | Float | 넉백 지속 시간(초) |
+| `Note` | String | 설명용 |
+
+## A단계 시작값
+
+아래 값은 정식 밸런스가 아닌 검증용 시작값이다. 시작값으로는 처치 속도(초당 약 21 피해)가 생성 속도(초당 체력 60)보다 느려 적이 쌓인다. 오래 관찰할 때는 엑셀에서 플레이어 `Max_hp`를 임시로 올린다.
+
+| 대상 | 열 | 시작값 |
+| --- | --- | --- |
+| 플레이어 | `Max_hp` | 100 |
+| `enemy_01` | `Max_hp` | 30 |
+| `enemy_01` | `Contact_damage` | 5 |
+| `enemy_01` | `Contact_rehit_sec` | 1.0 |
+| `enemy_01` | `Death_fade_sec` | 0.4 |
+| `enemy_test_ranged` | `Move_speed` | 100 |
+| `enemy_test_ranged` | `Attack_range_type` | ranged |
+| `enemy_test_ranged` | `Body_radius` | 16 |
+| `enemy_test_ranged` | `Push_weight` | 1.0 |
+| `enemy_test_ranged` | `Max_hp` | 30 |
+| `enemy_test_ranged` | `Contact_damage` | 5 |
+| `enemy_test_ranged` | `Contact_rehit_sec` | 1.0 |
+| `enemy_test_ranged` | `Death_fade_sec` | 0.4 |
+| `enemy_test_ranged` | `Shot_interval_sec` | 2.0 |
+| `enemy_test_ranged` | `Shot_range` | 400 |
+| `enemy_test_ranged` | `Projectile_id` | `proj_test_01` |
+| `proj_test_01` | `Speed` | 300 |
+| `proj_test_01` | `Damage` | 8 |
+| `proj_test_01` | `Body_radius` | 6 |
+| `proj_test_01` | `Expire_rule` | distance |
+| `proj_test_01` | `Max_distance` | 500 |
+| `attack_01` | `Hits_per_attack` | 2 |
+| `attack_01` | `Hit_gap_sec` | 0.15 |
+| `attack_01` | `Hit_effect_sec` | 0.20 |
+| `attack_01` | `Interval_sec` | 0.60 |
+| `attack_01` | `Range` | 90 |
+| `attack_01` | `Damage` | 10 |
+| `attack_01` | `Knockback_distance` | 60 |
+| `attack_01` | `Knockback_sec` | 0.20 |
+
+## 초기 콘텐츠 범위
+
+`enemy_test_ranged`, `spawn_test_01`, `proj_test_01`은 A단계 검증용 임시 데이터다. 정식 적 2종에 포함하지 않으며, B단계에서 정식 콘텐츠로 다시 테스트하고 정리 방법을 정한다.
+
+## 승인·변경 이력
+
+- 2026-11-08 사용자 승인. 상세 기획과 예외·누락 검토를 한 번에 진행했다.
+- 2026-11-08 변경: 투사체의 직선·유도, 소멸·관통 지원을 검토했다가 직선 이동과 명중 시 소멸만으로 범위를 줄였다. 소멸 조건은 하나만 지정한다.
