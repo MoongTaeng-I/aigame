@@ -2,16 +2,23 @@ extends Node2D
 class_name EnemyManager
 
 const EnemyScene = preload("res://scenes/enemy.tscn")
+const ProjectileScript = preload("res://scripts/projectile.gd")
 const SPAWN_CLEARANCE := 2.0
 
 var _player: CharacterBody2D
 var _map_rect := Rect2()
 var _enemy_records: Dictionary = {}
 var _spawn_records: Dictionary = {}
+var _projectile_records: Dictionary = {}
+var _attack_record: Dictionary = {}
 var _max_alive: int = 0
 var _offscreen_relocate_seconds: float = 0.0
 var _active_enemies: Array = []
 var _enemy_pool: Array = []
+var _dying_enemies: Array = []
+var _projectiles: Array = []
+var _spawn_order_counter: int = 0
+var _contact_ready_at: Dictionary = {}
 var _spawn_timers: Dictionary = {}
 var _stop_normal_spawning: bool = false
 # 임시 경과 시각이다. 시스템 8의 시간 관리가 생기면 그쪽으로 옮긴다.
@@ -19,11 +26,13 @@ var _elapsed_seconds: float = 0.0
 var _random := RandomNumberGenerator.new()
 var _count_label: Label
 
-func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float) -> void:
+func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}) -> void:
 	_player = player
 	_map_rect = map_rect
 	_enemy_records = enemy_records
 	_spawn_records = spawn_records
+	_projectile_records = projectile_records
+	_attack_record = attack_record
 	_max_alive = max_alive
 	_offscreen_relocate_seconds = offscreen_relocate_seconds
 	for spawn_id in _spawn_records:
@@ -55,6 +64,10 @@ func _physics_process(delta: float) -> void:
 	_elapsed_seconds += delta
 	_advance_spawn_rows(delta)
 	_update_active_enemies(delta)
+	_update_dying_enemies(delta)
+	_update_projectiles(delta)
+	if _player.has_method("update_basic_attack"):
+		_player.update_basic_attack(_elapsed_seconds, _active_enemies)
 	_resolve_contact_pushes()
 	_update_count_label()
 
@@ -95,14 +108,19 @@ func _spawn_from_row(row: Dictionary) -> void:
 		else:
 			enemy = EnemyScene.instantiate() as EnemyActor
 			add_child(enemy)
+			if not enemy.died.is_connected(_on_enemy_died):
+				enemy.died.connect(_on_enemy_died)
 		enemy.configure(enemy_record)
-		enemy.activate_at(spawn_position)
+		_spawn_order_counter += 1
+		enemy.activate_at(spawn_position, _spawn_order_counter)
+		enemy.map_bounds = _get_map_world_rect()
 		_active_enemies.append(enemy)
 
 func _update_active_enemies(delta: float) -> void:
 	var screen_rect := _get_screen_world_rect()
-	for enemy in _active_enemies:
-		enemy.move_toward_player(_player.global_position, delta)
+	for enemy in _active_enemies.duplicate():
+		enemy.update_actor(delta, _player.global_position, _get_map_world_rect())
+		_update_enemy_shot(enemy, delta)
 		if screen_rect.grow(enemy.body_radius).has_point(enemy.global_position):
 			enemy.offscreen_seconds = 0.0
 			continue
@@ -112,6 +130,46 @@ func _update_active_enemies(delta: float) -> void:
 			if relocation_position != null:
 				enemy.global_position = relocation_position
 				enemy.offscreen_seconds = 0.0
+
+func _update_dying_enemies(delta: float) -> void:
+	for enemy in _dying_enemies.duplicate():
+		if not is_instance_valid(enemy):
+			_dying_enemies.erase(enemy)
+			continue
+		enemy.update_actor(delta, _player.global_position, _get_map_world_rect())
+		if enemy.is_queued_for_deletion():
+			_dying_enemies.erase(enemy)
+
+func _on_enemy_died(enemy: EnemyActor) -> void:
+	if _active_enemies.has(enemy):
+		_active_enemies.erase(enemy)
+		_dying_enemies.append(enemy)
+		_update_count_label()
+
+func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
+	if enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:
+		return
+	if enemy.global_position.distance_to(_player.global_position) > enemy.shot_range:
+		return
+	enemy.shot_elapsed += delta
+	if enemy.shot_elapsed >= enemy.shot_interval_sec:
+		enemy.shot_elapsed -= enemy.shot_interval_sec
+		var projectile_record: Dictionary = _projectile_records.get(enemy.projectile_id, {})
+		if projectile_record.is_empty():
+			return
+		var projectile := ProjectileScript.new() as CombatProjectile
+		add_child(projectile)
+		projectile.configure(projectile_record, enemy.global_position, _player.global_position, _get_map_world_rect(), _player)
+		_projectiles.append(projectile)
+
+func _update_projectiles(delta: float) -> void:
+	for projectile in _projectiles.duplicate():
+		if not is_instance_valid(projectile):
+			_projectiles.erase(projectile)
+			continue
+		projectile.advance(delta)
+		if projectile.is_queued_for_deletion():
+			_projectiles.erase(projectile)
 
 func _try_get_spawn_position(body_radius: float) -> Variant:
 	var screen_rect := _get_screen_world_rect()
@@ -209,6 +267,10 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	var distance_squared: float = offset.length_squared()
 	if distance_squared >= combined_radius * combined_radius:
 		return
+	if first == _player and second is EnemyActor:
+		_apply_contact_damage(second as EnemyActor)
+	elif second == _player and first is EnemyActor:
+		_apply_contact_damage(first as EnemyActor)
 	var distance := sqrt(distance_squared)
 	var direction: Vector2 = offset / distance if distance > 0.001 else Vector2.RIGHT
 	var overlap := combined_radius - distance
@@ -221,6 +283,16 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	var second_position: Vector2 = second.global_position + direction * overlap * second_share
 	first.global_position = _clamp_body_to_map(first_position, float(first.body_radius))
 	second.global_position = _clamp_body_to_map(second_position, float(second.body_radius))
+
+func _apply_contact_damage(enemy: EnemyActor) -> void:
+	if enemy.is_logically_dead or enemy.contact_damage <= 0:
+		return
+	var key := enemy.get_instance_id()
+	var ready_at := float(_contact_ready_at.get(key, 0.0))
+	if _elapsed_seconds + 0.000001 < ready_at:
+		return
+	_player.apply_damage(enemy.contact_damage)
+	_contact_ready_at[key] = _elapsed_seconds + enemy.contact_rehit_sec
 
 func _clamp_body_to_map(world_position: Vector2, body_radius: float) -> Vector2:
 	var bounds := _get_map_world_rect()

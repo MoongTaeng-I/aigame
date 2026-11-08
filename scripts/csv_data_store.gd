@@ -108,6 +108,10 @@ func _load_file(file_name: String, schema: Dictionary) -> String:
 	return ""
 
 func _convert_value(raw_value: String, kind: Variant) -> Dictionary:
+	if kind is Dictionary and String(kind.get("type", "")) == "Optional":
+		if raw_value.is_empty():
+			return {"ok": true, "value": null}
+		return _convert_value(raw_value, kind.get("inner", "String"))
 	if kind is Dictionary and String(kind.get("type", "")) == "Enum":
 		var enum_values: Dictionary = kind.get("values", {})
 		if enum_values.has(raw_value):

@@ -1,6 +1,7 @@
 extends Node2D
 
 const CsvDataStore = preload("res://scripts/csv_data_store.gd")
+const CombatDataScript = preload("res://scripts/combat_data.gd")
 const EnemyManagerScript = preload("res://scripts/enemy_manager.gd")
 const EnemyActorScript = preload("res://scripts/enemy.gd")
 const MapScene = preload("res://scenes/map.tscn")
@@ -9,47 +10,14 @@ const PlayerScene = preload("res://scenes/player.tscn")
 func _ready() -> void:
 	_configure_window()
 	var data_store = CsvDataStore.new()
-	data_store.register_schema("player.csv", {
-		"Id": "String",
-		"Name_ko": "String",
-		"Move_speed": "Float",
-		"Body_radius": "Float",
-		"Push_weight": "Float",
-		"Note": "String",
-	})
-	data_store.register_schema("enemy.csv", {
-		"Id": "String",
-		"Name_ko": "String",
-		"Move_speed": "Float",
-		"Attack_range_type": {
-			"type": "Enum",
-			"values": {
-				"melee": EnemyActorScript.AttackRangeType.MELEE,
-				"ranged": EnemyActorScript.AttackRangeType.RANGED,
-			},
-		},
-		"Body_radius": "Float",
-		"Push_weight": "Float",
-		"Note": "String",
-	})
-	data_store.register_schema("spawn.csv", {
-		"Id": "String",
-		"Time_start": "Float",
-		"Time_end": "Float",
-		"Enemy_id": "String",
-		"Spawn_interval": "Float",
-		"Spawn_count": "Int",
-		"Note": "String",
-	})
-	data_store.register_schema("spawn_rule.csv", {
-		"Id": "String",
-		"Max_alive": "Int",
-		"Offscreen_relocate_sec": "Float",
-		"Note": "String",
-	})
+	CombatDataScript.register_schemas(data_store)
 	var load_error: String = data_store.load_all()
 	if not load_error.is_empty():
 		_show_data_error(load_error)
+		return
+	var combat_error := CombatDataScript.validate(data_store)
+	if not combat_error.is_empty():
+		_show_data_error(combat_error)
 		return
 	var player_record: Dictionary = data_store.get_row("player.csv", "player_01")
 	if player_record.is_empty():
@@ -70,6 +38,7 @@ func _ready() -> void:
 	var player = PlayerScene.instantiate()
 	player.move_speed = float(player_record["Move_speed"])
 	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
+	player.configure_combat(int(player_record["Max_hp"]), data_store.get_row("basic_attack.csv", "attack_01"))
 	map.add_child(player)
 	player.position = Vector2.ZERO
 	var enemy_manager = EnemyManagerScript.new()
@@ -79,7 +48,9 @@ func _ready() -> void:
 		enemy_records,
 		spawn_records,
 		int(spawn_rule["Max_alive"]),
-		float(spawn_rule["Offscreen_relocate_sec"])
+		float(spawn_rule["Offscreen_relocate_sec"]),
+		data_store.get_table("projectile.csv"),
+		data_store.get_row("basic_attack.csv", "attack_01")
 	)
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
