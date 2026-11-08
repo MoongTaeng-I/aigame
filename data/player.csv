@@ -1,2 +1,2 @@
-﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Note,Max_hp
-player_01,플레이어,250,16,3.0,A단계 검증용 시작값,100
+﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Note,Max_hp,Pickup_radius
+player_01,플레이어,250,16,3.0,A단계 검증용 시작값,100,100

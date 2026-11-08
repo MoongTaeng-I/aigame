@@ -1,3 +1,3 @@
-﻿Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id
-enemy_01,그림자 졸개,120,melee,16,1,A단계 검증용 시작값,30,5,1.0,0.4,,,
-enemy_test_ranged,임시 원거리,100,ranged,16,1.0,A단계 검증용 임시. 정식 적 2종에 포함하지 않음,30,5,1.0,0.4,2.0,400,proj_test_01
+﻿Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value
+enemy_01,그림자 졸개,120,melee,16,1,A단계 검증용 시작값,30,5,1.0,0.4,,,,1
+enemy_test_ranged,임시 원거리,100,ranged,16,1.0,A단계 검증용 임시. 정식 적 2종에 포함하지 않음,30,5,1.0,0.4,2.0,400,proj_test_01,2
