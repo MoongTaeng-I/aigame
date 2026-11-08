@@ -1,0 +1,2 @@
+﻿Id,Speed,Damage,Body_radius,Expire_rule,Max_distance,Max_lifetime_sec,Note
+proj_test_01,300,8,6,distance,500,,A단계 검증용 임시

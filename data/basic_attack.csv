@@ -1,0 +1,2 @@
+﻿Id,Hits_per_attack,Hit_gap_sec,Hit_effect_sec,Interval_sec,Range,Damage,Knockback_distance,Knockback_sec,Note
+attack_01,2,0.15,0.20,0.60,90,10,60,0.20,A단계 검증용 시작값

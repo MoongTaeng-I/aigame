@@ -1,0 +1,7 @@
+[remap]
+importer="keep"
+type="TextFile"
+
+[deps]
+source_file="res://data/basic_attack.csv"
+dest_files=["res://data/basic_attack.csv"]
