@@ -54,7 +54,7 @@ func run(scene_tree: SceneTree) -> void:
 		for number in range(1,int(pair[1])+1):
 			complete = complete and covered.has("%s-%02d" % [pair[0],number])
 	require(complete,"all 22 requested groups reached a spec verdict; runtime errors cannot silently skip a group")
-	var output := FileAccess.open("res://.local/ops-04-foundation-results.json", FileAccess.WRITE)
+	var output := FileAccess.open("res://.local/p0-foundation-results.json", FileAccess.WRITE)
 	output.store_string(JSON.stringify({"checks":checks,"failures":failures,"mismatches":mismatches,"results":results}, "  "))
 	output.close()
 
