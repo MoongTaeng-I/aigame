@@ -270,32 +270,83 @@ func _resolve_contact_pushes() -> void:
 		_resolve_contact_push_pass()
 
 func _resolve_contact_push_pass() -> void:
-	var bodies: Array = [_player]
+	var bodies: Array[Node2D] = [_player]
 	bodies.append_array(_active_enemies)
-	var maximum_radius := float(_player.body_radius)
-	for enemy in _active_enemies:
-		maximum_radius = maxf(maximum_radius, enemy.body_radius)
+	var count := bodies.size()
+	var positions := PackedVector2Array()
+	var radii := PackedFloat64Array()
+	var weights := PackedFloat64Array()
+	var active := PackedByteArray()
+	positions.resize(count)
+	radii.resize(count)
+	weights.resize(count)
+	active.resize(count)
+	positions[0] = _player.global_position
+	radii[0] = float(_player.body_radius)
+	weights[0] = maxf(float(_player.push_weight),0.0001)
+	active[0] = 1
+	var maximum_radius := radii[0]
+	for index in range(1,count):
+		var enemy := bodies[index] as EnemyActor
+		positions[index] = enemy.global_position
+		radii[index] = enemy.body_radius
+		weights[index] = maxf(enemy.push_weight,0.0001)
+		active[index] = int(enemy.is_active)
+		maximum_radius = maxf(maximum_radius,radii[index])
 	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
 	var spatial_grid: Dictionary = {}
 	var body_cells: Array[Vector2i] = []
-	for body_index in range(bodies.size()):
-		var body: Variant = bodies[body_index]
-		var cell := Vector2i(floori(body.global_position.x / cell_size), floori(body.global_position.y / cell_size))
+	for body_index in range(count):
+		var point := positions[body_index]
+		var cell := Vector2i(floori(point.x / cell_size), floori(point.y / cell_size))
 		body_cells.append(cell)
 		var cell_indices: Array = spatial_grid.get(cell, [])
 		cell_indices.append(body_index)
 		spatial_grid[cell] = cell_indices
-	for first_index in range(bodies.size()):
-		var first: Variant = bodies[first_index]
-		var center_cell: Vector2i = body_cells[first_index]
+	# Flatten neighbors once per occupied cell, preserving x/y and insertion order.
+	var neighbors: Dictionary = {}
+	for center_cell: Vector2i in spatial_grid:
+		var indices := PackedInt32Array()
 		for cell_x in range(-1, 2):
 			for cell_y in range(-1, 2):
 				var neighbor_cell := center_cell + Vector2i(cell_x, cell_y)
 				var nearby_indices: Array = spatial_grid.get(neighbor_cell, [])
 				for second_index in nearby_indices:
-					if int(second_index) <= first_index:
-						continue
-					_resolve_contact_pair(first, bodies[int(second_index)])
+					indices.append(int(second_index))
+		neighbors[center_cell] = indices
+	var bounds := _get_map_world_rect()
+	var skip_player: bool = _player.dash_pass_through
+	for first_index in range(count):
+		var ordered_neighbors: PackedInt32Array = neighbors[body_cells[first_index]]
+		for second_index: int in ordered_neighbors:
+			if second_index<=first_index:
+				continue
+			if (skip_player and first_index==0) or not active[first_index] or not active[second_index]:
+				continue
+			var first_radius := radii[first_index]
+			var second_radius := radii[second_index]
+			var combined_radius := first_radius+second_radius
+			if first_index>0:
+				combined_radius += separation_gap
+			var offset := positions[second_index]-positions[first_index]
+			var distance_squared := offset.length_squared()
+			if distance_squared>=combined_radius*combined_radius:
+				continue
+			var distance := sqrt(distance_squared)
+			var direction: Vector2 = offset/distance if distance>0.001 else Vector2.RIGHT
+			var overlap := combined_radius-distance
+			var first_weight := weights[first_index]
+			var second_weight := weights[second_index]
+			var total_weight := first_weight+second_weight
+			var first_share := second_weight/total_weight
+			var second_share := first_weight/total_weight
+			var first_position := positions[first_index]-direction*overlap*first_share
+			var second_position := positions[second_index]+direction*overlap*second_share
+			bodies[first_index].global_position = Vector2(clampf(first_position.x,bounds.position.x+first_radius,bounds.end.x-first_radius),clampf(first_position.y,bounds.position.y+first_radius,bounds.end.y-first_radius))
+			bodies[second_index].global_position = Vector2(clampf(second_position.x,bounds.position.x+second_radius,bounds.end.x-second_radius),clampf(second_position.y,bounds.position.y+second_radius,bounds.end.y-second_radius))
+			# Read back after the same node writes to preserve transform rounding.
+			positions[first_index] = bodies[first_index].global_position
+			positions[second_index] = bodies[second_index].global_position
 
 func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	if _player.dash_pass_through and (first==_player or second==_player):
