@@ -13,14 +13,16 @@ var cooldown_until: float = 0.0
 var hits_done: int = 0
 var on_tick: Callable
 var mode: String = "ticks"
+var completion_field: String = "Duration_sec"
 
-func configure(rows: Array, initial_level: int, callback: Callable, cast_mode: String = "ticks") -> void:
+func configure(rows: Array, initial_level: int, callback: Callable, cast_mode: String = "ticks", duration_field: String = "Duration_sec") -> void:
 	levels = rows.duplicate(true)
 	levels.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return int(a.Level)<int(b.Level))
 	level = initial_level
 	on_tick = callback
 	implemented = callback.is_valid()
 	mode = cast_mode
+	completion_field = duration_field
 
 func max_level() -> int:
 	return int(levels.back().Level) if not levels.is_empty() else 0
@@ -44,8 +46,8 @@ func start(now: float) -> bool:
 
 func advance(now: float) -> void:
 	if mode!="ticks":
-		if active and now+0.000000001>=started_at+float(snapshot.Duration_sec):
-			_finish(started_at+float(snapshot.Duration_sec))
+		if active and now+0.000000001>=started_at+float(snapshot[completion_field]):
+			_finish(started_at+float(snapshot[completion_field]))
 		return
 	while active:
 		var tick_at := started_at + hits_done*float(snapshot.Hit_interval_sec)

@@ -40,8 +40,8 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 				mode = "instant"
 			elif id=="skill_dragon_fear":
 				callback = Callable(self,"_fear_start")
-				mode = "instant"
-		cast.configure(rows,1 if records[id].Initially_unlocked else 0,callback,mode)
+				mode = "timed"
+		cast.configure(rows,1 if records[id].Initially_unlocked else 0,callback,mode,"Cast_sec" if id=="skill_dragon_fear" else "Duration_sec")
 		skills[id] = cast
 
 func _ready() -> void:
@@ -59,7 +59,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			try_use(id)
 
 func try_use(id: String) -> bool:
-	if player.is_dead or get_tree().paused or player.is_stealthed():
+	if player.is_dead or get_tree().paused or player.is_stealthed() or player.is_fear_casting():
 		return false
 	return skills[id].start(clock)
 
@@ -111,6 +111,7 @@ func _stealth_start(stats: Dictionary, at: float) -> void:
 	skills["skill_rapid_slash"].cancel(at)
 
 func _fear_start(stats: Dictionary, at: float) -> void:
+	player.fear_cast_remaining = float(stats.Cast_sec)
 	for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):
 		enemy.apply_fear(float(stats.Duration_sec))
 	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+UI.FEAR_FLASH_SEC})

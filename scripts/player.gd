@@ -14,6 +14,10 @@ var dash_remaining: float = 0.0
 var dash_speed: float = 0.0
 var dash_pass_through: bool = false
 var stealth_remaining: float = 0.0
+var fear_cast_remaining: float = 0.0
+
+func is_fear_casting() -> bool:
+    return fear_cast_remaining > 0.000000001
 
 func is_stealthed() -> bool:
     return stealth_remaining > 0.000000001
@@ -82,7 +86,7 @@ func add_experience(amount: int) -> void:
         leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:
-    if is_dead or amount <= 0:
+    if is_dead or amount <= 0 or is_fear_casting():
         return
     hp = maxi(0, hp - amount)
     _update_hp_label()
@@ -199,14 +203,17 @@ func _physics_process(delta: float) -> void:
     if is_dead:
         return
     stealth_remaining = maxf(0.0,stealth_remaining-delta)
+    var locked_time := minf(delta,fear_cast_remaining)
+    fear_cast_remaining = maxf(0.0,fear_cast_remaining-delta)
+    var movement_delta := delta-locked_time
     var direction := movement_input()
     dash_pass_through = dash_remaining > 0.0
-    var travel := move_speed * delta
+    var travel := move_speed * movement_delta
     if dash_pass_through:
         direction = dash_direction
-        travel = dash_speed * minf(delta,dash_remaining)
+        travel = dash_speed * maxf(0.0,minf(delta,dash_remaining)-locked_time)
         dash_remaining = maxf(0.0,dash_remaining-delta)
-    elif direction != Vector2.ZERO:
+    elif direction != Vector2.ZERO and movement_delta>0.0:
         last_move_direction = direction
     # Resolve each axis independently so a blocked component does not cancel motion along the wall.
     move_and_collide(Vector2(direction.x * travel, 0.0))

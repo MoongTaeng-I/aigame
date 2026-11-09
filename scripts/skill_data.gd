@@ -7,7 +7,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("skill_rapid_slash_level.csv", {"Id":"String","Level":"Int","Damage":"Int","Hits":"Int","Hit_interval_sec":"Float","Range":"Float","Cooldown_sec":"Float","Note":"String"})
 	store.register_schema("skill_dash_level.csv", {"Id":"String","Level":"Int","Distance":"Float","Duration_sec":"Float","Cooldown_sec":"Float","Note":"String"})
 	store.register_schema("skill_stealth_level.csv", {"Id":"String","Level":"Int","Duration_sec":"Float","Cooldown_sec":"Float","Note":"String"})
-	store.register_schema("skill_dragon_fear_level.csv", {"Id":"String","Level":"Int","Range":"Float","Duration_sec":"Float","Cooldown_sec":"Float","Note":"String"})
+	store.register_schema("skill_dragon_fear_level.csv", {"Id":"String","Level":"Int","Range":"Float","Duration_sec":"Float","Cooldown_sec":"Float","Note":"String","Cast_sec":"Float"})
 	store.register_schema("stealth_rule.csv", {"Id":"String","Wander_radius":"Float","Note":"String"})
 
 static func standard_key(name: String) -> int:
@@ -52,7 +52,7 @@ static func validate(store: CsvDataStore) -> String:
 	var rule := store.get_row("stealth_rule.csv","stealth_rule_01")
 	if rule.is_empty() or float(rule.Wander_radius)<=0.0:
 		return _error(store,"stealth_rule.csv","stealth_rule_01","Wander_radius","필수 행과 0보다 큰 반경이 필요합니다.")
-	return validate_effect_table(store,"skill_dragon_fear_level.csv",["Range","Duration_sec","Cooldown_sec"],true)
+	return validate_effect_table(store,"skill_dragon_fear_level.csv",["Range","Duration_sec","Cooldown_sec","Cast_sec"],true)
 
 static func validate_effect_table(store: CsvDataStore, file: String, positive: Array, prevent_overlap: bool = false) -> String:
 	var rows: Array = store.get_table(file).values()

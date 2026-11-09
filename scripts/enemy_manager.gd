@@ -321,7 +321,7 @@ func _update_contact_damage() -> void:
 			return
 
 func _apply_contact_damage(enemy: EnemyActor) -> void:
-	if not enemy.is_active or enemy.is_logically_dead or enemy.is_feared() or enemy.contact_damage <= 0:
+	if not enemy.is_active or enemy.is_logically_dead or enemy.is_feared() or enemy.contact_damage <= 0 or _player.is_fear_casting():
 		return
 	var key := enemy.get_instance_id()
 	var ready_at := float(_contact_ready_at.get(key, 0.0))
