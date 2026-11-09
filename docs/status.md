@@ -34,6 +34,9 @@
 - 시스템 3(전투와 생존) A단계를 완료했다(2026-11-09). P0 자동 검사 93개와 사용자 플레이 확인을 모두 통과했다.
 - 시스템 4(경험치와 레벨업) A단계를 완료했다(2026-11-09). P0 자동 검사 140개와 사용자 플레이 확인 13개를 모두 통과했다.
 
+- 시스템 5(기본 스킬) A단계를 완료했다(2026-11-09). 사용자 플레이 확인과 S5-FIX-01~03 재확인을 거쳐 질주·난도·은신·드래곤 피어를 승인했다.
+- 시스템 6(레벨업 선택지) A단계를 완료했다(2026-11-09). 사용자 확인표 14항목 모두 ○이며, 다시 뽑기 실행은 현재 일반 후보가 3개라 P0만 검증했고 후보 4개 이상이 되는 시스템 7에서 직접 확인한다.
+
 ## 현재 구현 상태
 
 - 시스템 1(플레이어와 맵) A단계가 구현되어 있다. 1280×720 창 모드 고정, 2560×1440 맵, WASD 8방향 이동(대각선 속도 정규화), 맵 경계에서 벽을 따라 이동(경계를 향하는 성분만 차단), 카메라 추적과 맵 경계 정지, CSV 읽기 공통 기능(`scripts/csv_data_store.gd`)이다.
@@ -44,13 +47,17 @@
 - 구현 파일: `scripts/combat_data.gd`, `scripts/projectile.gd`, `tests/p0_runner.gd`, `tests/run_headless.py`, `data/projectile.csv`, `data/basic_attack.csv` 및 변경된 기존 파일 `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/player.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `data/player.csv`, `data/enemy.csv`, `data/spawn.csv`다. 새 CSV의 `.import`도 포함한다.
 - 시스템 4(경험치와 레벨업) A단계에서 적 사망 위치 경험치 드랍, 가속 끌어당김과 경로 접촉 적립, 바닥 경험치 상한 합치기, 레벨 요구량 마지막 행 반복과 다중 레벨업 이월, 레벨업당 강화 포인트 1개와 레벨업 신호, 임시 레벨·경험치 표시가 동작한다.
 - 구현 파일: `scripts/experience_data.gd`, `scripts/experience_manager.gd`, `scripts/experience_orb.gd`, `data/level.csv`, `data/xp_rule.csv`와 두 CSV의 `.import`, 변경된 기존 파일 `scripts/main.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `scripts/player.gd`, `scripts/combat_data.gd`, `data/enemy.csv`, `data/player.csv`, `tests/p0_runner.gd`다.
-- 시스템 5~10은 상세 기획 전이다.
+- 시스템 5는 스킬 공통 시전·사용 완료 기준 쿨타임, 네 스킬의 키 입력·아이콘·포인트 해금/강화, 은신 중 공격·스킬 차단, 피어 시전 중 이동 정지·무적, 질주 중 피어 차단을 구현했다. 적끼리 Separation_gap 8과 Push_iterations 8을 검증용 시작값으로 유지하며 밀어내기는 결과 불변 최적화를 적용했다.
+- 시스템 5 구현 파일: `scripts/skill_data.gd`, `scripts/skill_cast.gd`, `scripts/skill_area.gd`, `scripts/skill_manager.gd`, `scripts/skill_ui.gd`, `data/skill.csv`, 네 스킬 레벨 CSV, `data/stealth_rule.csv`와 `.import`, 기존 플레이어·적 관리자·초기화·스키마 파일이다.
+- 시스템 6은 레벨업 선택 대기열·게임 정지/재개, 마우스 3택 1, 가중치 후보 추출·최대 레벨 제외·체력 회복 보충, 효과 적용과 판당 다시 뽑기 횟수를 구현했다. 현재 일반 후보는 3개여서 다시 뽑기가 항상 비활성이다.
+- 시스템 6 구현 파일: `scripts/choice_data.gd`, `scripts/choice_manager.gd`, `scripts/choice_ui.gd`, `data/choice.csv`, `data/choice_level.csv`, `data/choice_rule.csv`와 `.import`, 기존 플레이어·초기화·스키마 파일이다.
+- 시스템 7은 상세 기획 진행 중이며 시스템 8~10은 상세 기획 전이다.
 
 ## 미해결 문제
 
 - 시스템별 세부 수치와 콘텐츠 종류가 미정이다. 전체 목록은 game_design.md의 '미정 항목'에 있다.
 - 저장소 이름이 작업명과 다르다. 사용자가 GitHub에서 바꾼다.
-- P0 자동 검사(tests/p0_runner.gd, tests/foundation_p0.gd)가 시스템 1~4 규칙을 확인한다. OPS-04 최종 결과는 227개 판정, 일반 실패 0개, 기획 불일치 의심 2개다.
+- P0 자동 검사(tests/p0_runner.gd와 시스템별 보조 검사)가 시스템 1~6 규칙을 확인한다. S5-DONE-01 병합 후 결과는 648개 판정, 일반 실패 0개, 기존 기획 불일치 의심 2개다.
 - 기획 불일치 의심(판단 애매): 시스템 1 규칙 1의 창 모드는 프로젝트 설정상 창 모드지만, 헤드리스에서 main 씬 초기화 후 Window.mode가 1로 읽혔다. 환경 영향과 구현 차이를 구분하지 못했으며 실제 창 표시는 확인하지 못했다(S1-01).
 - 기획 불일치 의심(판단 애매): 시스템 1 규칙 1의 크기 변경 금지는 프로젝트 설정상 resizable=false지만, 헤드리스의 Window.unresizable은 false로 판정됐다. 설정과 런타임 속성의 차이이며 실제 창 크기 변경 가능 여부는 확인하지 못했다(S1-01).
 - Notion 메인 페이지의 소개 문장과 다음 행동은 Claude 초안이며 사용자가 다시 쓸 예정이다.
@@ -62,6 +69,10 @@
 - 시스템 3 B단계: 정식 적 2종의 전투 수치, 임시 원거리 적·투사체 데이터의 정리 방법을 정한다.
 - 시스템 4 B단계: 정식 적별 경험치, 레벨 요구량, 획득 반경·끌어당김·상한의 최종값을 정한다.
 
+- 시스템 5·6 B단계: 스킬·선택지 최종 수치와 나머지 콘텐츠를 정한다. 적 간격 8과 Push_iterations 8은 검증용 시작값이며 최종 밸런스가 아니다.
+- 다시 뽑기 직접 플레이: 규칙 13은 유지하고, 시스템 7에서 그림자 카드가 추가되어 일반 후보가 4개 이상일 때 실행 동작을 확인한다(현재는 P0만 검증).
+- 성능 남은 과제(제안): 시스템 10(아트) 완료 기준에 적 200 + 피어 + 그림자 상태에서 내보낸 실행 파일의 프레임 확인을 넣는 안을 시스템 10에서 확정한다. Push_iterations와 Max_alive는 비상 조정 수단이다.
+
 ## 다음 작업
 
-- 시스템 5(기본 스킬)의 상세 기획을 시작한다.
+- 시스템 7(그림자 소환수) 기획을 진행한다(진행 중).
