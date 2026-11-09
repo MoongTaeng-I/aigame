@@ -16,6 +16,8 @@ var ui: Control
 func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records: Dictionary, slash_levels: Dictionary, extra_levels: Dictionary = {}, stealth_rule: Dictionary = {}) -> void:
 	player = owner_player
 	enemies = enemy_manager
+	if not stealth_rule.is_empty():
+		enemies.wander_radius = float(stealth_rule.Wander_radius)
 	records = skill_records.duplicate(true)
 	for id in SkillData.IDS:
 		if not InputMap.has_action(id):
@@ -33,6 +35,9 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 			if id=="skill_dash":
 				callback = Callable(self,"_dash_start")
 				mode = "timed"
+			elif id=="skill_stealth":
+				callback = Callable(self,"_stealth_start")
+				mode = "instant"
 		cast.configure(rows,1 if records[id].Initially_unlocked else 0,callback,mode)
 		skills[id] = cast
 
@@ -96,6 +101,9 @@ func icon_state(id: String) -> Dictionary:
 
 func _dash_start(stats: Dictionary, _at: float) -> void:
 	player.begin_dash(float(stats.Distance),float(stats.Duration_sec))
+
+func _stealth_start(stats: Dictionary, _at: float) -> void:
+	player.stealth_remaining = float(stats.Duration_sec)
 
 func _draw() -> void:
 	UI.draw_ranges(self,effects)

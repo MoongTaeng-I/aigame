@@ -1,5 +1,5 @@
 ﻿Id,Name_ko,Key,Initially_unlocked,Note
 skill_dash,질주,Space,1,A단계 검증용 시작값
 skill_rapid_slash,난도,F,1,A단계 검증용 시작값
-skill_stealth,은신,1,0,A단계 미구현
+skill_stealth,은신,1,0,A단계 검증용 시작값
 skill_dragon_fear,드래곤 피어,2,0,A단계 미구현

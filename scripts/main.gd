@@ -69,7 +69,7 @@ func _ready() -> void:
 	map.add_child(experience_manager)
 	var skill_manager := SkillManager.new()
 	skill_manager.name = "SkillManager"
-	skill_manager.configure(player,enemy_manager,data_store.get_table("skill.csv"),data_store.get_table("skill_rapid_slash_level.csv"),{"skill_dash":data_store.get_table("skill_dash_level.csv")})
+	skill_manager.configure(player,enemy_manager,data_store.get_table("skill.csv"),data_store.get_table("skill_rapid_slash_level.csv"),{"skill_dash":data_store.get_table("skill_dash_level.csv"),"skill_stealth":data_store.get_table("skill_stealth_level.csv")},data_store.get_row("stealth_rule.csv","stealth_rule_01"))
 	map.add_child(skill_manager)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:

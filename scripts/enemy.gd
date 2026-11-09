@@ -33,6 +33,8 @@ var knockback_duration: float = 0.0
 var knockback_elapsed: float = 0.0
 var map_bounds := Rect2()
 var _fade_elapsed: float = 0.0
+var wander_target := Vector2.ZERO
+var has_wander_target: bool = false
 
 @onready var collision_shape := $CollisionShape2D as CollisionShape2D
 
@@ -62,6 +64,7 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	is_logically_dead = false
 	spawn_order = order
 	shot_elapsed = 0.0
+	has_wander_target = false
 	_fade_elapsed = 0.0
 	knockback_direction = Vector2.ZERO
 	knockback_distance = 0.0
@@ -119,7 +122,7 @@ func start_knockback(source_position: Vector2, distance: float, duration: float)
 	knockback_duration = duration
 	knockback_elapsed = 0.0
 
-func update_actor(delta: float, player_position: Vector2, bounds: Rect2) -> void:
+func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at_target: bool = false) -> void:
 	map_bounds = bounds
 	if is_logically_dead:
 		_fade_elapsed += delta
@@ -130,6 +133,8 @@ func update_actor(delta: float, player_position: Vector2, bounds: Rect2) -> void
 	if not is_active:
 		return
 	var motion := global_position.direction_to(player_position) * move_speed * delta
+	if stop_at_target:
+		motion = global_position.direction_to(player_position)*minf(move_speed*delta,global_position.distance_to(player_position))
 	if knockback_elapsed < knockback_duration and knockback_duration > 0.0:
 		# Integrate the linear decay so total displacement does not depend on frame size.
 		var end_time := minf(knockback_duration, knockback_elapsed + delta)

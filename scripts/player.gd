@@ -13,6 +13,10 @@ var dash_direction := Vector2.RIGHT
 var dash_remaining: float = 0.0
 var dash_speed: float = 0.0
 var dash_pass_through: bool = false
+var stealth_remaining: float = 0.0
+
+func is_stealthed() -> bool:
+    return stealth_remaining > 0.000000001
 var body_radius: float = 18.0
 var push_weight: float = 1.0
 var max_hp: int = 100
@@ -164,6 +168,7 @@ func begin_dash(distance: float, duration: float) -> void:
 func _physics_process(delta: float) -> void:
     if is_dead:
         return
+    stealth_remaining = maxf(0.0,stealth_remaining-delta)
     var direction := movement_input()
     dash_pass_through = dash_remaining > 0.0
     var travel := move_speed * delta

@@ -39,6 +39,7 @@ const RANGE_FILL := Color(0.54,0.28,0.85,0.08)
 const RANGE_WIDTH := 2.0
 const SHAPE_WIDTH := 0.12
 const SHAPE_EXTENT := 0.78
+const STEALTH_ALPHA := 0.35
 const BLUR_SHADER := """shader_type canvas_item;
 uniform float blur_px;
 uniform vec4 tint : source_color;
@@ -94,6 +95,7 @@ func _layout() -> void:
 		glyphs[index].position = card_rect(index).position+ICON_OFFSET
 
 func _process(_delta: float) -> void:
+	manager.player.modulate.a = STEALTH_ALPHA if manager.player.is_stealthed() else 1.0
 	_layout()
 	queue_redraw()
 	if overlay!=null:

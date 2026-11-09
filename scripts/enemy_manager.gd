@@ -26,6 +26,7 @@ var _stop_normal_spawning: bool = false
 # 임시 경과 시각이다. 시스템 8의 시간 관리가 생기면 그쪽으로 옮긴다.
 var _elapsed_seconds: float = 0.0
 var _random := RandomNumberGenerator.new()
+var wander_radius: float = 0.0
 var _count_label: Label
 
 func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}) -> void:
@@ -128,9 +129,21 @@ func _spawn_from_row(row: Dictionary) -> void:
 		_active_enemies.append(enemy)
 
 func _update_active_enemies(delta: float) -> void:
+	if _player.is_dead:
+		return
 	var screen_rect := _get_screen_world_rect()
 	for enemy in _active_enemies.duplicate():
-		enemy.update_actor(delta, _player.global_position, _get_map_world_rect())
+		var target: Vector2 = _player.global_position
+		var wandering: bool = _player.is_stealthed()
+		if wandering:
+			if not enemy.has_wander_target or enemy.global_position.distance_to(enemy.wander_target)<=0.000001:
+				var offset := Vector2.RIGHT.rotated(_random.randf()*TAU)*sqrt(_random.randf())*wander_radius
+				enemy.wander_target = _clamp_body_to_map(enemy.global_position+offset,enemy.body_radius)
+				enemy.has_wander_target = true
+			target = enemy.wander_target
+		else:
+			enemy.has_wander_target = false
+		enemy.update_actor(delta, target, _get_map_world_rect(),wandering)
 		_update_enemy_shot(enemy, delta)
 		if screen_rect.grow(enemy.body_radius).has_point(enemy.global_position):
 			enemy.offscreen_seconds = 0.0
@@ -160,6 +173,8 @@ func _on_enemy_died(enemy: EnemyActor) -> void:
 		enemy_died.emit(enemy)
 
 func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
+	if _player.is_stealthed():
+		return
 	if not enemy.is_active or enemy.is_logically_dead or enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:
 		return
 	if enemy.global_position.distance_to(_player.global_position) > enemy.shot_range:
