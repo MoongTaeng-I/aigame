@@ -25,6 +25,10 @@ var _attack_data: Dictionary = {}
 var _remaining_hits: int = 0
 var _next_hit_at: float = 0.0
 var _attack_ready_at: float = 0.0
+var _base_attack_range: float = 0.0
+var _base_attack_interval: float = 0.0
+var _base_pickup_radius: float = 0.0
+var _attack_cast_range: float = 0.0
 var is_dead: bool = false
 var _hp_label: Label
 var _death_label: Label
@@ -46,10 +50,13 @@ func configure_combat(health: int, attack_data: Dictionary) -> void:
     max_hp = health
     hp = health
     _attack_data = attack_data.duplicate(true)
+    _base_attack_range = float(attack_data.get("Range",0.0))
+    _base_attack_interval = float(attack_data.get("Interval_sec",0.0))
     _update_hp_label()
 
 func configure_progression(level_records: Dictionary, radius: float) -> void:
     pickup_radius = radius
+    _base_pickup_radius = radius
     level = 1
     experience = 0
     enhancement_points = 0
@@ -93,26 +100,29 @@ func update_basic_attack(now: float, enemies: Array) -> void:
     if is_dead or _attack_data.is_empty():
         return
     while _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
-        var target: Variant = choose_target(enemies)
+        var target: Variant = choose_target(enemies,_attack_cast_range)
         if target != null:
             _apply_basic_hit(target)
+        if _remaining_hits==1:
+            _attack_ready_at = _next_hit_at + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
         _remaining_hits -= 1
         _next_hit_at += float(_attack_data["Hit_gap_sec"])
     if _remaining_hits == 0 and now + 0.000000001 >= _attack_ready_at:
         var first_target: Variant = choose_target(enemies)
         if first_target != null:
+            _attack_cast_range = float(_attack_data["Range"])
             _apply_basic_hit(first_target)
             _remaining_hits = int(_attack_data["Hits_per_attack"]) - 1
             _next_hit_at = now + float(_attack_data["Hit_gap_sec"])
             _attack_ready_at = now + _remaining_hits * float(_attack_data["Hit_gap_sec"]) + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
 
-func choose_target(enemies: Array) -> Variant:
+func choose_target(enemies: Array, range_override: float = -1.0) -> Variant:
     var chosen: Variant = null
     for candidate in enemies:
         if candidate == null or not candidate.is_active or candidate.is_logically_dead:
             continue
         var distance := global_position.distance_to(candidate.global_position)
-        if distance > float(_attack_data["Range"]):
+        if distance > (range_override if range_override>=0.0 else float(_attack_data["Range"])):
             continue
         if chosen == null:
             chosen = candidate
@@ -120,6 +130,20 @@ func choose_target(enemies: Array) -> Variant:
         if candidate.hp < chosen.hp or (candidate.hp == chosen.hp and distance < global_position.distance_to(chosen.global_position)) or (candidate.hp == chosen.hp and distance == global_position.distance_to(chosen.global_position) and candidate.spawn_order < chosen.spawn_order):
             chosen = candidate
     return chosen
+
+func apply_choice_modifiers(range_add: float, interval_sub: float, pickup_add: float) -> void:
+    _attack_data["Range"] = _base_attack_range + range_add
+    _attack_data["Interval_sec"] = _base_attack_interval - interval_sub
+    pickup_radius = _base_pickup_radius + pickup_add
+
+func healed_hp(percent: float) -> int:
+    return mini(max_hp,hp+floori(max_hp*percent/100.0))
+
+func heal_percent(percent: float) -> void:
+    if is_dead:
+        return
+    hp = healed_hp(percent)
+    _update_hp_label()
 
 func _apply_basic_hit(enemy: Variant) -> void:
     enemy.apply_damage(int(_attack_data["Damage"]))

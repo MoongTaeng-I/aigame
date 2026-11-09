@@ -1,0 +1,17 @@
+﻿Id,Choice_id,Level,Value,Desc_ko,Note
+choice_attack_range_01,choice_attack_range,1,10,기본 공격 범위 +10,A단계 검증용 시작값
+choice_attack_range_02,choice_attack_range,2,20,기본 공격 범위 +20,A단계 검증용 시작값
+choice_attack_range_03,choice_attack_range,3,30,기본 공격 범위 +30,A단계 검증용 시작값
+choice_attack_range_04,choice_attack_range,4,45,기본 공격 범위 +45,A단계 검증용 시작값
+choice_attack_range_05,choice_attack_range,5,60,기본 공격 범위 +60,A단계 검증용 시작값
+choice_pickup_radius_01,choice_pickup_radius,1,25,경험치 획득 반경 +25,A단계 검증용 시작값
+choice_pickup_radius_02,choice_pickup_radius,2,50,경험치 획득 반경 +50,A단계 검증용 시작값
+choice_pickup_radius_03,choice_pickup_radius,3,75,경험치 획득 반경 +75,A단계 검증용 시작값
+choice_pickup_radius_04,choice_pickup_radius,4,100,경험치 획득 반경 +100,A단계 검증용 시작값
+choice_pickup_radius_05,choice_pickup_radius,5,150,경험치 획득 반경 +150,A단계 검증용 시작값
+choice_attack_interval_01,choice_attack_interval,1,0.05,기본 공격 간격 -0.05초,A단계 검증용 시작값
+choice_attack_interval_02,choice_attack_interval,2,0.1,기본 공격 간격 -0.1초,A단계 검증용 시작값
+choice_attack_interval_03,choice_attack_interval,3,0.15,기본 공격 간격 -0.15초,A단계 검증용 시작값
+choice_attack_interval_04,choice_attack_interval,4,0.2,기본 공격 간격 -0.2초,A단계 검증용 시작값
+choice_attack_interval_05,choice_attack_interval,5,0.3,기본 공격 간격 -0.3초,A단계 검증용 시작값
+choice_heal_01,choice_heal,1,30,최대 체력의 30%를 회복한다,A단계 검증용 시작값

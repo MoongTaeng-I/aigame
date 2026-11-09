@@ -4,6 +4,7 @@ class_name CombatData
 const EnemyActorScript = preload("res://scripts/enemy.gd")
 const ExperienceData = preload("res://scripts/experience_data.gd")
 const SkillData = preload("res://scripts/skill_data.gd")
+const ChoiceData = preload("res://scripts/choice_data.gd")
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("player.csv", {
@@ -37,6 +38,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	})
 	ExperienceData.register_schemas(store)
 	SkillData.register_schemas(store)
+	ChoiceData.register_schemas(store)
 
 static func validate(store: CsvDataStore) -> String:
 	var projectiles: Dictionary = store.get_table("projectile.csv")
