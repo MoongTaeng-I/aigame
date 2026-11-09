@@ -144,7 +144,7 @@ func _update_active_enemies(delta: float) -> void:
 		else:
 			enemy.has_wander_target = false
 		enemy.update_actor(delta, target, _get_map_world_rect(),wandering)
-		_update_enemy_shot(enemy, delta)
+		_update_enemy_shot(enemy, enemy.action_delta)
 		if screen_rect.grow(enemy.body_radius).has_point(enemy.global_position):
 			enemy.offscreen_seconds = 0.0
 			continue
@@ -173,7 +173,7 @@ func _on_enemy_died(enemy: EnemyActor) -> void:
 		enemy_died.emit(enemy)
 
 func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
-	if _player.is_stealthed():
+	if _player.is_stealthed() or enemy.is_feared():
 		return
 	if not enemy.is_active or enemy.is_logically_dead or enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:
 		return
@@ -321,7 +321,7 @@ func _update_contact_damage() -> void:
 			return
 
 func _apply_contact_damage(enemy: EnemyActor) -> void:
-	if not enemy.is_active or enemy.is_logically_dead or enemy.contact_damage <= 0:
+	if not enemy.is_active or enemy.is_logically_dead or enemy.is_feared() or enemy.contact_damage <= 0:
 		return
 	var key := enemy.get_instance_id()
 	var ready_at := float(_contact_ready_at.get(key, 0.0))

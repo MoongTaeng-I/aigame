@@ -40,6 +40,8 @@ const RANGE_WIDTH := 2.0
 const SHAPE_WIDTH := 0.12
 const SHAPE_EXTENT := 0.78
 const STEALTH_ALPHA := 0.35
+const FEAR_COLOR := Color("#74b7ed")
+const FEAR_FLASH_SEC := 0.2
 const BLUR_SHADER := """shader_type canvas_item;
 uniform float blur_px;
 uniform vec4 tint : source_color;

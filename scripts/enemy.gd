@@ -35,6 +35,17 @@ var map_bounds := Rect2()
 var _fade_elapsed: float = 0.0
 var wander_target := Vector2.ZERO
 var has_wander_target: bool = false
+var fear_remaining: float = 0.0
+var action_delta: float = 0.0
+const SkillUI = preload("res://scripts/skill_ui.gd")
+
+func is_feared() -> bool:
+	return fear_remaining>0.000000001
+
+func apply_fear(duration: float) -> void:
+	if is_active and not is_logically_dead:
+		fear_remaining = duration
+		queue_redraw()
 
 @onready var collision_shape := $CollisionShape2D as CollisionShape2D
 
@@ -65,6 +76,7 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	spawn_order = order
 	shot_elapsed = 0.0
 	has_wander_target = false
+	fear_remaining = 0.0
 	_fade_elapsed = 0.0
 	knockback_direction = Vector2.ZERO
 	knockback_distance = 0.0
@@ -132,9 +144,12 @@ func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at
 		return
 	if not is_active:
 		return
-	var motion := global_position.direction_to(player_position) * move_speed * delta
+	action_delta = maxf(0.0,delta-fear_remaining)
+	fear_remaining = maxf(0.0,fear_remaining-delta)
+	queue_redraw()
+	var motion := global_position.direction_to(player_position) * move_speed * action_delta
 	if stop_at_target:
-		motion = global_position.direction_to(player_position)*minf(move_speed*delta,global_position.distance_to(player_position))
+		motion = global_position.direction_to(player_position)*minf(move_speed*action_delta,global_position.distance_to(player_position))
 	if knockback_elapsed < knockback_duration and knockback_duration > 0.0:
 		# Integrate the linear decay so total displacement does not depend on frame size.
 		var end_time := minf(knockback_duration, knockback_elapsed + delta)
@@ -156,7 +171,7 @@ func get_knockback_velocity() -> Vector2:
 func get_combined_velocity(player_position: Vector2) -> Vector2:
 	if is_logically_dead or not is_active:
 		return Vector2.ZERO
-	return global_position.direction_to(player_position) * move_speed + get_knockback_velocity()
+	return (Vector2.ZERO if is_feared() else global_position.direction_to(player_position)*move_speed)+get_knockback_velocity()
 
 func clamp_position_to_map(world_position: Vector2, bounds: Rect2) -> Vector2:
 	return Vector2(
@@ -165,7 +180,7 @@ func clamp_position_to_map(world_position: Vector2, bounds: Rect2) -> Vector2:
 	)
 
 func move_toward_player(player_position: Vector2, delta: float) -> void:
-	if is_logically_dead:
+	if is_logically_dead or is_feared():
 		return
 	var direction := global_position.direction_to(player_position)
 	if direction != Vector2.ZERO:
@@ -178,5 +193,5 @@ func _ready() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, body_radius, ENEMY_COLOR)
+	draw_circle(Vector2.ZERO, body_radius, SkillUI.FEAR_COLOR if is_feared() else ENEMY_COLOR)
 	draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, OUTLINE_COLOR, 2.0)

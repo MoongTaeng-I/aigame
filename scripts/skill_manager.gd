@@ -38,6 +38,9 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 			elif id=="skill_stealth":
 				callback = Callable(self,"_stealth_start")
 				mode = "instant"
+			elif id=="skill_dragon_fear":
+				callback = Callable(self,"_fear_start")
+				mode = "instant"
 		cast.configure(rows,1 if records[id].Initially_unlocked else 0,callback,mode)
 		skills[id] = cast
 
@@ -104,6 +107,12 @@ func _dash_start(stats: Dictionary, _at: float) -> void:
 
 func _stealth_start(stats: Dictionary, _at: float) -> void:
 	player.stealth_remaining = float(stats.Duration_sec)
+
+func _fear_start(stats: Dictionary, at: float) -> void:
+	for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):
+		enemy.apply_fear(float(stats.Duration_sec))
+	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+UI.FEAR_FLASH_SEC})
+	queue_redraw()
 
 func _draw() -> void:
 	UI.draw_ranges(self,effects)
