@@ -8,6 +8,11 @@ var enhancement_points: int = 0
 var pickup_radius: float = 0.0
 var _level_requirements: Array[int] = []
 var move_speed: float = 0.0
+var last_move_direction := Vector2.RIGHT
+var dash_direction := Vector2.RIGHT
+var dash_remaining: float = 0.0
+var dash_speed: float = 0.0
+var dash_pass_through: bool = false
 var body_radius: float = 18.0
 var push_weight: float = 1.0
 var max_hp: int = 100
@@ -143,16 +148,34 @@ func _update_hp_label() -> void:
     if _hp_label != null:
         _hp_label.text = "플레이어 HP: %d / %d" % [hp, max_hp]
 
-func _physics_process(delta: float) -> void:
-    var direction := Vector2(
+func movement_input() -> Vector2:
+    return Vector2(
         Input.get_axis("move_left", "move_right"),
         Input.get_axis("move_up", "move_down")
-    )
-    if direction != Vector2.ZERO:
-        direction = direction.normalized()
+    ).normalized()
+
+func begin_dash(distance: float, duration: float) -> void:
+    var input := movement_input()
+    dash_direction = input if input != Vector2.ZERO else last_move_direction
+    dash_remaining = duration
+    dash_speed = distance / duration
+    dash_pass_through = true
+
+func _physics_process(delta: float) -> void:
+    if is_dead:
+        return
+    var direction := movement_input()
+    dash_pass_through = dash_remaining > 0.0
+    var travel := move_speed * delta
+    if dash_pass_through:
+        direction = dash_direction
+        travel = dash_speed * minf(delta,dash_remaining)
+        dash_remaining = maxf(0.0,dash_remaining-delta)
+    elif direction != Vector2.ZERO:
+        last_move_direction = direction
     # Resolve each axis independently so a blocked component does not cancel motion along the wall.
-    move_and_collide(Vector2(direction.x * move_speed * delta, 0.0))
-    move_and_collide(Vector2(0.0, direction.y * move_speed * delta))
+    move_and_collide(Vector2(direction.x * travel, 0.0))
+    move_and_collide(Vector2(0.0, direction.y * travel))
 
 func _draw() -> void:
     draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)

@@ -13,7 +13,7 @@ var clock: float = 0.0
 var effects: Array = []
 var ui: Control
 
-func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records: Dictionary, slash_levels: Dictionary) -> void:
+func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records: Dictionary, slash_levels: Dictionary, extra_levels: Dictionary = {}, stealth_rule: Dictionary = {}) -> void:
 	player = owner_player
 	enemies = enemy_manager
 	records = skill_records.duplicate(true)
@@ -26,7 +26,14 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 		InputMap.action_add_event(id,event)
 		var cast := Cast.new()
 		var callback := Callable(self,"_slash_tick") if id=="skill_rapid_slash" else Callable()
-		cast.configure(slash_levels.values() if id=="skill_rapid_slash" else [],1 if records[id].Initially_unlocked else 0,callback)
+		var rows: Array = slash_levels.values() if id=="skill_rapid_slash" else []
+		var mode := "ticks"
+		if extra_levels.has(id):
+			rows = extra_levels[id].values()
+			if id=="skill_dash":
+				callback = Callable(self,"_dash_start")
+				mode = "timed"
+		cast.configure(rows,1 if records[id].Initially_unlocked else 0,callback,mode)
 		skills[id] = cast
 
 func _ready() -> void:
@@ -86,6 +93,9 @@ func icon_state(id: String) -> Dictionary:
 		"show_plus":cast.implemented and player.enhancement_points>=1 and cast.level<cast.max_level(),
 		"active_border":cast.active,"show_gauge":cooling,"progress":progress,
 		"cooldown_text":"%.1f" % (maxf(1.0,ceil(remaining*10.0-0.000000001))/10.0) if cooling else ""}
+
+func _dash_start(stats: Dictionary, _at: float) -> void:
+	player.begin_dash(float(stats.Distance),float(stats.Duration_sec))
 
 func _draw() -> void:
 	UI.draw_ranges(self,effects)

@@ -275,6 +275,8 @@ func _resolve_contact_pushes() -> void:
 					_resolve_contact_pair(first, bodies[int(second_index)])
 
 func _resolve_contact_pair(first: Variant, second: Variant) -> void:
+	if _player.dash_pass_through and (first==_player or second==_player):
+		return
 	if (first is EnemyActor and not first.is_active) or (second is EnemyActor and not second.is_active):
 		return
 	var combined_radius := float(first.body_radius) + float(second.body_radius)
