@@ -30,7 +30,15 @@ func _run() -> void:
 	await _test_xp_progression()
 	await _test_xp_cap()
 	_test_xp_csv()
-	print("P0 RESULT: %d checks, %d failures; P0-01 through P0-10 completed" % [checks, failures])
+	print("S3+S4 BASELINE: %d checks, %d failures" % [checks, failures])
+	var foundation = preload("res://tests/foundation_p0.gd").new()
+	await foundation.run(self)
+	checks += foundation.checks
+	failures += foundation.failures
+	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
+	for item in foundation.mismatches:
+		print("MISMATCH ", JSON.stringify(item))
+	print("P0 RESULT: %d checks, %d failures, %d spec mismatches" % [checks, failures, foundation.mismatches.size()])
 	quit(0 if failures == 0 else 1)
 
 func check(condition: bool, label: String) -> void:
