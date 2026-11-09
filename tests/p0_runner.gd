@@ -8,6 +8,8 @@ const Projectile = preload("res://scripts/projectile.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const ExperienceData = preload("res://scripts/experience_data.gd")
 const ExperienceManager = preload("res://scripts/experience_manager.gd")
+const SkillDataScript = preload("res://scripts/skill_data.gd")
+const SkillManagerScript = preload("res://scripts/skill_manager.gd")
 
 var checks := 0
 var failures := 0
@@ -35,6 +37,13 @@ func _run() -> void:
 	await foundation.run(self)
 	checks += foundation.checks
 	failures += foundation.failures
+	print("S1-S4 BASELINE: %d checks, %d failures, %d spec mismatches" % [checks,failures,foundation.mismatches.size()])
+	_test_skill_csv()
+	await _test_skill_keys()
+	await _test_skill_levels_and_ui()
+	await _test_skill_timing()
+	await _test_skill_targets()
+	await _test_skill_flow()
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
@@ -537,3 +546,267 @@ func _test_xp_csv() -> void:
 	check(error.is_empty(), "S4-14 all actual CSV including new tables load: "+error)
 	if error.is_empty():
 		check(ExperienceData.validate(store).is_empty(), "S4-14 actual experience data validates")
+
+func _s5_records(unlocked: bool = true) -> Dictionary:
+	var records := {}
+	var keys := ["Space","F","1","2"]
+	for i in range(SkillDataScript.IDS.size()):
+		var id: String = SkillDataScript.IDS[i]
+		records[id] = {"Id":id,"Name_ko":id,"Key":keys[i],"Initially_unlocked":true if i==0 else (unlocked if i==1 else false)}
+	return records
+
+func _s5_levels() -> Dictionary:
+	return {"a":{"Id":"a","Level":1,"Damage":8,"Hits":5,"Hit_interval_sec":0.1,"Range":100.0,"Cooldown_sec":6.0},"b":{"Id":"b","Level":2,"Damage":13,"Hits":3,"Hit_interval_sec":0.2,"Range":120.0,"Cooldown_sec":2.0}}
+
+func _s5_fixture(unlocked: bool = true) -> Dictionary:
+	var f := _xp_fixture(300,2)
+	var manager := SkillManagerScript.new()
+	manager.configure(f.player,f.manager,_s5_records(unlocked),_s5_levels())
+	f.host.add_child(manager)
+	manager.set_physics_process(false)
+	f["skills"] = manager
+	return f
+
+func _s5_press(f: Dictionary, id: String = "skill_rapid_slash") -> void:
+	var event := InputEventAction.new()
+	event.action = id
+	event.pressed = true
+	# Dispatch the real input action through SceneTree to _unhandled_input.
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+	event = InputEventAction.new()
+	event.action = id
+	event.pressed = false
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+func _s5_click(f: Dictionary, id: String = "skill_rapid_slash") -> void:
+	var index := SkillDataScript.IDS.find(id)
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_LEFT
+	event.pressed = true
+	event.position = f.skills.ui.card_rect(index).get_center()
+	f.skills.ui._gui_input(event)
+
+func _s5_to(f: Dictionary, time: float) -> void:
+	f.skills._physics_process(maxf(0.0,time-f.skills.clock))
+
+func _s5_csv_error(records: Dictionary, levels: Dictionary) -> String:
+	var store := _store()
+	var text := "Id,Name_ko,Key,Initially_unlocked,Note\n"
+	for row in records.values():
+		text += "%s,%s,%s,%s,test\n" % [row.Id,row.Name_ko,row.Key,str(int(row.Initially_unlocked))]
+	var error := store.load_text("skill.csv",text)
+	if not error.is_empty():
+		return error
+	text = "Id,Level,Damage,Hits,Hit_interval_sec,Range,Cooldown_sec,Note\n"
+	for row in levels.values():
+		text += "%s,%d,%d,%d,%s,%s,%s,test\n" % [row.Id,row.Level,row.Damage,row.Hits,str(row.Hit_interval_sec),str(row.Range),str(row.Cooldown_sec)]
+	error = store.load_text("skill_rapid_slash_level.csv",text)
+	return SkillDataScript.validate(store) if error.is_empty() else error
+
+func _test_skill_csv() -> void:
+	check(_s5_csv_error(_s5_records(),_s5_levels()).is_empty(),"S5-01 synthetic valid skill data")
+	for key in ["NotAKey","space","","Space","W","A","S","D"]:
+		var records := _s5_records()
+		records.skill_rapid_slash.Key = key
+		check(_s5_csv_error(records,_s5_levels()).contains("Key"),"S5-01 invalid, noncanonical, duplicate or movement Key rejected: "+key)
+	for id in SkillDataScript.IDS:
+		var records := _s5_records()
+		records.erase(id)
+		check(_s5_csv_error(records,_s5_levels()).contains("Id"),"S5-01 missing skill rejected: "+id)
+	var store := _store()
+	check(not store.load_text("skill.csv","Id,Name_ko,Key,Initially_unlocked,Note\ntest,test,F,2,test\n").is_empty(),"S5-01 Initially_unlocked outside 0/1 rejected")
+	check(not _s5_csv_error(_s5_records(),{}).is_empty(),"S5-02 empty level table rejected")
+	var gap := _s5_levels()
+	gap.b.Level = 3
+	check(_s5_csv_error(_s5_records(),gap).contains("Level"),"S5-02 missing level rejected")
+	gap = _s5_levels()
+	gap.a.Level = 0
+	check(_s5_csv_error(_s5_records(),gap).contains("Level"),"S5-02 levels must start at 1")
+	for column in ["Damage","Hits","Range","Cooldown_sec","Hit_interval_sec"]:
+		var levels := _s5_levels()
+		levels.a[column] = 0
+		check(_s5_csv_error(_s5_records(),levels).contains(column),"S5-02 invalid level field rejected: "+column)
+	var single := _s5_levels()
+	single.a.Hits = 1
+	single.a.Hit_interval_sec = 0
+	check(_s5_csv_error(_s5_records(),single).is_empty(),"S5-02 one hit permits zero interval")
+	store = _store()
+	var error := store.load_all()
+	check(error.is_empty(),"S5-03 all actual CSV load: "+error)
+	if error.is_empty():
+		check(SkillDataScript.validate(store).is_empty(),"S5-03 actual skill CSV validation")
+
+func _test_skill_keys() -> void:
+	var store := _store()
+	var error := store.load_all()
+	check(error.is_empty(),"S5-04 actual CSV available for input binding")
+	if not error.is_empty():
+		return
+	var f := _fixture()
+	var manager := SkillManagerScript.new()
+	manager.configure(f.player,f.manager,store.get_table("skill.csv"),store.get_table("skill_rapid_slash_level.csv"))
+	f.host.add_child(manager)
+	manager.set_physics_process(false)
+	for id in SkillDataScript.IDS:
+		var key: String = store.get_row("skill.csv",id).Key
+		var events := InputMap.action_get_events(id)
+		var code := SkillDataScript.standard_key(key)
+		check(code!=KEY_NONE and OS.get_keycode_string(code)==key,"S5-04 canonical key roundtrip: "+key)
+		check(events.size()==1 and events[0] is InputEventKey and events[0].physical_keycode==code and events[0].keycode==0,"S5-04 sole physical key matches CSV: "+id)
+		if key in ["1","2"]:
+			check(events[0].physical_keycode not in [KEY_KP_1,KEY_KP_2],"S5-04 top-row digit excludes keypad: "+key)
+		check(manager.icon_state(id).key==key,"S5-04 icon key text matches CSV: "+id)
+	f.host.queue_free()
+	await process_frame
+
+func _test_skill_levels_and_ui() -> void:
+	var f := _s5_fixture(false)
+	check(f.skills.skills.skill_rapid_slash.level==0 and f.skills.skills.skill_dash.level==1,"S5-05 initial levels follow Initially_unlocked")
+	var state: Dictionary = f.skills.icon_state("skill_rapid_slash")
+	check(state.phase=="locked" and not state.show_plus,"S5-05 locked and no points has lock without plus")
+	_s5_press(f)
+	check(not f.skills.skills.skill_rapid_slash.active,"S5-05 locked skill cannot start")
+	_s5_click(f)
+	check(f.player.enhancement_points==0 and f.skills.skills.skill_rapid_slash.level==0,"S5-05 zero-point click does nothing")
+	f.player.enhancement_points = 2
+	check(f.skills.icon_state("skill_rapid_slash").show_plus,"S5-05 plus appears on implemented locked skill with points")
+	_s5_click(f)
+	check(f.skills.skills.skill_rapid_slash.level==1 and f.player.enhancement_points==1,"S5-05 icon click unlocks at cost one")
+	check(f.skills.icon_state("skill_rapid_slash").phase=="ready","S5-05 unlocked icon phase")
+	_s5_click(f)
+	check(f.skills.skills.skill_rapid_slash.level==2 and f.player.enhancement_points==0,"S5-05 icon click upgrades at cost one")
+	f.player.enhancement_points = 2
+	_s5_click(f)
+	check(f.skills.skills.skill_rapid_slash.level==2 and f.player.enhancement_points==2 and not f.skills.icon_state("skill_rapid_slash").show_plus,"S5-05 table final level is max and click preserves points")
+	for id in ["skill_dash","skill_stealth","skill_dragon_fear"]:
+		var before: int = f.skills.skills[id].level
+		_s5_press(f,id)
+		_s5_click(f,id)
+		state = f.skills.icon_state(id)
+		check(state.phase=="unimplemented" and not state.show_plus and not f.skills.skills[id].active and state.level==before and f.player.enhancement_points==2,"S5-06 unimplemented blocks keys and upgrade regardless of unlock: "+id)
+	f.host.queue_free()
+	await process_frame
+
+func _test_skill_timing() -> void:
+	var f := _s5_fixture()
+	var enemy := _spawn(f,Vector2(50,0))
+	_s5_press(f)
+	check(enemy.hp==92 and f.player.enhancement_points==0,"S5-07 unlocked zero-point skill hits at time zero")
+	var state: Dictionary = f.skills.icon_state("skill_rapid_slash")
+	check(state.active_border and state.phase=="active" and not state.show_gauge and state.cooldown_text=="","S5-07 active indicator excludes cooldown text and gauge")
+	_s5_press(f)
+	check(enemy.hp==92,"S5-07 active cast rejects reuse")
+	for i in range(1,5):
+		_s5_to(f,i*0.1-0.000001)
+		check(enemy.hp==100-8*i,"S5-08 no early hit before tick %d" % (i+1))
+		_s5_to(f,i*0.1)
+		check(enemy.hp==100-8*(i+1),"S5-08 hit exactly at %.1f seconds" % (i*0.1))
+	check(not f.skills.skills.skill_rapid_slash.active and is_equal_approx(f.skills.skills.skill_rapid_slash.completed_at,0.4) and is_equal_approx(f.skills.skills.skill_rapid_slash.cooldown_until,6.4),"S5-09 cast completes at 0.4 and cooldown expires at 6.4")
+	check(not f.skills.effects.is_empty(),"S5-09 last effect remains after cast completes")
+	state = f.skills.icon_state("skill_rapid_slash")
+	check(state.phase=="cooldown" and state.show_gauge and is_zero_approx(state.progress) and state.cooldown_text=="6.0" and not state.active_border,"S5-09 cooldown starts empty with shared text/gauge state")
+	_s5_to(f,4.06)
+	state = f.skills.icon_state("skill_rapid_slash")
+	check(state.cooldown_text=="2.4" and is_equal_approx(state.progress,3.66/6.0),"S5-10 ceil remaining 2.34 to 2.4 and gauge elapsed/total")
+	_s5_to(f,6.36)
+	check(f.skills.icon_state("skill_rapid_slash").cooldown_text=="0.1","S5-10 ceil remaining 0.04 to 0.1")
+	_s5_to(f,6.399999)
+	_s5_press(f)
+	check(enemy.hp==60,"S5-09 cannot reuse immediately before 6.4")
+	_s5_to(f,6.4)
+	state = f.skills.icon_state("skill_rapid_slash")
+	check(state.phase=="ready" and not state.show_gauge and state.cooldown_text=="" and is_equal_approx(state.progress,1.0),"S5-10 completed gauge returns to default without 0.0 text")
+	_s5_press(f)
+	check(enemy.hp==52 and f.skills.skills.skill_rapid_slash.active,"S5-09 can reuse exactly at 6.4")
+	f.host.queue_free()
+	await process_frame
+
+func _test_skill_targets() -> void:
+	var f := _s5_fixture()
+	var a := _spawn(f,Vector2(20,0))
+	var b := _spawn(f,Vector2(100,0))
+	var c := _spawn(f,Vector2(-50,0))
+	var outside := _spawn(f,Vector2(100.01,0))
+	_s5_press(f)
+	check(a.hp==92 and b.hp==92 and c.hp==92 and outside.hp==100,"S5-11 each live enemy in range hit once including exact Range")
+	check(a.knockback_duration==0 and b.knockback_duration==0 and c.knockback_duration==0,"S5-11 slash adds no knockback")
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	a = _spawn(f,Vector2(20,0))
+	b = _spawn(f,Vector2(200,0))
+	_s5_press(f)
+	_s5_to(f,0.1)
+	a.position = Vector2(200,0)
+	b.position = Vector2(20,0)
+	_s5_to(f,0.2)
+	_s5_to(f,0.3)
+	_s5_to(f,0.4)
+	check(a.hp==84 and b.hp==76,"S5-12 exited enemy gets hits 1-2 and entrant gets hits 3-5")
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	a = _spawn(f,Vector2(20,0))
+	b = _spawn(f,Vector2(1000,0))
+	_s5_press(f)
+	f.player.position = Vector2(1000,0)
+	_s5_to(f,0.1)
+	_s5_to(f,0.4)
+	check(a.hp==92 and b.hp==68,"S5-12 each hit range follows current player position")
+	f.host.queue_free()
+	await process_frame
+
+func _test_skill_flow() -> void:
+	var f := _s5_fixture()
+	var enemy := _spawn(f,Vector2(50,0),8)
+	var events := [0]
+	enemy.died.connect(func(_dead): events[0]+=1)
+	_s5_press(f)
+	_s5_to(f,0.4)
+	check(events[0]==1 and enemy.is_logically_dead and f.manager.get_alive_count()==0 and f.xp.get_ground_count()==1 and f.xp.get_ground_total()==2,"S5-13 slash kill uses one death signal, alive decrement and XP drop")
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	_s5_press(f)
+	_s5_to(f,0.4)
+	check(f.skills.icon_state("skill_rapid_slash").phase=="cooldown" and is_equal_approx(f.skills.skills.skill_rapid_slash.cooldown_until,6.4),"S5-14 empty range still completes and cools down")
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	enemy = _spawn(f,Vector2(90,0))
+	_s5_press(f)
+	f.player.enhancement_points = 1
+	_s5_click(f)
+	_s5_to(f,0.4)
+	check(enemy.hp==60 and f.skills.skills.skill_rapid_slash.level==2 and f.skills.skills.skill_rapid_slash.snapshot.Damage==8 and f.skills.skills.skill_rapid_slash.snapshot.Hits==5 and f.skills.skills.skill_rapid_slash.snapshot.Range==100.0,"S5-15 upgrade during cast preserves starting stats")
+	enemy.position = Vector2(110,0)
+	_s5_to(f,6.4)
+	_s5_press(f)
+	_s5_to(f,6.8)
+	check(enemy.hp==21 and f.skills.skills.skill_rapid_slash.snapshot.Damage==13 and is_equal_approx(f.skills.skills.skill_rapid_slash.cooldown_until,8.8),"S5-15 next use takes new damage hits range interval and cooldown")
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	enemy = _spawn(f,Vector2(50,0))
+	_s5_press(f)
+	f.player.apply_damage(100)
+	_s5_to(f,10.0)
+	_s5_press(f)
+	check(paused and f.player.is_dead and enemy.hp==92 and f.skills.clock==0.0,"S5-16 death freezes cast and prevents all later damage")
+	paused = false
+	f.host.queue_free()
+	await process_frame
+	f = _s5_fixture()
+	enemy = _spawn(f,Vector2(50,0))
+	_s5_press(f)
+	f.player.move_speed = 120.0
+	Input.action_press("move_right")
+	f.player._physics_process(0.1)
+	Input.action_release("move_right")
+	f.player.update_basic_attack(0.0,f.manager.get_living_enemies())
+	f.player.update_basic_attack(0.15,f.manager.get_living_enemies())
+	check(is_equal_approx(f.player.position.x,12.0) and enemy.hp==72 and f.skills.skills.skill_rapid_slash.active,"S5-17 movement and basic two-hit attack continue during cast")
+	f.host.queue_free()
+	await process_frame
