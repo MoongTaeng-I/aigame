@@ -61,6 +61,8 @@ func _unhandled_input(event: InputEvent) -> void:
 func try_use(id: String) -> bool:
 	if player.is_dead or get_tree().paused or player.is_stealthed() or player.is_fear_casting():
 		return false
+	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
+		return false
 	return skills[id].start(clock)
 
 func try_upgrade(id: String) -> bool:

@@ -211,7 +211,7 @@ func _physics_process(delta: float) -> void:
     var travel := move_speed * movement_delta
     if dash_pass_through:
         direction = dash_direction
-        travel = dash_speed * maxf(0.0,minf(delta,dash_remaining)-locked_time)
+        travel = dash_speed * minf(delta,dash_remaining)
         dash_remaining = maxf(0.0,dash_remaining-delta)
     elif direction != Vector2.ZERO and movement_delta>0.0:
         last_move_direction = direction
