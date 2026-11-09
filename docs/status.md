@@ -32,6 +32,7 @@
 - 시스템 1의 이동 규칙 두 가지를 변경하고 검증했다(2026-11-08). 이동 입력을 WASD로 교체했고, 맵 경계에서 멈추던 동작을 벽을 따라 이동하는 동작으로 바꿨다. 사용자가 확인 항목 12개를 모두 통과했다.
 - 사용을 중단한 공유 폴더 동기화 프로그램 파일과 지난 시험 로그를 삭제했다 (OPS-03).
 - 시스템 3(전투와 생존) A단계를 완료했다(2026-11-09). P0 자동 검사 93개와 사용자 플레이 확인을 모두 통과했다.
+- 시스템 4(경험치와 레벨업) A단계를 완료했다(2026-11-09). P0 자동 검사 140개와 사용자 플레이 확인 13개를 모두 통과했다.
 
 ## 현재 구현 상태
 
@@ -41,13 +42,15 @@
 - 구현 파일: `scripts/enemy_manager.gd`, `scripts/enemy.gd`, `scripts/csv_data_store.gd`, `data/enemy.csv`, `data/spawn.csv`, `data/spawn_rule.csv` 및 기존 플레이어·맵 파일이다.
 - 시스템 3(전투와 생존) A단계에서 자동 2타 공격·대상 재선정, 감속 넉백과 추적 합산, 체력·개체별 접촉 재피격 제한, 직선 투사체와 단일 소멸 조건, 논리 사망·흐려짐·생존 수 제외, 임시 체력·사망 표시가 동작한다.
 - 구현 파일: `scripts/combat_data.gd`, `scripts/projectile.gd`, `tests/p0_runner.gd`, `tests/run_headless.py`, `data/projectile.csv`, `data/basic_attack.csv` 및 변경된 기존 파일 `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/player.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `data/player.csv`, `data/enemy.csv`, `data/spawn.csv`다. 새 CSV의 `.import`도 포함한다.
-- 시스템 4~10은 상세 기획 전이다.
+- 시스템 4(경험치와 레벨업) A단계에서 적 사망 위치 경험치 드랍, 가속 끌어당김과 경로 접촉 적립, 바닥 경험치 상한 합치기, 레벨 요구량 마지막 행 반복과 다중 레벨업 이월, 레벨업당 강화 포인트 1개와 레벨업 신호, 임시 레벨·경험치 표시가 동작한다.
+- 구현 파일: `scripts/experience_data.gd`, `scripts/experience_manager.gd`, `scripts/experience_orb.gd`, `data/level.csv`, `data/xp_rule.csv`와 두 CSV의 `.import`, 변경된 기존 파일 `scripts/main.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `scripts/player.gd`, `scripts/combat_data.gd`, `data/enemy.csv`, `data/player.csv`, `tests/p0_runner.gd`다.
+- 시스템 5~10은 상세 기획 전이다.
 
 ## 미해결 문제
 
 - 시스템별 세부 수치와 콘텐츠 종류가 미정이다. 전체 목록은 game_design.md의 '미정 항목'에 있다.
 - 저장소 이름이 작업명과 다르다. 사용자가 GitHub에서 바꾼다.
-- P0 자동 검사(tests/p0_runner.gd)가 시스템 3 규칙을 확인한다. 시스템 1·2의 규칙은 아직 P0에 포함되지 않았다.
+- P0 자동 검사(tests/p0_runner.gd)가 시스템 3·4 규칙을 확인한다. 시스템 1·2의 규칙은 아직 P0에 포함되지 않았다.
 - Notion 메인 페이지의 소개 문장과 다음 행동은 Claude 초안이며 사용자가 다시 쓸 예정이다.
 
 ## 보류한 작업
@@ -55,7 +58,8 @@
 - Claude와 GitHub의 직접 연동: 선택적으로 보류함. 현재 Filesystem으로 문서를 읽을 수 있어 중복 설정을 줄이기 위한 결정이다. 오류나 미해결 문제가 아니다.
 - 시스템 2 B단계: 두 번째 적과 나머지 생성 규칙을 시스템 3 이후 일괄 추가한다.
 - 시스템 3 B단계: 정식 적 2종의 전투 수치, 임시 원거리 적·투사체 데이터의 정리 방법을 정한다.
+- 시스템 4 B단계: 정식 적별 경험치, 레벨 요구량, 획득 반경·끌어당김·상한의 최종값을 정한다.
 
 ## 다음 작업
 
-- 시스템 4(경험치와 레벨업)의 상세 기획을 시작한다. 시작 전에 시스템 1~3의 실제 소요 시간을 검토한다.
+- 시스템 5(기본 스킬)의 상세 기획을 시작한다.
