@@ -44,6 +44,8 @@ func _run() -> void:
 	await _test_skill_timing()
 	await _test_skill_targets()
 	await _test_skill_flow()
+	print("S1-S5 SLASH BASELINE: %d checks, %d failures" % [checks,failures])
+	await preload("res://tests/skill_extensions_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
@@ -603,7 +605,15 @@ func _s5_csv_error(records: Dictionary, levels: Dictionary) -> String:
 	for row in levels.values():
 		text += "%s,%d,%d,%d,%s,%s,%s,test\n" % [row.Id,row.Level,row.Damage,row.Hits,str(row.Hit_interval_sec),str(row.Range),str(row.Cooldown_sec)]
 	error = store.load_text("skill_rapid_slash_level.csv",text)
+	# New production schemas need valid independent defaults in this legacy fixture.
+	for file in _s5_extension_sources():
+		var preparation_error := store.load_text(file,_s5_extension_sources()[file])
+		if not preparation_error.is_empty():
+			return preparation_error
 	return SkillDataScript.validate(store) if error.is_empty() else error
+
+func _s5_extension_sources() -> Dictionary:
+	return {"skill_dash_level.csv":"Id,Level,Distance,Duration_sec,Cooldown_sec,Note\nd,1,80,0.2,5,test\n","skill_stealth_level.csv":"Id,Level,Duration_sec,Cooldown_sec,Note\ns,1,1,4,test\n","skill_dragon_fear_level.csv":"Id,Level,Range,Duration_sec,Cooldown_sec,Note\nf,1,100,1,5,test\n","stealth_rule.csv":"Id,Wander_radius,Note\nstealth_rule_01,30,test\n"}
 
 func _test_skill_csv() -> void:
 	check(_s5_csv_error(_s5_records(),_s5_levels()).is_empty(),"S5-01 synthetic valid skill data")
