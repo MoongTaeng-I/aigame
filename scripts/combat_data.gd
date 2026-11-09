@@ -24,7 +24,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 		"Id": "String", "Time_start": "Float", "Time_end": "Float", "Enemy_id": "String",
 		"Spawn_interval": "Float", "Spawn_count": "Int", "Note": "String",
 	})
-	store.register_schema("spawn_rule.csv", {"Id": "String", "Max_alive": "Int", "Offscreen_relocate_sec": "Float", "Note": "String", "Separation_gap":"Float"})
+	store.register_schema("spawn_rule.csv", {"Id": "String", "Max_alive": "Int", "Offscreen_relocate_sec": "Float", "Note": "String", "Separation_gap":"Float", "Push_iterations":"Int"})
 	store.register_schema("projectile.csv", {
 		"Id": "String", "Speed": "Float", "Damage": "Int", "Body_radius": "Float",
 		"Expire_rule": {"type": "Enum", "values": {"distance": 0, "lifetime": 1, "bounds": 2}},
