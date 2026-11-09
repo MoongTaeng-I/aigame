@@ -60,3 +60,7 @@ func _finish(at: float) -> void:
 	active = false
 	completed_at = at
 	cooldown_until = completed_at + float(snapshot.Cooldown_sec)
+
+func cancel(now: float) -> void:
+	if active:
+		_finish(now)

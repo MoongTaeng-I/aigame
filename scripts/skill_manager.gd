@@ -59,7 +59,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			try_use(id)
 
 func try_use(id: String) -> bool:
-	if player.is_dead or get_tree().paused:
+	if player.is_dead or get_tree().paused or player.is_stealthed():
 		return false
 	return skills[id].start(clock)
 
@@ -83,7 +83,7 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 func _slash_tick(stats: Dictionary, at: float) -> void:
-	if player.is_dead:
+	if player.is_dead or player.is_stealthed():
 		return
 	Area.damage_circle(player.global_position,float(stats.Range),int(stats.Damage),enemies.get_living_enemies())
 	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(stats.Hit_interval_sec)})
@@ -105,8 +105,10 @@ func icon_state(id: String) -> Dictionary:
 func _dash_start(stats: Dictionary, _at: float) -> void:
 	player.begin_dash(float(stats.Distance),float(stats.Duration_sec))
 
-func _stealth_start(stats: Dictionary, _at: float) -> void:
+func _stealth_start(stats: Dictionary, at: float) -> void:
 	player.stealth_remaining = float(stats.Duration_sec)
+	player.cancel_basic_attack()
+	skills["skill_rapid_slash"].cancel(at)
 
 func _fear_start(stats: Dictionary, at: float) -> void:
 	for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):

@@ -99,6 +99,9 @@ func apply_damage(amount: int) -> void:
 func update_basic_attack(now: float, enemies: Array) -> void:
     if is_dead or _attack_data.is_empty():
         return
+    if is_stealthed():
+        cancel_basic_attack()
+        return
     while _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
         var target: Variant = choose_target(enemies,_attack_cast_range)
         if target != null:
@@ -135,6 +138,9 @@ func apply_choice_modifiers(range_add: float, interval_sub: float, pickup_add: f
     _attack_data["Range"] = _base_attack_range + range_add
     _attack_data["Interval_sec"] = _base_attack_interval - interval_sub
     pickup_radius = _base_pickup_radius + pickup_add
+
+func cancel_basic_attack() -> void:
+    _remaining_hits = 0
 
 func healed_hp(percent: float) -> int:
     return mini(max_hp,hp+floori(max_hp*percent/100.0))
