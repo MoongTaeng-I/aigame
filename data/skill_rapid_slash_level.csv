@@ -1,0 +1,6 @@
+﻿Id,Level,Damage,Hits,Hit_interval_sec,Range,Cooldown_sec,Note
+rapid_slash_01,1,8,5,0.1,160,6,A단계 검증용 시작값
+rapid_slash_02,2,10,5,0.1,160,6,A단계 검증용 시작값
+rapid_slash_03,3,10,6,0.1,170,5.5,A단계 검증용 시작값
+rapid_slash_04,4,12,6,0.1,180,5,A단계 검증용 시작값
+rapid_slash_05,5,14,7,0.1,200,4.5,A단계 검증용 시작값

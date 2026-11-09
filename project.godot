@@ -48,6 +48,23 @@ move_right={
 ]
 }
 
+skill_dash={
+"deadzone": 0.2,
+"events": []
+}
+skill_rapid_slash={
+"deadzone": 0.2,
+"events": []
+}
+skill_stealth={
+"deadzone": 0.2,
+"events": []
+}
+skill_dragon_fear={
+"deadzone": 0.2,
+"events": []
+}
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

@@ -6,6 +6,8 @@ const ExperienceData = preload("res://scripts/experience_data.gd")
 const ExperienceManager = preload("res://scripts/experience_manager.gd")
 const EnemyManagerScript = preload("res://scripts/enemy_manager.gd")
 const EnemyActorScript = preload("res://scripts/enemy.gd")
+const SkillData = preload("res://scripts/skill_data.gd")
+const SkillManager = preload("res://scripts/skill_manager.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const PlayerScene = preload("res://scenes/player.tscn")
 
@@ -20,6 +22,8 @@ func _ready() -> void:
 	var combat_error := CombatDataScript.validate(data_store)
 	if combat_error.is_empty():
 		combat_error = ExperienceData.validate(data_store)
+	if combat_error.is_empty():
+		combat_error = SkillData.validate(data_store)
 	if not combat_error.is_empty():
 		_show_data_error(combat_error)
 		return
@@ -63,6 +67,10 @@ func _ready() -> void:
 	experience_manager.name = "ExperienceManager"
 	experience_manager.configure(player,enemy_manager,data_store.get_row("xp_rule.csv","xp_rule_01"))
 	map.add_child(experience_manager)
+	var skill_manager := SkillManager.new()
+	skill_manager.name = "SkillManager"
+	skill_manager.configure(player,enemy_manager,data_store.get_table("skill.csv"),data_store.get_table("skill_rapid_slash_level.csv"))
+	map.add_child(skill_manager)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:

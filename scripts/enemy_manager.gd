@@ -46,6 +46,9 @@ func set_normal_spawning_stopped(stopped: bool) -> void:
 func get_alive_count() -> int:
 	return _active_enemies.size()
 
+func get_living_enemies() -> Array:
+	return _active_enemies.duplicate()
+
 func recycle_enemy(enemy: EnemyActor) -> void:
 	if not _active_enemies.has(enemy):
 		return
