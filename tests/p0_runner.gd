@@ -48,6 +48,7 @@ func _run() -> void:
 	await preload("res://tests/skill_extensions_p0.gd").new().run(self)
 	print("S1-S5 BASELINE: %d checks, %d failures" % [checks,failures])
 	await preload("res://tests/choices_p0.gd").new().run(self)
+	await preload("res://tests/skill_rule_fixes_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
@@ -615,7 +616,7 @@ func _s5_csv_error(records: Dictionary, levels: Dictionary) -> String:
 	return SkillDataScript.validate(store) if error.is_empty() else error
 
 func _s5_extension_sources() -> Dictionary:
-	return {"skill_dash_level.csv":"Id,Level,Distance,Duration_sec,Cooldown_sec,Note\nd,1,80,0.2,5,test\n","skill_stealth_level.csv":"Id,Level,Duration_sec,Cooldown_sec,Note\ns,1,1,4,test\n","skill_dragon_fear_level.csv":"Id,Level,Range,Duration_sec,Cooldown_sec,Note\nf,1,100,1,5,test\n","stealth_rule.csv":"Id,Wander_radius,Note\nstealth_rule_01,30,test\n"}
+	return {"skill_dash_level.csv":"Id,Level,Distance,Duration_sec,Cooldown_sec,Note\nd,1,80,0.2,5,test\n","skill_stealth_level.csv":"Id,Level,Duration_sec,Cooldown_sec,Note\ns,1,1,4,test\n","skill_dragon_fear_level.csv":"Id,Level,Range,Duration_sec,Cooldown_sec,Note,Cast_sec\nf,1,100,1,5,test,0.5\n","stealth_rule.csv":"Id,Wander_radius,Note\nstealth_rule_01,30,test\n"}
 
 func _test_skill_csv() -> void:
 	check(_s5_csv_error(_s5_records(),_s5_levels()).is_empty(),"S5-01 synthetic valid skill data")

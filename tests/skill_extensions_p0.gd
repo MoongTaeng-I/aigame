@@ -29,7 +29,7 @@ func fixture(locked: bool = false) -> Dictionary:
 	var extra := {
 		"skill_dash":{"d":{"Id":"d","Level":1,"Distance":80.0,"Duration_sec":0.2,"Cooldown_sec":5.0}},
 		"skill_stealth":{"s":{"Id":"s","Level":1,"Duration_sec":1.0,"Cooldown_sec":4.0}},
-		"skill_dragon_fear":{"f":{"Id":"f","Level":1,"Range":100.0,"Duration_sec":1.0,"Cooldown_sec":5.0}}}
+		"skill_dragon_fear":{"f":{"Id":"f","Level":1,"Range":100.0,"Duration_sec":1.0,"Cooldown_sec":5.0,"Cast_sec":0.5}}}
 	for id in extra:
 		var next: Dictionary = extra[id].values()[0].duplicate(true)
 		next.Level = 2
@@ -188,7 +188,7 @@ func stealth() -> void:
 	press(f,"skill_rapid_slash")
 	f.player.update_basic_attack(0.0,f.manager.get_living_enemies())
 	f.skills.ui._process(0.0)
-	check(enemy.hp==82 and f.player.is_stealthed() and f.player.modulate.a<1.0,"STEALTH-06 basic and slash attacks keep stealth and translucent display")
+	check(enemy.hp==100 and f.player.is_stealthed() and f.player.modulate.a<1.0,"STEALTH-06 basic and slash inputs are blocked without ending stealth or translucent display")
 	await close(f)
 
 func fear() -> void:
@@ -197,9 +197,9 @@ func fear() -> void:
 	var outside: EnemyActor = t._spawn(f,Vector2(100.01,0))
 	enemy.move_speed = 20.0
 	press(f,"skill_dragon_fear")
-	check(enemy.is_feared() and not outside.is_feared() and not f.skills.skills.skill_dragon_fear.active and f.skills.icon_state("skill_dragon_fear").phase=="cooldown","FEAR-01 single inclusive range check and instant completion")
+	check(enemy.is_feared() and not outside.is_feared() and f.skills.skills.skill_dragon_fear.active and f.skills.icon_state("skill_dragon_fear").phase=="active","FEAR-01 single inclusive range check starts timed cast")
 	outside.position = Vector2.ZERO
-	f.manager._update_active_enemies(0.1)
+	advance(f,0.1,true)
 	check(enemy.position==Vector2(100,0) and not outside.is_feared(),"FEAR-02 self motion stops and later entrant is not affected")
 	f.player.position = enemy.position
 	enemy.shot_range = 500
@@ -210,8 +210,8 @@ func fear() -> void:
 	f.manager._update_enemy_shot(enemy,0.5)
 	check(f.player.hp==100 and f.manager._projectiles.is_empty() and is_equal_approx(enemy.shot_elapsed,0.2),"FEAR-03 contact and firing disabled with timer frozen")
 	f.player.position = Vector2.ZERO
-	f.manager._update_active_enemies(0.9)
-	f.manager._update_active_enemies(0.1)
+	advance(f,0.9,true)
+	advance(f,0.1,true)
 	f.manager._update_enemy_shot(enemy,0.3)
 	enemy.position = Vector2(16,0)
 	f.manager._apply_contact_damage(enemy)
@@ -224,13 +224,15 @@ func fear() -> void:
 	enemy.projectile_id = "shot"
 	f.manager._update_enemy_shot(enemy,0.5)
 	press(f,"skill_dragon_fear")
+	var projectile: Node2D = f.manager._projectiles[0]
 	f.manager._update_projectiles(1.0)
-	check(f.player.hp==92,"FEAR-05 projectile launched before fear still hits")
+	check(f.player.hp==100 and projectile.spent,"FEAR-05 existing projectile hits and disappears but cast damage is zero")
 	await close(f)
 	f = fixture()
 	enemy = t._spawn(f,Vector2(12,0))
-	press(f,"skill_stealth")
 	press(f,"skill_dragon_fear")
+	advance(f,0.5,true)
+	press(f,"skill_stealth")
 	f.manager._resolve_contact_pushes()
 	check(enemy.position.x>12,"FEAR-06 contact pushing moves feared enemy")
 	var start := enemy.position
@@ -250,12 +252,20 @@ func common() -> void:
 	for id in ["skill_dash","skill_stealth","skill_dragon_fear"]:
 		check(f.skills.skills[id].implemented and f.skills.icon_state(id).phase=="ready","EXT-01 implemented skill has normal unlocked icon: "+id)
 	var enemy: EnemyActor = t._spawn(f,Vector2(50,0))
+	press(f,"skill_dash")
 	press(f,"skill_stealth")
 	press(f,"skill_dragon_fear")
-	press(f,"skill_dash")
 	f.player.apply_damage(100)
 	advance(f,1.0,true)
-	check(f.player.stealth_remaining==1.0 and enemy.fear_remaining==1.0 and f.player.dash_remaining==0.2,"EXT-02 death pauses all three effects")
+	check(f.player.stealth_remaining==1.0 and enemy.fear_remaining==0.0 and f.player.dash_remaining==0.2,"EXT-02 death pauses dash and stealth while stealth blocks fear")
+	await close(f)
+	f = fixture()
+	enemy = t._spawn(f,Vector2(50,0))
+	press(f,"skill_dragon_fear")
+	advance(f,0.5,true)
+	f.player.apply_damage(100)
+	advance(f,1.0,true)
+	check(f.player.is_dead and is_equal_approx(enemy.fear_remaining,0.5),"EXT-02 death after cast pauses remaining fear effect")
 	await close(f)
 	f = fixture(true)
 	for id in ["skill_dash","skill_stealth","skill_dragon_fear"]:
@@ -286,7 +296,8 @@ func validate_tables() -> void:
 				var row := values.duplicate(); row[0]="other"; row[1]="3"; text+=lines[1]+"\n"+",".join(row)+"\n"
 			check(not table_error(file,text).is_empty(),"EXT-03 reject "+file+" level "+mode)
 		var columns := header.split(",")
-		for index in range(2,columns.size()-1):
+		for index in range(2,columns.size()):
+			if columns[index]=="Note": continue
 			var row := values.duplicate(); row[index]="0"
 			check(not table_error(file,header+"\n"+",".join(row)+"\n").is_empty(),"EXT-03 reject nonpositive "+file+" "+columns[index])
 		if file!="skill_dash_level.csv":

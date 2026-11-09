@@ -329,8 +329,9 @@ func test_enemy_motion_and_push() -> void:
 		enemy.position = Vector2.ZERO
 		enemy.push_weight = 1.0
 		other.push_weight = 3.0
+		f.manager.separation_gap = 4.0
 		f.manager._resolve_contact_pushes()
-		expect(enemy.position.distance_to(Vector2(-3.75,0))<EPS and other.position.distance_to(Vector2(16.25,0))<EPS, "S2-10", "enemy pair shares overlap by inverse weight", S2+" rules 11-14", "enemy1 -3.75, enemy2 16.25", [enemy.position,other.position])
+		expect(enemy.position.distance_to(Vector2(-6.75,0))<EPS and other.position.distance_to(Vector2(17.25,0))<EPS, "S2-10", "enemy pair includes gap 4 and inverse weight", S2+" rules 11-14 / S5-FIX-01 change 3", "enemy1 -6.75, enemy2 17.25", [enemy.position,other.position])
 		other.position = Vector2(500,500)
 		for edge in [Vector2(safe.position.x,0),Vector2(safe.end.x,0),Vector2(0,safe.position.y),Vector2(0,safe.end.y)]:
 			enemy.position = edge
