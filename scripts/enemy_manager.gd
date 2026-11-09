@@ -14,6 +14,7 @@ var _spawn_records: Dictionary = {}
 var _projectile_records: Dictionary = {}
 var _attack_record: Dictionary = {}
 var _max_alive: int = 0
+var separation_gap: float = 0.0
 var _offscreen_relocate_seconds: float = 0.0
 var _active_enemies: Array = []
 var _enemy_pool: Array = []
@@ -29,7 +30,7 @@ var _random := RandomNumberGenerator.new()
 var wander_radius: float = 0.0
 var _count_label: Label
 
-func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}) -> void:
+func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0) -> void:
 	_player = player
 	_map_rect = map_rect
 	_enemy_records = enemy_records
@@ -37,6 +38,7 @@ func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictiona
 	_projectile_records = projectile_records
 	_attack_record = attack_record
 	_max_alive = max_alive
+	separation_gap = gap
 	_offscreen_relocate_seconds = offscreen_relocate_seconds
 	for spawn_id in _spawn_records:
 		_spawn_timers[String(spawn_id)] = 0.0
@@ -267,7 +269,7 @@ func _resolve_contact_pushes() -> void:
 	var maximum_radius := float(_player.body_radius)
 	for enemy in _active_enemies:
 		maximum_radius = maxf(maximum_radius, enemy.body_radius)
-	var cell_size := maxf(64.0, maximum_radius * 2.0)
+	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
 	var spatial_grid: Dictionary = {}
 	var body_cells: Array[Vector2i] = []
 	for body_index in range(bodies.size()):
@@ -295,6 +297,8 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	if (first is EnemyActor and not first.is_active) or (second is EnemyActor and not second.is_active):
 		return
 	var combined_radius := float(first.body_radius) + float(second.body_radius)
+	if first is EnemyActor and second is EnemyActor:
+		combined_radius += separation_gap
 	var offset: Vector2 = second.global_position - first.global_position
 	var distance_squared: float = offset.length_squared()
 	if distance_squared >= combined_radius * combined_radius:

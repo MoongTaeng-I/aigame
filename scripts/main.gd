@@ -63,7 +63,8 @@ func _ready() -> void:
 		int(spawn_rule["Max_alive"]),
 		float(spawn_rule["Offscreen_relocate_sec"]),
 		data_store.get_table("projectile.csv"),
-		data_store.get_row("basic_attack.csv", "attack_01")
+		data_store.get_row("basic_attack.csv", "attack_01"),
+		float(spawn_rule["Separation_gap"])
 	)
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
@@ -103,6 +104,8 @@ func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, ene
 			return _data_field_error(data_store, "spawn.csv", spawn_id, "Spawn_interval", "0보다 큰 값이어야 합니다.")
 	if int(spawn_rule["Max_alive"]) < 0:
 		return _data_field_error(data_store, "spawn_rule.csv", String(spawn_rule["Id"]), "Max_alive", "0 이상이어야 합니다.")
+	if float(spawn_rule["Separation_gap"]) < 0.0:
+		return _data_field_error(data_store,"spawn_rule.csv",String(spawn_rule["Id"]),"Separation_gap","0 이상이어야 합니다.")
 	if float(spawn_rule["Offscreen_relocate_sec"]) < 0.0:
 		return _data_field_error(data_store, "spawn_rule.csv", String(spawn_rule["Id"]), "Offscreen_relocate_sec", "0 이상이어야 합니다.")
 	return ""
