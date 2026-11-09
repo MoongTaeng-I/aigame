@@ -49,6 +49,7 @@ func _run() -> void:
 	print("S1-S5 BASELINE: %d checks, %d failures" % [checks,failures])
 	await preload("res://tests/choices_p0.gd").new().run(self)
 	await preload("res://tests/skill_rule_fixes_p0.gd").new().run(self)
+	await preload("res://tests/crowd_fixes_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))

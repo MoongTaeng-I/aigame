@@ -165,7 +165,7 @@ func tables() -> void:
 
 func gap_error(value: String) -> String:
 	var store = t._store()
-	var error: String = store.load_text("spawn_rule.csv","Id,Max_alive,Offscreen_relocate_sec,Note,Separation_gap\nrule_01,10,3,test,"+value+"\n")
+	var error: String = store.load_text("spawn_rule.csv","Id,Max_alive,Offscreen_relocate_sec,Note,Separation_gap,Push_iterations\nrule_01,10,3,test,"+value+",1\n")
 	if not error.is_empty(): return error
 	var main := Main.new()
 	error = main._validate_gameplay_data(store,{"Id":"test","Body_radius":8,"Push_weight":3},{},{},store.get_row("spawn_rule.csv","rule_01"))
