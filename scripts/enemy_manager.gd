@@ -6,6 +6,7 @@ signal enemy_died(enemy: EnemyActor)
 const EnemyScene = preload("res://scenes/enemy.tscn")
 const ProjectileScript = preload("res://scripts/projectile.gd")
 const SPAWN_CLEARANCE := 2.0
+enum PushBodyKind { PLAYER, ENEMY, SHADOW }
 
 var _player: CharacterBody2D
 var _map_rect := Rect2()
@@ -18,6 +19,7 @@ var separation_gap: float = 0.0
 var push_iterations: int = 1
 var _offscreen_relocate_seconds: float = 0.0
 var _active_enemies: Array = []
+var _shadow_bodies: Array[Node2D] = []
 var _enemy_pool: Array = []
 var _dying_enemies: Array = []
 var _projectiles: Array = []
@@ -53,6 +55,20 @@ func get_alive_count() -> int:
 
 func get_living_enemies() -> Array:
 	return _active_enemies.duplicate()
+
+# Push-only participants expose body_radius and push_weight. They are not enemies
+# and do not enter targeting, contact damage, projectile or spawn-count lists.
+func register_shadow_body(body: Node2D) -> void:
+	if _shadow_bodies.has(body):
+		return
+	_shadow_bodies.append(body)
+	body.tree_exiting.connect(unregister_shadow_body.bind(body), CONNECT_ONE_SHOT)
+
+func unregister_shadow_body(body: Node2D) -> void:
+	_shadow_bodies.erase(body)
+	var callback := unregister_shadow_body.bind(body)
+	if body.tree_exiting.is_connected(callback):
+		body.tree_exiting.disconnect(callback)
 
 func recycle_enemy(enemy: EnemyActor) -> void:
 	if not _active_enemies.has(enemy):
@@ -272,26 +288,41 @@ func _resolve_contact_pushes() -> void:
 func _resolve_contact_push_pass() -> void:
 	var bodies: Array[Node2D] = [_player]
 	bodies.append_array(_active_enemies)
+	bodies.append_array(_shadow_bodies)
 	var count := bodies.size()
 	var positions := PackedVector2Array()
 	var radii := PackedFloat64Array()
 	var weights := PackedFloat64Array()
 	var active := PackedByteArray()
+	var kinds := PackedByteArray()
 	positions.resize(count)
 	radii.resize(count)
 	weights.resize(count)
 	active.resize(count)
+	kinds.resize(count)
+	kinds.fill(PushBodyKind.ENEMY)
 	positions[0] = _player.global_position
 	radii[0] = float(_player.body_radius)
 	weights[0] = maxf(float(_player.push_weight),0.0001)
-	active[0] = 1
+	# Dash exclusion applies to every player pair, including shadow pairs.
+	active[0] = int(not _player.dash_pass_through)
+	kinds[0] = PushBodyKind.PLAYER
 	var maximum_radius := radii[0]
-	for index in range(1,count):
+	for index in range(1,1+_active_enemies.size()):
 		var enemy := bodies[index] as EnemyActor
 		positions[index] = enemy.global_position
 		radii[index] = enemy.body_radius
 		weights[index] = maxf(enemy.push_weight,0.0001)
 		active[index] = int(enemy.is_active)
+		maximum_radius = maxf(maximum_radius,radii[index])
+	for shadow_index in range(_shadow_bodies.size()):
+		var index := 1+_active_enemies.size()+shadow_index
+		var body: Variant = _shadow_bodies[shadow_index]
+		positions[index] = body.global_position
+		radii[index] = float(body.body_radius)
+		weights[index] = maxf(float(body.push_weight),0.0001)
+		active[index] = 1
+		kinds[index] = PushBodyKind.SHADOW
 		maximum_radius = maxf(maximum_radius,radii[index])
 	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
 	var spatial_grid: Dictionary = {}
@@ -315,19 +346,23 @@ func _resolve_contact_push_pass() -> void:
 					indices.append(int(second_index))
 		neighbors[center_cell] = indices
 	var bounds := _get_map_world_rect()
-	var skip_player: bool = _player.dash_pass_through
 	for first_index in range(count):
+		if not active[first_index]:
+			continue
+		var first_radius := radii[first_index]
+		var first_weight := weights[first_index]
+		var enemy_gap := separation_gap if kinds[first_index]==PushBodyKind.ENEMY else 0.0
 		var ordered_neighbors: PackedInt32Array = neighbors[body_cells[first_index]]
 		for second_index: int in ordered_neighbors:
 			if second_index<=first_index:
 				continue
-			if (skip_player and first_index==0) or not active[first_index] or not active[second_index]:
+			if not active[second_index]:
 				continue
-			var first_radius := radii[first_index]
 			var second_radius := radii[second_index]
 			var combined_radius := first_radius+second_radius
-			if first_index>0:
-				combined_radius += separation_gap
+			# Until shadow spacing is decided, only enemy-enemy pairs get a gap.
+			if kinds[second_index]==PushBodyKind.ENEMY:
+				combined_radius += enemy_gap
 			var offset := positions[second_index]-positions[first_index]
 			var distance_squared := offset.length_squared()
 			if distance_squared>=combined_radius*combined_radius:
@@ -335,7 +370,6 @@ func _resolve_contact_push_pass() -> void:
 			var distance := sqrt(distance_squared)
 			var direction: Vector2 = offset/distance if distance>0.001 else Vector2.RIGHT
 			var overlap := combined_radius-distance
-			var first_weight := weights[first_index]
 			var second_weight := weights[second_index]
 			var total_weight := first_weight+second_weight
 			var first_share := second_weight/total_weight
