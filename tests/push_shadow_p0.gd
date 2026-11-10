@@ -158,9 +158,12 @@ func chase_player() -> void:
 	var enemy: EnemyActor = t._spawn(f,Vector2.ZERO)
 	enemy.move_speed = 60.0
 	var s := shadow(f,Vector2(-20,0))
+	# Measurement found the player node at (100,100) but its physics body still
+	# at (0,0). Flush deferred transforms before querying real actor movement.
+	f.player.force_update_transform()
+	enemy.force_update_transform()
 	await t.physics_frame
 	t.check(enemy.get_world_2d()==view.world_2d,"SETUP SHADOW chase uses isolated physics world")
-	print("SHADOW-07 SETUP screen=",f.manager._get_screen_world_rect()," relocate=",f.manager._offscreen_relocate_seconds)
 	f.manager._update_active_enemies(0.1)
 	var expected := Vector2.ONE.normalized()*6.0
 	t.check(near(enemy.global_position,expected) and near(s.global_position,Vector2(-20,0)),"SHADOW-07 actual enemy movement approaches player with closer shadow present actual=%s expected=%s" % [str(enemy.global_position),str(expected)])
