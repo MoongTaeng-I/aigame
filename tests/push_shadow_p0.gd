@@ -158,11 +158,10 @@ func chase_player() -> void:
 	var enemy: EnemyActor = t._spawn(f,Vector2.ZERO)
 	enemy.move_speed = 60.0
 	var s := shadow(f,Vector2(-20,0))
-	# Measurement found the player node at (100,100) but its physics body still
-	# at (0,0). Flush deferred transforms before querying real actor movement.
-	f.player.force_update_transform()
-	enemy.force_update_transform()
-	await t.physics_frame
+	# Full-suite measurement found the server transform still stale at the first
+	# physics_frame signal and synchronized at the second. Wait for that step.
+	for _frame in range(2):
+		await t.physics_frame
 	t.check(enemy.get_world_2d()==view.world_2d,"SETUP SHADOW chase uses isolated physics world")
 	f.manager._update_active_enemies(0.1)
 	var expected := Vector2.ONE.normalized()*6.0
