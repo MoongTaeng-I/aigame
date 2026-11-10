@@ -55,6 +55,13 @@ func _physics_process(delta: float) -> void:
 func steering_position(actor: Node2D) -> Vector2:
 	return _steering_positions.get(actor.get_instance_id(),actor.global_position)
 
+func claimed_targets(except_actor: Node2D) -> Array:
+	var result: Array = []
+	# actors is summon order; earlier tick decisions are visible immediately.
+	for actor in actors:
+		if actor!=except_actor and actor.target_is_live(): result.append(actor.target)
+	return result
+
 func leave_afterimage(point: Vector2, pose: Dictionary, seconds: float) -> Node2D:
 	var copy := Afterimage.new()
 	copy.configure(pose,seconds)

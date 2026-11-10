@@ -11,6 +11,7 @@ var body_radius: float
 var push_weight: float
 var enemy_push_share: float
 var target: EnemyActor
+var target_spawn_order: int = -1
 var last_node: String = "follow"
 var facing := Vector2.RIGHT
 var clock: float = 0.0
@@ -36,12 +37,13 @@ func configure(owner_manager: Node2D, record: Dictionary, attack_record: Diction
 func apply_damage(_amount: int) -> bool:
 	return false
 
-func nearest(enemies: Array, radius: float, screen_only: bool = false) -> EnemyActor:
+func nearest(enemies: Array, radius: float, screen_only: bool = false, excluded: Array = []) -> EnemyActor:
 	var best: EnemyActor = null
 	var best_distance := INF
 	var screen: Rect2 = manager.enemies._get_screen_world_rect()
 	for candidate: EnemyActor in enemies:
 		if not candidate.is_active or candidate.is_logically_dead: continue
+		if excluded.has(candidate): continue
 		if screen_only and not screen.has_point(candidate.global_position): continue
 		var distance := global_position.distance_squared_to(candidate.global_position)
 		if distance>radius*radius: continue
@@ -49,6 +51,22 @@ func nearest(enemies: Array, radius: float, screen_only: bool = false) -> EnemyA
 			best = candidate
 			best_distance = distance
 	return best
+
+func target_is_live() -> bool:
+	return is_instance_valid(target) and target.is_active and not target.is_logically_dead and target.spawn_order==target_spawn_order
+
+func can_retain_target() -> bool:
+	if not target_is_live(): return false
+	return global_position.distance_to(target.global_position)<=float(config.Search_radius) or manager.enemies._get_screen_world_rect().has_point(target.global_position)
+
+func choose_target(living: Array) -> void:
+	var excluded: Array = manager.claimed_targets(self)
+	target = nearest(living,float(config.Search_radius),false,excluded)
+	if target==null: target = nearest(living,float(config.Search_radius))
+	if target==null:
+		target = nearest(living,INF,true,excluded)
+		if target==null: target = nearest(living,INF,true)
+	target_spawn_order = target.spawn_order if target!=null else -1
 
 func tick(delta: float) -> void:
 	clock += delta
@@ -61,25 +79,29 @@ func tick(delta: float) -> void:
 		target = null
 		last_node = "follow"
 		move_to_distance(player.global_position,float(config.Follow_distance),delta)
-	elif cast_active:
-		advance_attack(living)
 	else:
-		target = nearest(living,float(config.Search_radius))
-		if target!=null:
+		if not can_retain_target(): target = null
+		if cast_active:
+			advance_attack(living)
+		else:
+			if target==null: choose_target(living)
+			act_on_target(player,delta)
+	global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
+	queue_redraw()
+
+func act_on_target(player: Node2D, delta: float) -> void:
+	if target!=null:
+		if global_position.distance_to(target.global_position)<=float(config.Search_radius):
 			last_node = "attack"
 			move_to_distance(target.global_position,float(attack.Range),delta)
 			if global_position.distance_to(target.global_position)<=float(attack.Range)+0.00001 and clock+0.000000001>=ready_at:
 				start_attack()
 		else:
-			target = nearest(living,INF,true)
-			if target!=null:
-				last_node = "screen"
-				move_to_distance(target.global_position,0.0,delta)
-			else:
-				last_node = "follow"
-				move_to_distance(player.global_position,float(config.Follow_distance),delta)
-	global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
-	queue_redraw()
+			last_node = "screen"
+			move_to_distance(target.global_position,0.0,delta)
+	else:
+		last_node = "follow"
+		move_to_distance(player.global_position,float(config.Follow_distance),delta)
 
 func move_to_distance(point: Vector2, stop_distance: float, delta: float) -> void:
 	var distance := global_position.distance_to(point)
@@ -128,20 +150,34 @@ func start_attack() -> void:
 func advance_attack(living: Array) -> void:
 	var motion: Dictionary = motions[motion_index]
 	var age := clock-cast_started_at
+	if not hit_done and target_is_live():
+		var direction := global_position.direction_to(target.global_position)
+		if direction!=Vector2.ZERO: facing = direction
 	if not hit_done and age+0.000000001>=float(motion.Hit_time_sec):
 		hit_done = true
+		var geometry := attack_geometry()
 		for enemy: EnemyActor in living:
-			if in_sector(enemy): enemy.apply_damage(int(attack.Damage))
+			if in_sector(enemy,geometry): enemy.apply_damage(int(attack.Damage))
 	if age+0.000000001>=float(motion.Motion_sec):
 		cast_active = false
 		ready_at = cast_started_at+float(motion.Motion_sec)+float(attack.Interval_sec)
 
-func in_sector(enemy: EnemyActor) -> bool:
+func attack_geometry() -> Dictionary:
+	return {"center":global_position,"direction":facing,"range":float(attack.Range),"arc_deg":float(attack.Arc_deg)}
+
+func attack_visual_state() -> Dictionary:
+	if not cast_active: return {}
+	var state := attack_geometry()
+	state.hit_age = clock-cast_started_at-float(motions[motion_index].Hit_time_sec) if hit_done else -1.0
+	return state
+
+func in_sector(enemy: EnemyActor, geometry: Dictionary = {}) -> bool:
 	if not enemy.is_active or enemy.is_logically_dead: return false
-	var offset := enemy.global_position-global_position
-	if offset.length_squared()>float(attack.Range)*float(attack.Range): return false
+	if geometry.is_empty(): geometry = attack_geometry()
+	var offset: Vector2 = enemy.global_position-Vector2(geometry.center)
+	if offset.length_squared()>float(geometry.range)*float(geometry.range): return false
 	if offset==Vector2.ZERO: return true
-	return absf(wrapf(offset.angle()-facing.angle(),-PI,PI))<=deg_to_rad(float(attack.Arc_deg))*0.5+0.000000001
+	return absf(wrapf(offset.angle()-Vector2(geometry.direction).angle(),-PI,PI))<=deg_to_rad(float(geometry.arc_deg))*0.5+0.000000001
 
 func cancel_attack() -> void:
 	cast_active = false
@@ -164,5 +200,7 @@ func snapshot() -> Dictionary:
 	return {"radius":body_radius,"facing":facing,"motion":motion_index if cast_active else -1,"phase":phase}
 
 func _draw() -> void:
+	var sector := attack_visual_state()
+	if not sector.is_empty(): Visual.draw_sector(self,sector)
 	var pose := snapshot()
 	Visual.draw_pose(self,body_radius,facing,int(pose.motion),float(pose.phase))

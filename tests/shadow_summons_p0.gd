@@ -4,6 +4,7 @@ const Summons = preload("res://scripts/shadow_manager.gd")
 const Data = preload("res://scripts/shadow_data.gd")
 const Choices = preload("res://scripts/choice_manager.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
+const Visual = preload("res://scripts/shadow_visual.gd")
 var t: SceneTree
 const EPS := 0.001
 
@@ -24,6 +25,13 @@ func run(tree: SceneTree) -> void:
 	await steering_fixes()
 	share_validation()
 	print("S7-FIX NEW RESULT: %d checks, %d failures" % [t.checks-fix_before,t.failures-fix_failures])
+	var fix2_before: int = t.checks
+	var fix2_failures: int = t.failures
+	await distributed_targets()
+	await retained_targets()
+	await hit_direction_and_visuals()
+	await last_direction_after_release()
+	print("S7-FIX-02 NEW RESULT: %d checks, %d failures; previous baseline %d" % [t.checks-fix2_before,t.failures-fix2_failures,fix2_before])
 
 func fixture() -> Dictionary:
 	var f: Dictionary = t._xp_fixture()
@@ -60,7 +68,7 @@ func data_and_cards() -> void:
 	var f := fixture()
 	t.check(Data.validate(f.store).is_empty(),"S7-01 shadow tables validate")
 	var row: Dictionary = f.store.get_row("shadow.csv","igrit")
-	t.check(row.Search_radius==160 and row.Chase_leash_distance==420 and row.Follow_distance==120 and row.Move_speed==320 and row.Teleport_distance==700 and row.Afterimage_sec==1,"S7-01 CSV specified movement and afterimage start values")
+	t.check(row.Search_radius==280 and row.Chase_leash_distance==560 and row.Follow_distance==200 and row.Move_speed==320 and row.Teleport_distance==900 and row.Afterimage_sec==1,"S7-01 CSV specified movement and afterimage start values")
 	t.check(row.Body_radius==f.store.get_row("player.csv","player_01").Body_radius and row.Push_weight==f.store.get_row("player.csv","player_01").Push_weight,"S7-01 radius and weight copied from player source")
 	t.check(f.store.get_row("shadow_attack.csv","igrit_attack").Damage==f.store.get_row("basic_attack.csv","attack_01").Damage,"S7-01 damage copied from approved basic attack source")
 	var choices := Choices.new()
@@ -107,18 +115,18 @@ func targeting_and_bt() -> void:
 	t.check(s.target==early,"S7-03 equal center distances choose earlier spawn")
 	var nearest: EnemyActor = t._spawn(f,Vector2(380,300))
 	s.tick(0.0)
-	t.check(s.target==nearest,"S7-03 nearer search candidate wins")
-	nearest.apply_damage(100)
+	t.check(s.target==early,"S7-03 locked target retained when a nearer candidate appears")
+	early.apply_damage(100)
 	s.cancel_attack()
 	s.tick(0.0)
-	t.check(s.target==early and s.target!=later,"S7-03 logical death excluded from search")
+	t.check(s.target==nearest and s.target!=later,"S7-03 logical death releases lock and chooses nearest living enemy")
 	await close(f)
 	f = fixture()
 	f.player.position = Vector2(300,300)
 	s = f.summons.summon()
 	var enemy: EnemyActor = t._spawn(f,Vector2(450,300))
 	s.tick(1.0)
-	t.check(near(s.global_position,Vector2(360,300)) and s.cast_active,"S7-04 approach clamps at Range 90 then attacks without overshoot")
+	t.check(near(s.global_position,Vector2(310,300)) and s.cast_active,"S7-04 approach clamps at Range 140 then attacks without overshoot")
 	var stopped: Vector2 = s.position
 	s.tick(0.1)
 	t.check(near(s.position,stopped),"S7-04 holds position during attack at Range")
@@ -126,28 +134,28 @@ func targeting_and_bt() -> void:
 	f = fixture()
 	f.player.position = Vector2(300,300)
 	s = f.summons.summon()
-	enemy = t._spawn(f,Vector2(500,300))
+	enemy = t._spawn(f,Vector2(600,300))
 	s.tick(0.1)
 	t.check(s.target==enemy and s.last_node=="screen" and near(s.position,Vector2(332,300)),"S7-05 outside search selects nearest current-screen enemy")
 	await close(f)
-	for offset in [10,200]:
+	for offset in [10,300]:
 		f = fixture()
 		f.player.position = Vector2.ZERO
 		s = f.summons.summon()
-		s.position = Vector2(500,100)
+		s.position = Vector2(600,100)
 		enemy = t._spawn(f,s.position+Vector2(offset,0))
 		var initial: Vector2 = s.position
 		s.tick(0.1)
-		t.check(s.last_node=="follow" and s.target==null and not s.cast_active and s.position.distance_to(f.player.position)<initial.length(),"S7-06 leash >420 rejects node %s and returns" % ("1" if offset==10 else "2"))
+		t.check(s.last_node=="follow" and s.target==null and not s.cast_active and s.position.distance_to(f.player.position)<initial.length(),"S7-06 leash >560 rejects node %s and returns" % ("1" if offset==10 else "2"))
 		await close(f)
 	f = fixture()
 	s = f.summons.summon()
 	s.position = Vector2(100,0)
 	s.tick(1.0)
 	t.check(s.position==Vector2(100,0) and not s.cast_active,"S7-07 no candidate waits inside Follow_distance")
-	s.position = Vector2(200,0)
+	s.position = Vector2(300,0)
 	s.tick(1.0)
-	t.check(near(s.position,Vector2(120,0)),"S7-07 follow approaches and stops exactly at 120")
+	t.check(near(s.position,Vector2(200,0)),"S7-07 follow approaches and stops exactly at 200")
 	enemy = t._spawn(f,s.position+Vector2(50,0))
 	s.tick(0.0)
 	t.check(s.cast_active and s.target==enemy,"S7-07 candidate appearing after empty wait attacks immediately")
@@ -164,7 +172,7 @@ func attacks() -> void:
 		var target: EnemyActor = t._spawn(f,Vector2(50,0))
 		var inside: EnemyActor = t._spawn(f,Vector2(70,40))
 		var outside_angle: EnemyActor = t._spawn(f,Vector2(0,80))
-		var outside_range: EnemyActor = t._spawn(f,Vector2(100,0))
+		var outside_range: EnemyActor = t._spawn(f,Vector2(150,0))
 		s.tick(0.0)
 		t.check(s.motion_index==selected and s.cast_active,"S7-08 injected random selector chooses motion %d" % selected)
 		var motion: Dictionary = s.motions[selected]
@@ -191,17 +199,17 @@ func teleport_and_afterimage() -> void:
 	f.player.position = Vector2(300,300)
 	var s = f.summons.summon()
 	s.angle_picker = func() -> float: return 0.0
-	s.position = Vector2(999.99,300)
+	s.position = Vector2(1199.99,300)
 	s.tick(0.0)
-	t.check(images(f).is_empty(),"S7-10 no teleport below distance 700")
-	s.position = Vector2(1000,300)
-	var enemy: EnemyActor = t._spawn(f,Vector2(470,300))
+	t.check(images(f).is_empty(),"S7-10 no teleport below distance 900")
+	s.position = Vector2(1200,300)
+	var enemy: EnemyActor = t._spawn(f,Vector2(550,300))
 	s.tick(0.0)
-	t.check(near(s.position,Vector2(420,300)) and near(s.position-f.player.position,Vector2(120,0)),"S7-10 distance 700 teleports onto Follow_distance circle")
+	t.check(near(s.position,Vector2(500,300)) and near(s.position-f.player.position,Vector2(200,0)),"S7-10 distance 900 teleports onto Follow_distance circle")
 	t.check(s.target==enemy and s.last_node=="attack","S7-10 teleport immediately re-evaluates BT from search")
 	var copy: Node2D = images(f)[0]
 	copy.set_physics_process(false)
-	t.check(near(copy.global_position,Vector2(1000,300)) and copy.pose.radius==s.body_radius and copy.modulate.a<1.0,"S7-11 translucent pose copy stays at departure")
+	t.check(near(copy.global_position,Vector2(1200,300)) and copy.pose.radius==s.body_radius and copy.modulate.a<1.0,"S7-11 translucent pose copy stays at departure")
 	t.check(not copy is CollisionObject2D and f.manager.get_alive_count()==1 and f.summons.actors.size()==1,"S7-11 afterimage enters no enemy or summon count and has no collider")
 	var before: Vector2 = copy.position
 	f.manager._resolve_contact_pushes()
@@ -302,7 +310,7 @@ func actual_chase_and_camera() -> void:
 	s.angle_picker = func() -> float: return PI
 	s.teleport()
 	var screen: Rect2 = enemies._get_screen_world_rect()
-	t.check(near(s.position,Vector2(1144,704)) and screen.has_point(s.position),"S7-16 actual map-edge camera keeps inward teleported shadow visible")
+	t.check(near(s.position,Vector2(1064,704)) and screen.has_point(s.position),"S7-16 actual map-edge camera keeps inward teleported shadow visible")
 	print("S7 CAMERA edge player=",player.global_position," shadow=",s.global_position," screen=",screen)
 	# Near map center a permitted leash position may be offscreen vertically.
 	player.position = Vector2.ZERO
@@ -402,10 +410,10 @@ func steering_fixes() -> void:
 	other.position = Vector2(140,0)
 	s.tick(0.1)
 	t.check(s.position==Vector2(80,0),"S7-FIX-03 outside spacing preserves original stopped follow behavior")
-	s.position = Vector2(120,0)
-	other.position = Vector2(100,0)
+	s.position = Vector2(200,0)
+	other.position = Vector2(180,0)
 	s.tick(0.1)
-	t.check(s.position.distance_to(f.player.position)<=120.0+EPS,"S7-FIX-04 follow arrival is not undone by outward steering")
+	t.check(s.position.distance_to(f.player.position)<=200.0+EPS,"S7-FIX-04 follow arrival is not undone by outward steering")
 	await close(f)
 	f = fixture()
 	f.player.position = Vector2(300,300)
@@ -413,11 +421,11 @@ func steering_fixes() -> void:
 	other = f.summons.summon()
 	s.position = Vector2(300,300)
 	other.position = Vector2(320,300)
-	var enemy: EnemyActor = t._spawn(f,Vector2(390,300))
+	var enemy: EnemyActor = t._spawn(f,Vector2(440,300))
 	s.motion_picker = func(_count: int) -> int: return 0
 	s.ready_at = 100.0
 	s.tick(0.1)
-	t.check(s.target==enemy and s.position.distance_to(enemy.position)<=90.0+EPS,"S7-FIX-04 Range destination and arrival survive outward steering")
+	t.check(s.target==enemy and s.position.distance_to(enemy.position)<=140.0+EPS,"S7-FIX-04 Range destination and arrival survive outward steering")
 	s.ready_at = 0.0
 	s.tick(0.0)
 	t.check(s.cast_active,"S7-FIX-04 arrived Range still starts attack")
@@ -431,7 +439,7 @@ func steering_fixes() -> void:
 	s = f.summons.summon()
 	other = f.summons.summon()
 	other.position = Vector2(280,300)
-	enemy = t._spawn(f,Vector2(500,300))
+	enemy = t._spawn(f,Vector2(600,300))
 	var initial: Vector2 = s.position
 	s.tick(0.1)
 	t.check(s.target==enemy and s.last_node=="screen" and s.position.x>initial.x and s.position.distance_to(initial)<=32.0+EPS,"S7-FIX-05 chase goal retained and combined motion speed limited")
@@ -446,3 +454,174 @@ func share_validation() -> void:
 		var error := Data.validate(store)
 		var valid: bool = value>=0.0 and value<=1.0
 		t.check(loaded.is_empty() and (error.is_empty() if valid else error.contains("Enemy_push_share")),"S7-FIX-06 Enemy_push_share validation value="+str(value))
+
+func distributed_targets() -> void:
+	for screen_only in [false,true]:
+		var f := fixture()
+		f.player.position = Vector2(300,300)
+		var shadows: Array = []
+		for i in range(3): shadows.append(f.summons.summon())
+		var enemies: Array = []
+		for x in ([600,640,680] if screen_only else [460,500,540]):
+			enemies.append(t._spawn(f,Vector2(x,300)))
+		f.summons._physics_process(0.0)
+		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1] and shadows[2].target==enemies[2],"S7-FIX2-A three distinct targets in summon order, screen=%s" % str(screen_only))
+		t.check(shadows[0].last_node==("screen" if screen_only else "attack") and shadows[2].last_node==shadows[0].last_node,"S7-FIX2-A distribution applies to both BT candidate stages")
+		var closer: EnemyActor = t._spawn(f,Vector2(350,300))
+		f.summons._physics_process(0.0)
+		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1] and shadows[2].target==enemies[2] and not f.summons.claimed_targets(shadows[0]).has(closer),"S7-FIX2-A locked claims survive a new closer candidate")
+		await close(f)
+		f = fixture()
+		f.player.position = Vector2(300,300)
+		shadows.clear()
+		for i in range(3): shadows.append(f.summons.summon())
+		var one: EnemyActor = t._spawn(f,Vector2(600 if screen_only else 460,300))
+		var two: EnemyActor = t._spawn(f,Vector2(640 if screen_only else 500,300))
+		f.summons._physics_process(0.0)
+		t.check(shadows[0].target==one and shadows[1].target==two and shadows[2].target==one,"S7-FIX2-A only insufficient candidates allow nearest-target sharing, screen=%s" % str(screen_only))
+		await close(f)
+	# Once claimed search candidates are exhausted, node 1 retries locally;
+	# an unclaimed screen-only enemy does not override BT priority.
+	var f := fixture()
+	f.player.position = Vector2(300,300)
+	var first = f.summons.summon()
+	var second = f.summons.summon()
+	var near_enemy: EnemyActor = t._spawn(f,Vector2(460,300))
+	t._spawn(f,Vector2(650,300))
+	f.summons._physics_process(0.0)
+	t.check(first.target==near_enemy and second.target==near_enemy,"S7-FIX2-A per-stage fallback preserves search-before-screen priority")
+	await close(f)
+
+func retained_targets() -> void:
+	var f := fixture()
+	f.player.position = Vector2(300,300)
+	var s = f.summons.summon()
+	s.ready_at = 100.0
+	var original: EnemyActor = t._spawn(f,Vector2(500,300))
+	s.tick(0.0)
+	var closer: EnemyActor = t._spawn(f,Vector2(380,300))
+	s.tick(0.0)
+	t.check(s.target==original,"S7-FIX2-B retains live target despite a nearer enemy")
+	original.position = Vector2(600,300)
+	s.tick(0.0)
+	t.check(s.target==original and s.last_node=="screen","S7-FIX2-B outside search but onscreen keeps target and pursues node 2")
+	original.position = Vector2(1600,300)
+	s.tick(0.0)
+	t.check(s.target==closer,"S7-FIX2-B outside both search and screen releases and reselects")
+	closer.apply_damage(100)
+	s.tick(0.0)
+	t.check(s.target==null and s.last_node=="follow","S7-FIX2-B logical death clears target with no eligible alternative")
+	var pooled: EnemyActor = t._spawn(f,Vector2(500,300))
+	s.tick(0.0)
+	t.check(s.target==pooled,"S7-FIX2-B new living target selected after empty wait")
+	f.manager.recycle_enemy(pooled)
+	s.tick(0.0)
+	t.check(s.target==null and not pooled.is_active,"S7-FIX2-B inactive pooled target releases immediately")
+	var reused: EnemyActor = t._spawn(f,Vector2(500,300))
+	s.tick(0.0)
+	var old_order: int = s.target_spawn_order
+	f.manager.recycle_enemy(reused)
+	var reentered: EnemyActor = t._spawn(f,Vector2(500,300))
+	var alternative: EnemyActor = t._spawn(f,Vector2(470,300))
+	t.check(reentered==reused and reentered.spawn_order>old_order and not s.target_is_live(),"S7-FIX2-B pooled reentry before a tick is not the old locked target")
+	s.tick(0.0)
+	t.check(s.target==alternative and s.target_spawn_order==alternative.spawn_order,"S7-FIX2-B reentry triggers a fresh nearest choice")
+	s.ready_at = 0.0
+	alternative.position = s.position+Vector2(100,0)
+	s.tick(0.0)
+	t.check(s.cast_active,"S7-FIX2-B leash release fixture starts real cast")
+	s.position = f.player.position+Vector2(561,0)
+	var before: Vector2 = s.position
+	s.tick(0.1)
+	t.check(s.target==null and not s.cast_active and s.last_node=="follow" and s.position.distance_to(f.player.position)<before.distance_to(f.player.position),"S7-FIX2-B leash releases target, cancels cast and returns")
+	await close(f)
+	f = fixture()
+	f.player.position = Vector2(100,300)
+	s = f.summons.summon()
+	s.ready_at = 100.0
+	var offscreen: EnemyActor = t._spawn(f,Vector2(-20,300))
+	s.tick(0.0)
+	offscreen.position = Vector2(-180,300)
+	s.tick(0.0)
+	t.check(s.target==offscreen and s.last_node=="attack","S7-FIX2-B offscreen at exact Search_radius remains locked")
+	offscreen.position.x = -180.01
+	s.tick(0.0)
+	t.check(s.target==null and s.last_node=="follow","S7-FIX2-B outside both boundaries releases without screen-exit clamping")
+	await close(f)
+
+func hit_direction_and_visuals() -> void:
+	for selected in [0,1]:
+		var f := fixture()
+		f.player.position = Vector2(300,300)
+		var s = f.summons.summon()
+		var fixed: int = selected
+		s.motion_picker = func(_count: int) -> int: return fixed
+		var target: EnemyActor = t._spawn(f,Vector2(400,300))
+		var old_direction: EnemyActor = t._spawn(f,Vector2(420,300))
+		var edge: EnemyActor = t._spawn(f,Vector2(170,300))
+		var outside: EnemyActor = t._spawn(f,Vector2(169.9,300))
+		t.check(s.attack_visual_state().is_empty(),"S7-FIX2-D no attack sector outside cast")
+		t.check(Data.validate(f.store).is_empty() and s.attack.Range==140 and s.config.Search_radius==280,"S7-FIX2-D Range140 and Search280 pass real CSV validation")
+		s.tick(0.0)
+		var motion: Dictionary = s.motions[selected]
+		t.check(s.cast_active and near(s.facing,Vector2.RIGHT),"S7-FIX2-C attack begins toward original target")
+		target.position = Vector2(300,400)
+		s.tick(float(motion.Hit_time_sec)-0.01)
+		t.check(near(s.facing,Vector2.DOWN) and not s.hit_done and target.hp==100,"S7-FIX2-C follows moving target before hit without early damage")
+		var before_hit: Dictionary = s.attack_visual_state()
+		t.check(before_hit.direction==Vector2.DOWN and before_hit.range==140 and before_hit.arc_deg==120 and near(before_hit.center,s.global_position) and before_hit.hit_age<0,"S7-FIX2-D live visualization uses actual pre-hit geometry")
+		# Mimic a position displacement between cast start and hit; center must
+		# be the actor's current center, not the start location.
+		s.position = Vector2(310,300)
+		target.position = Vector2(210,300)
+		s.tick(0.01)
+		t.check(s.hit_done and near(s.facing,Vector2.LEFT) and target.hp==90 and old_direction.hp==100,"S7-FIX2-C hit uses target direction at hit, not attack-start direction, motion=%d" % selected)
+		t.check(edge.hp==90 and outside.hp==100,"S7-FIX2-C Range140 boundary from hit-time center is inclusive")
+		var geometry: Dictionary = s.attack_geometry()
+		var state: Dictionary = s.attack_visual_state()
+		var same_geometry: bool = true
+		for key in ["center","direction","range","arc_deg"]:
+			same_geometry = same_geometry and state[key]==geometry[key]
+		t.check(same_geometry and state.center==Vector2(310,300) and state.direction==Vector2.LEFT,"S7-FIX2-D visualization and actual hit geometry share all four values")
+		var points := Visual.sector_points(state)
+		var same_edges: bool = points[0]==state.center
+		var half_angle := deg_to_rad(60.0)
+		for i in range(1,points.size()):
+			var offset: Vector2 = points[i]-Vector2(state.center)
+			same_edges = same_edges and absf(offset.length()-140.0)<EPS and absf(wrapf(offset.angle()-PI,-PI,PI))<=half_angle+EPS
+		t.check(same_edges and near(points[1],Vector2(310,300)+Vector2.LEFT.rotated(-half_angle)*140) and near(points[-1],Vector2(310,300)+Vector2.LEFT.rotated(half_angle)*140),"S7-FIX2-D renderer vertices use exact hit center, direction, range and arc")
+		t.check(is_equal_approx(Visual.sector_flash(float(state.hit_age)),1.0),"S7-FIX2-D sector flashes once at hit")
+		var hp_before: int = target.hp
+		var position_before: Vector2 = s.position
+		var claimed: Array = f.summons.claimed_targets(null)
+		for i in range(3):
+			Visual.sector_points(s.attack_visual_state())
+			s.queue_redraw()
+		await t.process_frame
+		t.check(target.hp==hp_before and s.position==position_before and f.summons.claimed_targets(null)==claimed and not s is CollisionObject2D,"S7-FIX2-D visualization has no damage, movement, claim or collider side effects")
+		target.position = Vector2(310,400)
+		s.tick(0.05)
+		t.check(near(s.facing,Vector2.LEFT) and target.hp==hp_before and Visual.sector_flash(float(s.attack_visual_state().hit_age))<1,"S7-FIX2-C direction stays locked after hit and flash fades without another hit")
+		s.tick(float(motion.Motion_sec)-float(motion.Hit_time_sec)-0.05)
+		t.check(not s.cast_active and s.attack_visual_state().is_empty(),"S7-FIX2-D sector disappears at exact motion end")
+		await close(f)
+
+func last_direction_after_release() -> void:
+	for reason in ["death","inactive","reentry"]:
+		var f := fixture()
+		f.player.position = Vector2(300,300)
+		var s = f.summons.summon()
+		s.motion_picker = func(_count: int) -> int: return 0
+		var target: EnemyActor = t._spawn(f,Vector2(400,300))
+		var down: EnemyActor = t._spawn(f,Vector2(300,420))
+		var right: EnemyActor = t._spawn(f,Vector2(420,300))
+		s.tick(0.0)
+		target.position = Vector2(300,400)
+		s.tick(0.1)
+		t.check(s.facing==Vector2.DOWN,"S7-FIX2-C last valid facing is updated before target release, reason="+reason)
+		if reason=="death": target.apply_damage(100)
+		else: f.manager.recycle_enemy(target)
+		if reason=="reentry": t._spawn(f,Vector2(400,300))
+		s.tick(0.05)
+		t.check(s.target==null and s.facing==Vector2.DOWN and down.hp==90 and right.hp==100,"S7-FIX2-C released target keeps last facing through hit without redirecting to a new enemy, reason="+reason)
+		await close(f)
