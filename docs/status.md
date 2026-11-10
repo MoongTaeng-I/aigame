@@ -41,17 +41,17 @@
 
 - 시스템 1(플레이어와 맵) A단계가 구현되어 있다. 1280×720 창 모드 고정, 2560×1440 맵, WASD 8방향 이동(대각선 속도 정규화), 맵 경계에서 벽을 따라 이동(경계를 향하는 성분만 차단), 카메라 추적과 맵 경계 정지, CSV 읽기 공통 기능(`scripts/csv_data_store.gd`)이다.
 - 구현 파일: `project.godot`, `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/map.gd`, `scripts/player.gd`, `scenes/map.tscn`, `scenes/player.tscn`, `data/player.csv`.
-- 시스템 2 A단계에서 적 생성·추적 이동·개체 간 밀어내기·화면 밖 재배치·동시 생존 상한이 동작한다. 적 200마리를 1분 유지해도 프레임 저하가 없었다.
+- 시스템 2 A단계에서 적 생성·추적 이동·개체 간 밀어내기·화면 밖 재배치·동시 생존 상한이 동작한다. 그림자 밀어내기 일반화·대역 검사(S2-FIX-01~03)를 구현했고, 에디터의 적 150마리 이상 끊김에 대해 사용자 A/B/C 시험 후 Push_iterations 시작값을 4로 정했다(2026-11-10). Max_alive 200·Separation_gap 8은 유지하며 4에서 렉 없음·틈 보임·질주·밀림 동일을 사용자가 확인했다.
 - 구현 파일: `scripts/enemy_manager.gd`, `scripts/enemy.gd`, `scripts/csv_data_store.gd`, `data/enemy.csv`, `data/spawn.csv`, `data/spawn_rule.csv` 및 기존 플레이어·맵 파일이다.
 - 시스템 3(전투와 생존) A단계에서 자동 2타 공격·대상 재선정, 감속 넉백과 추적 합산, 체력·개체별 접촉 재피격 제한, 직선 투사체와 단일 소멸 조건, 논리 사망·흐려짐·생존 수 제외, 임시 체력·사망 표시가 동작한다.
 - 구현 파일: `scripts/combat_data.gd`, `scripts/projectile.gd`, `tests/p0_runner.gd`, `tests/run_headless.py`, `data/projectile.csv`, `data/basic_attack.csv` 및 변경된 기존 파일 `scripts/main.gd`, `scripts/csv_data_store.gd`, `scripts/player.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `data/player.csv`, `data/enemy.csv`, `data/spawn.csv`다. 새 CSV의 `.import`도 포함한다.
 - 시스템 4(경험치와 레벨업) A단계에서 적 사망 위치 경험치 드랍, 가속 끌어당김과 경로 접촉 적립, 바닥 경험치 상한 합치기, 레벨 요구량 마지막 행 반복과 다중 레벨업 이월, 레벨업당 강화 포인트 1개와 레벨업 신호, 임시 레벨·경험치 표시가 동작한다.
 - 구현 파일: `scripts/experience_data.gd`, `scripts/experience_manager.gd`, `scripts/experience_orb.gd`, `data/level.csv`, `data/xp_rule.csv`와 두 CSV의 `.import`, 변경된 기존 파일 `scripts/main.gd`, `scripts/enemy.gd`, `scripts/enemy_manager.gd`, `scripts/player.gd`, `scripts/combat_data.gd`, `data/enemy.csv`, `data/player.csv`, `tests/p0_runner.gd`다.
-- 시스템 5는 스킬 공통 시전·사용 완료 기준 쿨타임, 네 스킬의 키 입력·아이콘·포인트 해금/강화, 은신 중 공격·스킬 차단, 피어 시전 중 이동 정지·무적, 질주 중 피어 차단을 구현했다. 적끼리 Separation_gap 8과 Push_iterations 8을 검증용 시작값으로 유지하며 밀어내기는 결과 불변 최적화를 적용했다.
+- 시스템 5는 스킬 공통 시전·사용 완료 기준 쿨타임, 네 스킬의 키 입력·아이콘·포인트 해금/강화, 은신 중 공격·스킬 차단, 피어 시전 중 이동 정지·무적, 질주 중 피어 차단을 구현했다. 적끼리 Separation_gap 8과 Push_iterations 4(2026-11-10)를 검증용 시작값으로 유지하며 밀어내기는 결과 불변 최적화를 적용했다.
 - 시스템 5 구현 파일: `scripts/skill_data.gd`, `scripts/skill_cast.gd`, `scripts/skill_area.gd`, `scripts/skill_manager.gd`, `scripts/skill_ui.gd`, `data/skill.csv`, 네 스킬 레벨 CSV, `data/stealth_rule.csv`와 `.import`, 기존 플레이어·적 관리자·초기화·스키마 파일이다.
 - 시스템 6은 레벨업 선택 대기열·게임 정지/재개, 마우스 3택 1, 가중치 후보 추출·최대 레벨 제외·체력 회복 보충, 효과 적용과 판당 다시 뽑기 횟수를 구현했다. 현재 일반 후보는 3개여서 다시 뽑기가 항상 비활성이다.
 - 시스템 6 구현 파일: `scripts/choice_data.gd`, `scripts/choice_manager.gd`, `scripts/choice_ui.gd`, `data/choice.csv`, `data/choice_level.csv`, `data/choice_rule.csv`와 `.import`, 기존 플레이어·초기화·스키마 파일이다.
-- 시스템 7은 상세 기획 진행 중이며 시스템 8~10은 상세 기획 전이다.
+- 시스템 7은 기획 문서와 밀어내기 일반화·대역 검사가 있고 BT·그림자 실콘텐츠는 미구현이며 구현 준비 단계다. 확인 필요 두 항목과 임시 규칙 두 항목은 남아 있다. 시스템 8~10은 상세 기획 전이다.
 
 ## 미해결 문제
 
@@ -75,4 +75,4 @@
 
 ## 다음 작업
 
-- 시스템 7(그림자 소환수) 기획을 진행한다(진행 중).
+- 시스템 7(그림자 소환수) 구현을 준비한다. 확인 필요·미정 항목을 확정한 뒤 승인된 범위로 구현한다.
