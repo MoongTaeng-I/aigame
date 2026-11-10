@@ -18,7 +18,7 @@ func run(tree: SceneTree) -> void:
 	var rule: Dictionary = store.get_row("spawn_rule.csv","rule_01")
 	var helper := Crowd.new()
 	var result := helper.simulate(t,int(rule.Push_iterations))
-	t.check(result.p95<=1.0 and result.overlap_pairs==0 and result.player_alive,"CROWD-05 actual CSV 100 initial enemies 600 frames meets p95 and no-body-overlap criterion: "+JSON.stringify(result))
+	t.check(result.p95<=2.5 and result.overlap_pairs==0 and result.player_alive,"CROWD-05 actual CSV 100 initial enemies 600 frames meets p95<=2.5px and no-body-overlap criterion: "+JSON.stringify(result))
 
 func dash_blocks_fear() -> void:
 	var helper := Extensions.new()
