@@ -51,7 +51,7 @@
 - 시스템 5 구현 파일: `scripts/skill_data.gd`, `scripts/skill_cast.gd`, `scripts/skill_area.gd`, `scripts/skill_manager.gd`, `scripts/skill_ui.gd`, `data/skill.csv`, 네 스킬 레벨 CSV, `data/stealth_rule.csv`와 `.import`, 기존 플레이어·적 관리자·초기화·스키마 파일이다.
 - 시스템 6은 레벨업 선택 대기열·게임 정지/재개, 마우스 3택 1, 가중치 후보 추출·최대 레벨 제외·체력 회복 보충, 효과 적용과 판당 다시 뽑기 횟수를 구현했다. 현재 일반 후보는 3개여서 다시 뽑기가 항상 비활성이다.
 - 시스템 6 구현 파일: `scripts/choice_data.gd`, `scripts/choice_manager.gd`, `scripts/choice_ui.gd`, `data/choice.csv`, `data/choice_level.csv`, `data/choice_rule.csv`와 `.import`, 기존 플레이어·초기화·스키마 파일이다.
-- 시스템 7은 기획 문서와 밀어내기 일반화·대역 검사가 있고 BT·그림자 실콘텐츠는 미구현이며 구현 준비 단계다. 확인 필요 두 항목과 임시 규칙 두 항목은 남아 있다. 시스템 8~10은 상세 기획 전이다.
+- 시스템 7은 이그리트 A단계 구현 중이다. 이동 한도 ①·② 적용과 질주 중 그림자-플레이어 제외를 확정했으며 간격 0은 임시다. 시스템 8~10은 상세 기획 전이다.
 
 ## 미해결 문제
 
@@ -75,4 +75,4 @@
 
 ## 다음 작업
 
-- 시스템 7(그림자 소환수) 구현을 준비한다. 확인 필요·미정 항목을 확정한 뒤 승인된 범위로 구현한다.
+- 시스템 7 이그리트·BT·공격·카드·텔레포트·잔상을 구현하고 P0 및 사용자 직접 확인을 진행한다.
