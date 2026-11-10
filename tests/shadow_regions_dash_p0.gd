@@ -20,6 +20,8 @@ func run(tree: SceneTree) -> void:
 	await dash_and_circle()
 	await dash_arrival_and_blocking()
 	await cancellations()
+	await pass_through_and_pool()
+	await instrumentation_equivalence()
 	await type_capacity()
 	validate_shapes()
 	error_screen()
@@ -149,84 +151,202 @@ func dash_and_circle() -> void:
 	f.player.position = Vector2(300,300)
 	var s = f.summons.summon("charger_test")
 	var target: EnemyActor = t._spawn(f,Vector2(480,300))
-	var edge: EnemyActor = t._spawn(f,Vector2(550,300))
-	var outside: EnemyActor = t._spawn(f,Vector2(550.1,300))
-	var inside: EnemyActor = t._spawn(f,Vector2(480,350))
-	t.check(s.circle_visual_state().is_empty(),"S7-I2-DASH no circle visualization outside attack")
+	s.choose_target(f.manager.get_living_enemies())
+	var start_edge: EnemyActor = t._spawn(f,Vector2(300,340))
+	var middle: EnemyActor = t._spawn(f,Vector2(450,340))
+	var outside: EnemyActor = t._spawn(f,Vector2(450,340.1))
+	# Nearby path probes arrived after the target was locked by normal selection.
+	t.check(s.dash_visual_state().is_empty(),"S7-I3-VIS no radius display outside dash")
 	s.tick(0.0)
-	t.check(s.cast_active and not s.hit_done and s.dash_goal==Vector2(480,300),"S7-I2-DASH starts at exact Range180, snapshots target point without early hit")
+	t.check(s.cast_active and s.dash_through_active and s.dash_goal==Vector2(600,300) and s.dash_direction==Vector2.RIGHT,"S7-I3-START Range180 fixes direction and distance300 endpoint beyond target")
+	t.check(start_edge.hp==90 and target.hp==100,"S7-I3-PATH first zero-length segment includes starting radius40 edge")
 	target.position = Vector2(300,480)
-	s.tick(0.1)
-	t.check(helper.near(s.position,Vector2(360,300)) and s.dash_goal==Vector2(480,300) and s.facing==Vector2.RIGHT and target.hp==100,"S7-I2-DASH speed600 follows fixed point rather than moving target")
-	t.check(s.separation_velocity()==Vector2.ZERO,"S7-I2-DASH no steering throughout active dash")
+	s.tick(0.3)
+	t.check(helper.near(s.position,Vector2(480,300)) and s.facing==Vector2.RIGHT and s.dash_goal==Vector2(600,300),"S7-I3-DIR moving target cannot turn fixed dash")
+	t.check(middle.hp==90 and outside.hp==100 and target.hp==100,"S7-I3-PATH long frame segment hits intervening center at40, excludes40.1; no endpoint explosion")
+	var geometry: Dictionary = s.dash_geometry()
+	var view: Dictionary = s.dash_visual_state()
+	t.check(view.center==geometry.center and view.radius==geometry.radius and view.radius==40 and s.separation_velocity()==Vector2.ZERO,"S7-I3-VIS same radius40/center and no steering while moving")
 	s.tick(0.2)
-	t.check(s.hit_done and helper.near(s.position,Vector2(480,300)) and target.hp==100 and edge.hp==90 and inside.hp==90 and outside.hp==100,"S7-I2-CIRCLE arrival hits once at current center, includes radius70 edge and excludes outside")
-	var geometry: Dictionary = s.circle_geometry()
-	var state: Dictionary = s.circle_visual_state()
-	t.check(state.center==geometry.center and state.radius==geometry.radius and state.radius==70 and absf(state.hit_age)<EPS,"S7-I2-CIRCLE visualization shares hit center/radius and flashes at dash end")
-	var old_hp: int = edge.hp
-	s.tick(0.1)
-	t.check(edge.hp==old_hp and s.cast_active,"S7-I2-CIRCLE recovery does not repeat damage")
-	s.tick(0.2)
-	t.check(not s.cast_active and s.circle_visual_state().is_empty() and absf(s.ready_at-2.1)<EPS,"S7-I2-DASH recovery0.3 ends before Interval1.5 begins")
-	s.tick(1.5-0.00001)
-	t.check(not s.cast_active,"S7-I2-DASH interval does not expire early")
+	t.check(helper.near(s.position,Vector2(600,300)) and s.hit_done and not s.dash_through_active and s.cast_active and s.dash_visual_state().is_empty(),"S7-I3-END distance completion begins stationary recovery without explosion display")
+	t.check(middle.hp==90 and start_edge.hp==90,"S7-I3-ONCE same generation receives at most one damage per dash")
+	var stopped: Vector2 = s.position
+	s.tick(0.3)
+	t.check(not s.cast_active and s.target==null and s.position==stopped and absf(s.ready_at-1.8)<EPS,"S7-I3-RECOVERY ends after0.3, releases target; interval1.0 starts at recovery end")
+	# Fresh legal candidate at fixed distance; do not conflate cooldown with
+	# selection of the moving former target or minimum-length constraints.
+	for enemy in f.manager.get_living_enemies(): f.manager.recycle_enemy(enemy)
+	f.player.position = s.position
+	target = t._spawn(f,s.position+Vector2(100,0))
+	s.tick(1.0-0.00001)
+	t.check(not s.cast_active,"S7-I3-INTERVAL no early dash during post-recovery interval")
 	s.tick(0.00001)
-	t.check(s.cast_active,"S7-I2-DASH exact post-recovery interval permits next dash")
+	t.check(s.cast_active and s.target==target,"S7-I3-INTERVAL exact cooldown permits new BT-selected dash")
 	await helper.close(f)
 
 func dash_arrival_and_blocking() -> void:
-	for distance in [8.0,8.01]:
-		var f: Dictionary = helper.fixture()
-		f.player.position = Vector2(300,300)
-		var s = f.summons.summon("charger_test")
-		var target: EnemyActor = t._spawn(f,Vector2(300+distance,300))
-		s.tick(0.0)
-		t.check(s.hit_done==(distance==8.0) and target.hp==(90 if distance==8.0 else 100),"S7-I2-ARRIVAL named 8px tolerance inclusive, distance="+str(distance))
-		await helper.close(f)
 	var f: Dictionary = helper.fixture()
-	# Narrow test map and a genuinely configured smaller enemy make the fixed
-	# goal unreachable by the shadow radius. All pushes remain production code.
-	f.manager._map_rect = Rect2(-40,-20,80,40)
-	f.manager._enemy_records.test.Body_radius = 4.0
-	f.manager.push_iterations = 4
+	f.player.position = Vector2.ZERO
 	var s = f.summons.summon("charger_test")
-	var target: EnemyActor = t._spawn(f,Vector2(36,0))
+	s.position = Vector2(400,0)
+	var enemy: EnemyActor = t._spawn(f,Vector2(500,0))
 	s.tick(0.0)
-	var blocked_before_timeout := true
-	for i in range(4):
-		s.tick(0.1)
-		f.manager._resolve_contact_pushes()
-		blocked_before_timeout = blocked_before_timeout and not s.hit_done and target.hp==100
-	t.check(blocked_before_timeout and s.position.distance_to(s.dash_goal)>8.0,"S7-I2-BLOCK real pushes/map clamp keep dash blocked without early damage")
+	t.check(s.cast_active and helper.near(s.dash_goal,Vector2(560,0)) and absf(s.dash_length-160.0)<EPS,"S7-I3-LEASH endpoint clipped to initial player leash560")
+	await helper.close(f)
+	f = helper.fixture()
+	s = f.summons.summon("charger_test")
+	s.position = Vector2(480,0)
+	enemy = t._spawn(f,Vector2(580,0))
+	s.tick(0.0)
+	t.check(not s.cast_active and not s.dash_through_active and s.last_node=="attack" and s.target==enemy and s.ready_at==0.0,"S7-I3-MIN leash-limited80 below100 does not start or alter shared cooldown/BT")
+	s.position = Vector2(460,0)
+	s.tick(0.0)
+	t.check(s.cast_active and absf(s.dash_length-100.0)<EPS,"S7-I3-MIN exact100 length can start")
+	await helper.close(f)
+	f = helper.fixture()
+	f.player.position = Vector2(3900,0)
+	s = f.summons.summon("charger_test")
+	s.position = Vector2(3950,0)
+	enemy = t._spawn(f,Vector2(3980,0))
+	s.tick(0.0)
+	t.check(s.cast_active and absf(s.dash_length-34.0)<EPS and helper.near(s.dash_goal,Vector2(3984,0)),"S7-I3-MAP user answer permits map-only short34 dash below100")
 	s.tick(0.1)
-	t.check(s.hit_done and s.position.distance_to(s.dash_goal)>8.0 and target.hp==90 and absf(s.dash_hit_at-0.5)<EPS,"S7-I2-BLOCK timeout0.5 emits circle at blocked position")
-	var position: Vector2 = s.position
-	f.manager._resolve_contact_pushes()
-	t.check(s.position!=position and s.position.x<=24.0+EPS,"S7-I2-BLOCK existing enemy push still applies after hit and obeys map bounds")
-	print("S7-I2 BLOCK ",JSON.stringify({"shadow":[s.position.x,s.position.y],"fixed_goal":[s.dash_goal.x,s.dash_goal.y],"hit_at":s.dash_hit_at,"target_hp":target.hp}))
+	t.check(s.hit_done and not s.dash_through_active and helper.near(s.position,Vector2(3984,0)) and s.dash_end_reason=="map","S7-I3-MAP ends at radius-aware map border without sliding or time cap")
+	await helper.close(f)
+	f = helper.fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon("charger_test")
+	enemy = t._spawn(f,s.position)
+	s.facing = Vector2.DOWN
+	s.tick(0.0)
+	t.check(s.dash_direction==Vector2.DOWN and helper.near(s.dash_goal,Vector2(300,600)),"S7-I3-ZERO zero target vector falls back to last direction")
+	await helper.close(f)
+	f = helper.fixture()
+	s = f.summons.summon("charger_test")
+	enemy = t._spawn(f,s.position)
+	s.facing = Vector2.ZERO
+	s.tick(0.0)
+	t.check(s.dash_direction==Vector2.RIGHT,"S7-I3-ZERO zero last direction finally uses RIGHT")
 	await helper.close(f)
 
 func cancellations() -> void:
-	for reason in ["leash","teleport"]:
+	var f: Dictionary = helper.fixture()
+	f.player.position = Vector2(300,300)
+	var s = f.summons.summon("charger_test")
+	var target: EnemyActor = t._spawn(f,Vector2(480,300))
+	s.tick(0.0)
+	f.player.position = Vector2(-300,300)
+	s.tick(0.1)
+	t.check(s.cast_active and s.dash_through_active and s.position.distance_to(f.player.position)>560,"S7-I3-CAST moving player can exceed leash without cancelling dash")
+	f.player.position = Vector2(-200,300)
+	s.tick(0.4)
+	s.tick(0.2)
+	t.check(s.cast_active and s.hit_done and not s.dash_through_active and s.position.distance_to(f.player.position)>560 and s.position.distance_to(f.player.position)<900,"S7-I3-CAST recovery also ignores leash until its end, below common teleport threshold")
+	await helper.close(f)
+	f = helper.fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon("charger_test")
+	target = t._spawn(f,Vector2(480,300))
+	s.tick(0.0)
+	f.player.position = Vector2(-100,300)
+	s.tick(0.5)
+	s.tick(0.3)
+	t.check(not s.cast_active and s.target==null and s.ready_at>s.clock and s.position.distance_to(f.player.position)>560,"S7-I3-CAST recovery completes outside leash with target cleared and cooldown preserved")
+	s.tick(0.0)
+	t.check(s.last_node=="follow" and s.ready_at==s.clock,"S7-I3-COMMON idle leash still resets cooldown exactly as before")
+	await helper.close(f)
+	f = helper.fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon("charger_test")
+	target = t._spawn(f,Vector2(480,300))
+	s.tick(0.0)
+	s.angle_picker = func() -> float: return 0.0
+	s.teleport()
+	t.check(not s.cast_active and not s.dash_through_active and s.target==null and helper.images(f).size()==1,"S7-I3-TELEPORT cancels dash and keeps original afterimage/clear behavior")
+	var old_hp: int = target.hp
+	f.manager.recycle_enemy(target)
+	s.tick(1.0)
+	t.check(target.hp==old_hp and not s.hit_done,"S7-I3-TELEPORT cancelled dash cannot deal late damage")
+	await helper.close(f)
+
+func pass_through_and_pool() -> void:
+	var f: Dictionary = helper.fixture()
+	f.player.position = Vector2(300,300)
+	var s = f.summons.summon("charger_test")
+	var enemy: EnemyActor = t._spawn(f,Vector2(480,300))
+	s.tick(0.0)
+	s.tick(0.3)
+	var shadow_before: Vector2 = s.position
+	var enemy_before: Vector2 = enemy.position
+	f.manager.push_iterations = 1
+	f.manager._resolve_contact_pushes()
+	f.manager._resolve_contact_pair(enemy,s)
+	f.manager._resolve_contact_pair(s,enemy)
+	t.check(s.position==shadow_before and enemy.position==enemy_before,"S7-I3-PUSH optimized and direct enemy pairs both skip only moving dash")
+	# Normal player and other-shadow pairs still participate during the dash.
+	f.player.position = s.position+Vector2(10,0)
+	f.manager._resolve_contact_pushes()
+	t.check(s.position!=shadow_before and f.player.position!=shadow_before+Vector2(10,0),"S7-I3-PUSH player-shadow still resolves during enemy pass-through")
+	var other = f.summons.summon("igrit")
+	other.position = s.position+Vector2(20,0)
+	f.player.position = Vector2(300,300)
+	shadow_before = s.position
+	f.manager._resolve_contact_pair(s,other)
+	t.check(s.position!=shadow_before,"S7-I3-PUSH shadow-shadow remains weighted during dash")
+	other.position = Vector2(300,0)
+	s.tick(0.2)
+	enemy.position = s.position
+	shadow_before = s.position
+	enemy_before = enemy.position
+	f.manager._resolve_contact_pair(enemy,s)
+	t.check(not s.dash_through_active and s.position!=shadow_before and enemy.position!=enemy_before,"S7-I3-PUSH recovery restores normal enemy0.9/shadow0.1 separation immediately")
+	await helper.close(f)
+	f = helper.fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon("charger_test")
+	enemy = t._spawn(f,Vector2(350,300))
+	s.tick(0.0)
+	s.tick(0.1)
+	t.check(enemy.hp==90,"S7-I3-POOL first lifetime receives path hit")
+	f.manager.recycle_enemy(enemy)
+	var reused: EnemyActor = t._spawn(f,s.position)
+	s.tick(0.0)
+	t.check(reused==enemy and reused.hp==90,"S7-I3-POOL reused instance with new spawn_order can receive one new lifetime hit")
+	s.tick(0.01)
+	t.check(reused.hp==90,"S7-I3-POOL same reentered lifetime never receives a second hit")
+	await helper.close(f)
+
+func instrumentation_equivalence() -> void:
+	var results: Array = []
+	var recorded := 0
+	for enabled in [false,true]:
 		var f: Dictionary = helper.fixture()
 		f.player.position = Vector2(300,300)
 		var s = f.summons.summon("charger_test")
-		var target: EnemyActor = t._spawn(f,Vector2(480,300))
-		s.tick(0.0)
-		t.check(s.cast_active,"S7-I2-CANCEL fixture starts a real dash, "+reason)
-		if reason=="leash":
-			s.position = f.player.position+Vector2(561,0)
-			s.tick(0.0)
-		else:
-			s.angle_picker = func() -> float: return 0.0
-			s.teleport()
-			t.check(helper.images(f).size()==1 and helper.images(f)[0].pose.kind=="charger_test","S7-I2-CANCEL teleport leaves temporary charger-pose afterimage")
-		t.check(not s.cast_active and s.target==null and target.hp==100,"S7-I2-CANCEL cancels pending circle without damage, "+reason)
-		f.manager.recycle_enemy(target)
-		s.tick(1.0)
-		t.check(not s.hit_done,"S7-I2-CANCEL cancelled cast cannot emit late damage, "+reason)
+		var igrit = f.summons.summon("igrit")
+		igrit.position = Vector2(300,100)
+		igrit.motion_picker = func(_n: int) -> int: return 0
+		var counter: Array = [0]
+		if enabled: s.diagnostic_sink = func(_event: String,_details: Dictionary) -> void: counter[0] += 1
+		var enemy: EnemyActor = t._spawn(f,Vector2(480,300))
+		enemy.hp = 100000
+		var frames: Array = []
+		for frame in range(48):
+			f.summons._physics_process(0.05)
+			f.manager._resolve_contact_pushes()
+			frames.append([s.position,s.facing,s.cast_active,s.hit_done,s.ready_at,s.target_spawn_order,igrit.position,igrit.cast_active,igrit.ready_at,enemy.hp])
+		results.append(frames)
+		recorded += counter[0]
 		await helper.close(f)
+	t.check(results[0]==results[1] and recorded>0,"S7-I3-TRACE same seeded state sequence with diagnostic hook off/on")
+	var f: Dictionary = helper.fixture()
+	f.player.position = Vector2(300,300)
+	var igrit = f.summons.summon("igrit")
+	igrit.motion_picker = func(_n: int) -> int: return 0
+	var enemy: EnemyActor = t._spawn(f,Vector2(450,300))
+	for frame in range(40): igrit.tick(0.05)
+	t.check(helper.near(igrit.position,Vector2(310,300)) and enemy.hp==80 and igrit.cast_active and igrit.hit_done and absf(igrit.ready_at-1.65)<EPS,"S7-I3-IGRIT frozen original fan outcome: two hits, Range140, motion/cooldown unchanged")
+	await helper.close(f)
 
 func type_capacity() -> void:
 	var f: Dictionary = helper.fixture()
@@ -241,30 +361,32 @@ func type_capacity() -> void:
 
 func validate_shapes() -> void:
 	var store = t._store()
-	t.check(store.load_all().is_empty() and Data.validate(store).is_empty(),"S7-I2-CSV real fan/circle_dash schemas and data validate")
+	t.check(store.load_all().is_empty() and Data.validate(store).is_empty(),"S7-I2-CSV real fan/dash_through schemas and data validate")
+	var schema: Dictionary = store.schemas["shadow_attack.csv"]
+	t.check(schema.has("Dash_distance") and schema.has("Dash_hit_radius") and schema.has("Dash_min_distance") and not schema.has("Circle_radius") and not schema.has("Dash_max_sec") and not Data.SHAPES.has("circle_dash"),"S7-I3-CSV new path columns present; old shape and arrival-explosion columns removed")
 	var text := FileAccess.get_file_as_string("res://data/shadow_attack.csv")
-	for shape in ["cone",""]:
+	for shape in ["cone","","circle_dash"]:
 		var bad: String = store.load_text("shadow_attack.csv",text.replace(",fan,",","+shape+","))
 		t.check(bad.contains("Shape") and bad.contains("행 2"),"S7-I2-CSV invalid Shape Enum rejected with source line, value="+shape)
 	t.check(store.load_all().is_empty(),"SETUP reload valid shadow tables")
 	var fan: Dictionary = store.get_row("shadow_attack.csv","igrit_attack")
-	for key in ["Circle_radius","Dash_speed","Dash_max_sec"]: fan[key] = -1.0
+	for key in ["Dash_speed","Dash_distance","Dash_hit_radius","Dash_min_distance"]: fan[key] = -1.0
 	t.check(Data.validate(store).is_empty(),"S7-I2-CSV fan ignores dash-only value ranges")
 	var circle: Dictionary = store.get_row("shadow_attack.csv","charger_attack")
 	circle.Arc_deg = -1.0
 	store.get_row("shadow_motion.csv","charger_dash").Hit_time_sec = -999.0
-	t.check(Data.validate(store).is_empty(),"S7-I2-CSV circle ignores Arc_deg and unused Hit_time_sec value ranges")
-	for key in ["Circle_radius","Dash_speed","Dash_max_sec"]:
+	t.check(Data.validate(store).is_empty(),"S7-I2-CSV dash_through ignores Arc_deg and unused Hit_time_sec value ranges")
+	for key in ["Dash_speed","Dash_distance","Dash_hit_radius","Dash_min_distance"]:
 		var saved: Variant = circle[key]
 		circle[key] = 0.0
-		t.check(Data.validate(store).contains(key),"S7-I2-CSV circle requires positive "+key)
+		t.check(Data.validate(store).contains(key),"S7-I2-CSV dash_through requires positive "+key)
 		circle[key] = saved
 	var diagonal: Dictionary = store.get_row("shadow_motion.csv","igrit_diagonal")
 	diagonal.Hit_time_sec = null
 	t.check(Data.validate(store).contains("Hit_time_sec"),"S7-I2-CSV fan still requires scheduled hit time")
 	diagonal.Hit_time_sec = 0.15
 	store.get_row("shadow_motion.csv","charger_dash").Motion_sec = 0.0
-	t.check(Data.validate(store).contains("Motion_sec"),"S7-I2-CSV circle recovery must be positive")
+	t.check(Data.validate(store).contains("Motion_sec"),"S7-I2-CSV dash_through recovery must be positive")
 	t.check(store.load_all().is_empty(),"SETUP reload card tables")
 	var rows: Dictionary = store.get_table("choice_level.csv")
 	var repeated: Dictionary = rows.choice_igrit_01.duplicate(true)

@@ -7,6 +7,9 @@ var costs: Dictionary = {}
 var pass_us: Array[int] = []
 var pair_counts: Array[int] = []
 var bookkeeping_us: int = 0
+# Measurement-only, default off; excludes movement/knockback from push steps.
+var observe_enemy_push: bool = false
+var enemy_push_max_step: float = 0.0
 
 func begin_frame() -> void:
 	costs = {"movement":0,"shots":0,"projectiles":0,"contact":0,"push":0}
@@ -38,7 +41,14 @@ func _update_contact_damage() -> void:
 func _resolve_contact_pushes() -> void:
 	var started := Time.get_ticks_usec()
 	var prior := bookkeeping_us
+	var before: Array = []
+	if observe_enemy_push:
+		for enemy in _active_enemies: before.append(enemy.global_position)
 	super._resolve_contact_pushes()
+	if observe_enemy_push:
+		enemy_push_max_step = 0.0
+		for i in range(_active_enemies.size()):
+			enemy_push_max_step = maxf(enemy_push_max_step,_active_enemies[i].global_position.distance_to(before[i]))
 	costs.push = Time.get_ticks_usec()-started-(bookkeeping_us-prior)
 
 func _resolve_contact_push_pass() -> void:

@@ -4,8 +4,6 @@ const Visual = preload("res://scripts/shadow_visual.gd")
 const Data = preload("res://scripts/shadow_data.gd")
 # User-approved table-policy exception; proposed start value, not final balance.
 const SHADOW_SPACING := 16.0
-# User-requested proposed arrival tolerance, not a steering/push distance.
-const DASH_ARRIVAL_DISTANCE := 8.0
 var manager: Node2D
 var config: Dictionary
 var attack: Dictionary
@@ -30,6 +28,13 @@ var diagnostic_sink: Callable
 var dash_goal := Vector2.ZERO
 var dash_updated_at: float = 0.0
 var dash_hit_at: float = 0.0
+var dash_origin := Vector2.ZERO
+var dash_direction := Vector2.RIGHT
+var dash_length: float = 0.0
+var dash_travelled: float = 0.0
+var dash_end_reason: String = "distance"
+var dash_hits: Dictionary = {}
+var dash_through_active: bool = false
 
 func configure(owner_manager: Node2D, record: Dictionary, attack_record: Dictionary, motion_records: Array) -> void:
 	manager = owner_manager
@@ -94,7 +99,7 @@ func tick(delta: float) -> void:
 	if global_position.distance_to(player.global_position)>=float(config.Teleport_distance):
 		teleport()
 	var living: Array = manager.enemies.get_living_enemies()
-	if global_position.distance_to(player.global_position)>float(config.Chase_leash_distance):
+	if global_position.distance_to(player.global_position)>float(config.Chase_leash_distance) and not (is_dash_through() and cast_active):
 		if diagnostic_sink.is_valid(): diagnostic_sink.call("cancel",{"reason":"leash","had_cast":cast_active})
 		cancel_attack()
 		target = null
@@ -115,7 +120,7 @@ func act_on_target(player: Node2D, delta: float) -> void:
 		if global_position.distance_to(target.global_position)<=float(config.Search_radius):
 			last_node = "attack"
 			move_to_distance(target.global_position,float(attack.Range),delta)
-			if is_circle_dash():
+			if is_dash_through():
 				var distance := global_position.distance_to(target.global_position)
 				# Vector2 float rounding can leave an exact Range stop a few
 				# millionths outside. Keep the existing fan predicate unchanged.
@@ -187,23 +192,37 @@ func separation_velocity() -> Vector2:
 	return result.limit_length(1.0)
 
 func start_attack() -> void:
+	var plan: Dictionary = {}
+	if is_dash_through():
+		plan = plan_dash()
+		if not plan.allowed:
+			if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_rejected",plan)
+			return
 	cast_active = true
 	hit_done = false
 	cast_started_at = clock
 	facing = global_position.direction_to(target.global_position)
 	if facing==Vector2.ZERO: facing = Vector2.RIGHT
 	motion_index = int(motion_picker.call(motions.size())) if motion_picker.is_valid() else random.randi_range(0,motions.size()-1)
-	if is_circle_dash():
-		dash_goal = target.global_position
+	if is_dash_through():
+		dash_origin = global_position
+		dash_goal = plan.endpoint
+		dash_direction = plan.direction
+		facing = dash_direction
+		dash_length = float(plan.length)
+		dash_travelled = 0.0
+		dash_end_reason = plan.end_reason
+		dash_hits.clear()
+		dash_through_active = true
 		dash_updated_at = clock
-	if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_start" if is_circle_dash() else "fan_start",{"goal":[dash_goal.x,dash_goal.y]})
+	if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_start" if is_dash_through() else "fan_start",{"goal":[dash_goal.x,dash_goal.y]})
 	advance_attack(manager.enemies.get_living_enemies())
 
-func is_circle_dash() -> bool:
-	return int(attack.Shape)==Data.Shape.CIRCLE_DASH
+func is_dash_through() -> bool:
+	return int(attack.Shape)==Data.Shape.DASH_THROUGH
 
 func advance_attack(living: Array) -> void:
-	if is_circle_dash():
+	if is_dash_through():
 		advance_dash(living)
 		return
 	advance_fan_attack(living)
@@ -223,40 +242,65 @@ func advance_fan_attack(living: Array) -> void:
 		cast_active = false
 		ready_at = cast_started_at+float(motion.Motion_sec)+float(attack.Interval_sec)
 
+func plan_dash() -> Dictionary:
+	if not target_is_live(): return {"allowed":false,"reason":"no_target"}
+	var direction := global_position.direction_to(target.global_position)
+	if direction==Vector2.ZERO: direction = facing.normalized()
+	if direction==Vector2.ZERO: direction = Vector2.RIGHT
+	var offset: Vector2 = global_position-manager.player.global_position
+	var b := offset.dot(direction)
+	var radius := float(config.Chase_leash_distance)
+	var exit_distance := maxf(0.0,-b+sqrt(maxf(0.0,b*b+radius*radius-offset.length_squared())))
+	var leash_length := minf(float(attack.Dash_distance),exit_distance)
+	if leash_length<float(attack.Dash_min_distance):
+		return {"allowed":false,"reason":"leash_minimum","length":leash_length}
+	var bounds: Rect2 = manager.enemies._get_map_world_rect().grow(-body_radius)
+	var length := leash_length
+	if direction.x>0.0: length = minf(length,(bounds.end.x-global_position.x)/direction.x)
+	elif direction.x<0.0: length = minf(length,(bounds.position.x-global_position.x)/direction.x)
+	if direction.y>0.0: length = minf(length,(bounds.end.y-global_position.y)/direction.y)
+	elif direction.y<0.0: length = minf(length,(bounds.position.y-global_position.y)/direction.y)
+	length = maxf(0.0,length)
+	return {"allowed":true,"direction":direction,"length":length,"endpoint":global_position+direction*length,"end_reason":"map" if length<leash_length else "distance","leash_length":leash_length}
+
 func advance_dash(living: Array) -> void:
 	if not hit_done:
-		var remaining := float(attack.Dash_max_sec)-(dash_updated_at-cast_started_at)
-		var delta := minf(maxf(clock-dash_updated_at,0.0),maxf(remaining,0.0))
+		var previous := global_position
+		var delta := maxf(clock-dash_updated_at,0.0)
 		dash_updated_at = clock
-		var distance := global_position.distance_to(dash_goal)
-		if distance>DASH_ARRIVAL_DISTANCE:
-			facing = global_position.direction_to(dash_goal)
-			global_position += facing*minf(float(attack.Dash_speed)*delta,distance)
-		global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
-		if global_position.distance_to(dash_goal)<=DASH_ARRIVAL_DISTANCE or clock-cast_started_at+0.000000001>=float(attack.Dash_max_sec):
+		dash_travelled = minf(dash_length,dash_travelled+float(attack.Dash_speed)*delta)
+		var intended := dash_origin+dash_direction*dash_travelled
+		global_position = manager.enemies._clamp_body_to_map(intended,body_radius)
+		for enemy: EnemyActor in living:
+			if in_dash_segment(enemy,previous,global_position) and int(dash_hits.get(enemy.get_instance_id(),-1))!=enemy.spawn_order:
+				dash_hits[enemy.get_instance_id()] = enemy.spawn_order
+				enemy.apply_damage(int(attack.Damage))
+		if dash_travelled>=dash_length or global_position!=intended:
 			hit_done = true
+			dash_through_active = false
 			dash_hit_at = clock
-			if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_end",{"reason":"arrival" if global_position.distance_to(dash_goal)<=DASH_ARRIVAL_DISTANCE else "time"})
-			var geometry := circle_geometry()
-			for enemy: EnemyActor in living:
-				if in_circle(enemy,geometry): enemy.apply_damage(int(attack.Damage))
+			if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_end",{"reason":"map" if global_position!=intended else dash_end_reason})
 	if hit_done and clock-dash_hit_at+0.000000001>=float(motions[motion_index].Motion_sec):
 		cast_active = false
+		target = null
 		ready_at = dash_hit_at+float(motions[motion_index].Motion_sec)+float(attack.Interval_sec)
 
-func circle_geometry() -> Dictionary:
-	return {"center":global_position,"radius":float(attack.Circle_radius)}
+func dash_geometry() -> Dictionary:
+	return {"center":global_position,"radius":float(attack.Dash_hit_radius)}
 
-func circle_visual_state() -> Dictionary:
-	if not cast_active: return {}
-	var state := circle_geometry()
-	state.hit_age = clock-dash_hit_at if hit_done else -1.0
+func dash_visual_state() -> Dictionary:
+	if not dash_through_active: return {}
+	var state := dash_geometry()
+	state.hit_age = -1.0
 	return state
 
-func in_circle(enemy: EnemyActor, geometry: Dictionary = {}) -> bool:
+func in_dash_segment(enemy: EnemyActor, from: Vector2, to: Vector2) -> bool:
 	if not enemy.is_active or enemy.is_logically_dead: return false
-	if geometry.is_empty(): geometry = circle_geometry()
-	return enemy.global_position.distance_squared_to(Vector2(geometry.center))<=float(geometry.radius)*float(geometry.radius)
+	var segment := to-from
+	var length_squared := segment.length_squared()
+	var fraction := clampf((enemy.global_position-from).dot(segment)/length_squared,0.0,1.0) if length_squared>0.0 else 0.0
+	var geometry := dash_geometry()
+	return enemy.global_position.distance_squared_to(from+segment*fraction)<=float(geometry.radius)*float(geometry.radius)
 
 func attack_geometry() -> Dictionary:
 	return {"center":global_position,"direction":facing,"range":float(attack.Range),"arc_deg":float(attack.Arc_deg)}
@@ -276,6 +320,7 @@ func in_sector(enemy: EnemyActor, geometry: Dictionary = {}) -> bool:
 	return absf(wrapf(offset.angle()-Vector2(geometry.direction).angle(),-PI,PI))<=deg_to_rad(float(geometry.arc_deg))*0.5+0.000000001
 
 func cancel_attack() -> void:
+	dash_through_active = false
 	cast_active = false
 	hit_done = false
 	ready_at = clock
@@ -292,7 +337,7 @@ func teleport() -> void:
 	queue_redraw()
 
 func snapshot() -> Dictionary:
-	if is_circle_dash():
+	if is_dash_through():
 		var recovery_phase := clampf((clock-dash_hit_at)/float(motions[motion_index].Motion_sec),0,1) if cast_active and hit_done else 0.0
 		return {"radius":body_radius,"facing":facing,"motion":-1,"phase":recovery_phase,"kind":"charger_test"}
 	var phase := 0.0
@@ -300,8 +345,8 @@ func snapshot() -> Dictionary:
 	return {"radius":body_radius,"facing":facing,"motion":motion_index if cast_active else -1,"phase":phase}
 
 func _draw() -> void:
-	if is_circle_dash():
-		var circle := circle_visual_state()
+	if is_dash_through():
+		var circle := dash_visual_state()
 		if not circle.is_empty(): Visual.draw_circle_attack(self,circle)
 		Visual.draw_charger_pose(self,body_radius,facing)
 		return
