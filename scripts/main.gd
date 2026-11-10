@@ -83,9 +83,7 @@ func _ready() -> void:
 	map.add_child(skill_manager)
 	var choices := ChoiceManager.new()
 	var shadows := ShadowManager.new()
-	var capacity := 0
-	for row in data_store.get_table("choice_level.csv").values():
-		if row.Choice_id=="choice_igrit": capacity = maxi(capacity,int(row.Value))
+	var capacity: int = ShadowManager.MAX_TYPES
 	shadows.name = "ShadowManager"
 	shadows.configure(player,enemy_manager,data_store.get_table("shadow.csv"),data_store.get_table("shadow_attack.csv"),data_store.get_table("shadow_motion.csv"),capacity)
 	map.add_child(shadows)

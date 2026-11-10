@@ -4,6 +4,8 @@ const Actor = preload("res://scripts/shadow_actor.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const ENABLE_DEBUG_TELEPORT := true
 const DEBUG_TELEPORT_KEY := KEY_T
+const MAX_TYPES := 3
+const REGION_BOUNDARY_EPS := 0.0000001
 var player: Node2D
 var enemies: EnemyManager
 var records: Dictionary = {}
@@ -19,14 +21,19 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, shadow_records
 	records = shadow_records
 	attacks = attack_records
 	motions = motion_records
-	capacity = limit
+	capacity = mini(limit,MAX_TYPES)
 	process_physics_priority = -1
 
-func can_summon() -> bool:
-	return actors.size()<capacity
+func can_summon(id: String = "") -> bool:
+	if actors.size()>=capacity: return false
+	if id.is_empty(): return true
+	if not records.has(id): return false
+	for actor in actors:
+		if actor.config.Id==id: return false
+	return true
 
 func summon(id: String = "igrit") -> Node2D:
-	if not can_summon() or not records.has(id): return null
+	if not can_summon(id): return null
 	var record: Dictionary = records[id]
 	var matching: Array = []
 	for motion in motions.values():
@@ -61,6 +68,23 @@ func claimed_targets(except_actor: Node2D) -> Array:
 	for actor in actors:
 		if actor!=except_actor and actor.target_is_live(): result.append(actor.target)
 	return result
+
+func region_index(point: Vector2, count: int) -> int:
+	var offset := point-player.global_position
+	if count<=0 or offset==Vector2.ZERO: return -1
+	var angle := fposmod(offset.angle(),TAU)
+	# Compensate only float-vector rounding at exact angular boundaries.
+	return floori(angle*count/TAU+REGION_BOUNDARY_EPS)%count
+
+func region_matches(actor: Node2D, point: Vector2, mode: int) -> bool:
+	if mode<0: return true
+	var region := region_index(point,actors.size())
+	var own := actors.find(actor)
+	return region==own if mode==0 else (region>=0 and region!=own)
+
+func follow_slot(actor: Node2D, distance: float) -> Vector2:
+	var angle := TAU*(actors.find(actor)+0.5)/actors.size()
+	return player.global_position+Vector2.RIGHT.rotated(angle)*distance
 
 func leave_afterimage(point: Vector2, pose: Dictionary, seconds: float) -> Node2D:
 	var copy := Afterimage.new()

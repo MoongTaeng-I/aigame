@@ -7,6 +7,21 @@ const SECTOR_HIT_BORDER := Color(0.8,0.95,1.0,0.95)
 const SECTOR_BORDER_WIDTH := 1.5
 const SECTOR_FLASH_SEC := 0.12
 const SECTOR_SEGMENTS := 48
+const CHARGER_BODY := Color("#14323d")
+const CHARGER_OUTLINE := Color("#50d9d0")
+const CHARGER_MARK := Color("#b6fff4")
+
+static func draw_circle_attack(canvas: Node2D, state: Dictionary) -> void:
+	var center := canvas.to_local(Vector2(state.center))
+	var flash := sector_flash(float(state.hit_age))
+	canvas.draw_circle(center,float(state.radius),SECTOR_FILL.lerp(SECTOR_HIT_FILL,flash))
+	canvas.draw_arc(center,float(state.radius),0,TAU,SECTOR_SEGMENTS,SECTOR_BORDER.lerp(SECTOR_HIT_BORDER,flash),SECTOR_BORDER_WIDTH,true)
+
+static func draw_charger_pose(canvas: CanvasItem, radius: float, facing: Vector2) -> void:
+	canvas.draw_circle(Vector2.ZERO,radius,CHARGER_BODY)
+	canvas.draw_arc(Vector2.ZERO,radius,0,TAU,SECTOR_SEGMENTS,CHARGER_OUTLINE,2.0)
+	var tip := facing*radius*1.4
+	canvas.draw_colored_polygon(PackedVector2Array([tip,tip.rotated(2.4),tip.rotated(-2.4)]),CHARGER_MARK)
 
 # Shared gameplay geometry is supplied by the actor; only tessellation and
 # color interpolation belong here. World points also support moved canvases.

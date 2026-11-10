@@ -47,8 +47,9 @@
 ## 예외 처리
 
 CSV 오류는 게임을 멈추고 화면에 표시한다.
-- choice.csv: Effect가 허용값(attack_range_add, attack_interval_sub, pickup_radius_add, heal)이 아님, heal 행이 정확히 1개가 아님, heal의 Weight가 0이 아님, 일반 선택지의 Weight가 1 미만.
+- choice.csv: Effect가 허용값(attack_range_add, attack_interval_sub, pickup_radius_add, heal, shadow_igrit, shadow_charger_test)이 아님, heal 행이 정확히 1개가 아님, heal의 Weight가 0이 아님, 일반 선택지의 Weight가 1 미만.
 - choice_level.csv: Choice_id가 choice.csv에 없음, 일반 선택지의 레벨 행이 없거나 Level이 1부터 이어지지 않음, heal의 레벨 행이 1개가 아니거나 Level이 1이 아님, heal의 Value가 0 이하 또는 100 초과, 일반 선택지 Value가 0 미만.
+- 그림자 카드(shadow_igrit/shadow_charger_test)는 소환 1행(Value 1)이어야 한다. 추가 레벨 성장은 미정이며 현재 검증 구조와 맞지 않는 행은 오류다.
 - attack_interval_sub의 모든 Value에 대해 basic_attack.csv의 Interval_sec − Value가 0 미만이면 오류.
 - choice_rule.csv: choice_rule_01이 없음, Reroll_count가 0 미만.
 

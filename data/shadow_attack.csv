@@ -1,2 +1,3 @@
-﻿Id,Damage,Range,Arc_deg,Interval_sec
-igrit_attack,10,140,120,1.2
+﻿Id,Damage,Range,Arc_deg,Interval_sec,Shape,Circle_radius,Dash_speed,Dash_max_sec
+igrit_attack,10,140,120,1.2,fan,,,
+charger_attack,10,180,360,1.5,circle_dash,70,600,0.5

@@ -68,7 +68,8 @@ func _process(_delta: float) -> void:
 func candidates() -> Array:
 	var result: Array = []
 	for id in levels:
-		if int(records[id].Effect)==Data.Effect.SHADOW_IGRIT and (shadow_manager==null or not shadow_manager.can_summon()): continue
+		var summon_id := Data.shadow_id(int(records[id].Effect))
+		if not summon_id.is_empty() and (shadow_manager==null or not shadow_manager.can_summon(summon_id)): continue
 		if int(levels[id])<level_rows[id].size(): result.append(id)
 	return result
 
@@ -106,8 +107,8 @@ func select(index: int) -> bool:
 	var id: String = cards[index]
 	if id==heal_id:
 		player.heal_percent(float(level_rows[id][0].Value))
-	elif int(records[id].Effect)==Data.Effect.SHADOW_IGRIT:
-		if shadow_manager==null or shadow_manager.summon("igrit")==null: return false
+	elif not Data.shadow_id(int(records[id].Effect)).is_empty():
+		if shadow_manager==null or shadow_manager.summon(Data.shadow_id(int(records[id].Effect)))==null: return false
 		levels[id] += 1
 	else:
 		levels[id] += 1
@@ -134,6 +135,6 @@ func card_state(index: int) -> Dictionary:
 	var current := int(levels.get(id,0))
 	var row: Dictionary = level_rows[id][0 if heal else current]
 	return {"id":id,"name":records[id].Name_ko,"heal":heal,"description":row.Desc_ko,
-		"summon":int(records[id].Effect)==Data.Effect.SHADOW_IGRIT,
+		"summon":not Data.shadow_id(int(records[id].Effect)).is_empty(),
 		"level":current,"next":current+1,"max":level_rows[id].size(),
 		"hp_before":player.hp,"hp_after":player.healed_hp(float(row.Value)) if heal else player.hp,"max_hp":player.max_hp}

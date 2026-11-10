@@ -1,7 +1,12 @@
 extends RefCounted
 
-enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT }
-const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT}
+enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT, SHADOW_CHARGER_TEST }
+const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT,"shadow_charger_test":Effect.SHADOW_CHARGER_TEST}
+
+static func shadow_id(effect: int) -> String:
+	if effect==Effect.SHADOW_IGRIT: return "igrit"
+	if effect==Effect.SHADOW_CHARGER_TEST: return "charger_test"
+	return ""
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("choice.csv",{"Id":"String","Name_ko":"String","Effect":{"type":"Enum","values":EFFECTS},"Weight":"Int","Note":"String"})
@@ -33,6 +38,8 @@ static func validate(store: CsvDataStore, base_interval: float) -> String:
 		var heal: bool = int(choices[id].Effect)==Effect.HEAL
 		if rows.is_empty() or (heal and rows.size()!=1):
 			return _error(store,"choice_level.csv","","Level","일반 레벨 행이 필요하며 heal은 1행이어야 합니다.")
+		if not shadow_id(int(choices[id].Effect)).is_empty() and (rows.size()!=1 or float(rows[0].Value)!=1.0):
+			return _error(store,"choice_level.csv",rows[0].Id,"Level","종류당 1마리 그림자 카드는 소환 1행(Value 1)이어야 합니다.")
 		for i in range(rows.size()):
 			var row: Dictionary = rows[i]
 			if int(row.Level)!=i+1:

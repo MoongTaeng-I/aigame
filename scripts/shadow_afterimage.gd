@@ -19,4 +19,5 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	if pose!=null:
-		Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))
+		if pose.get("kind","")=="charger_test": Visual.draw_charger_pose(self,float(pose.radius),pose.facing)
+		else: Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))

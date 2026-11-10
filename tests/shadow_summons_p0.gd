@@ -46,9 +46,7 @@ func fixture() -> Dictionary:
 	t.check(error.is_empty(),"SETUP S7 real CSV loads: "+error)
 	f.store = store
 	var manager := Summons.new()
-	var capacity := 0
-	for row in store.get_table("choice_level.csv").values():
-		if row.Choice_id=="choice_igrit": capacity = maxi(capacity,int(row.Value))
+	var capacity: int = Summons.MAX_TYPES
 	manager.configure(f.player,f.manager,store.get_table("shadow.csv"),store.get_table("shadow_attack.csv"),store.get_table("shadow_motion.csv"),capacity)
 	f.host.add_child(manager)
 	manager.set_physics_process(false)
@@ -75,20 +73,21 @@ func data_and_cards() -> void:
 	choices.configure(f.player,f.store.get_table("choice.csv"),f.store.get_table("choice_level.csv"),f.store.get_row("choice_rule.csv","choice_rule_01"),f.summons)
 	f.host.add_child(choices)
 	choices.random.seed = 20261110
-	t.check(choices.candidates().count("choice_igrit")==1 and choices.candidates().size()==4,"S7-02 igrit appears once as fourth general candidate")
+	t.check(choices.candidates().count("choice_igrit")==1 and choices.candidates().count("choice_charger_test")==1 and choices.candidates().size()==5,"S7-02 distinct shadow cards each appear once among five general candidates")
 	f.player.add_experience(f.player.get_xp_to_next())
-	t.check(choices.can_reroll() and t.paused,"S7-02 actual level-up enables reroll rule 13 with four candidates")
+	t.check(choices.can_reroll() and t.paused,"S7-02 actual level-up enables reroll rule 13 with five candidates")
 	var rerolls: int = choices.rerolls
 	choices.reroll()
 	t.check(choices.rerolls==rerolls-1 and choices.cards.size()==3,"S7-02 actual paused reroll draws three and consumes a use")
 	var attempts := 0
-	while f.summons.actors.size()<3 and attempts<20:
+	while f.summons.actors.size()<2 and attempts<20:
 		var index := choices.cards.find("choice_igrit")
+		if index<0: index = choices.cards.find("choice_charger_test")
 		var count: int = f.summons.actors.size()
 		if index<0: index = 0
-		var summoned: bool = choices.cards[index]=="choice_igrit"
+		var summoned: bool = choices.cards[index] in ["choice_igrit","choice_charger_test"]
 		if summoned:
-			t.check(choices.card_state(index).summon,"S7-02 igrit UI progression is summon count")
+			t.check(choices.card_state(index).summon and choices.card_state(index).max==1,"S7-02 each shadow card is one summon, not repeated growth")
 		var event := InputEventMouseButton.new()
 		event.button_index = MOUSE_BUTTON_LEFT
 		event.pressed = true
@@ -97,11 +96,11 @@ func data_and_cards() -> void:
 		if summoned:
 			t.check(f.summons.actors.size()==count+1,"S7-02 real card click summons exactly one entity")
 		attempts += 1
-		if f.summons.actors.size()<3:
+		if f.summons.actors.size()<2:
 			f.player.add_experience(f.player.get_xp_to_next()-f.player.experience)
-	t.check(f.summons.actors.size()==3 and not choices.candidates().has("choice_igrit") and f.summons.summon()==null,"S7-02 capacity three removes candidate and refuses fourth")
+	t.check(f.summons.actors.size()==2 and f.summons.capacity==3 and not choices.candidates().has("choice_igrit") and not choices.candidates().has("choice_charger_test") and f.summons.summon()==null and f.summons.summon("charger_test")==null,"S7-02 both owned types leave candidates and reject duplicates; three distinct-type slots remain the rule")
 	f.player.add_experience(f.player.get_xp_to_next()-f.player.experience)
-	t.check(not choices.can_reroll() and choices.candidates().size()<=3,"S7-02 after cap <=3 general candidates disables reroll rule 13")
+	t.check(not choices.can_reroll() and choices.candidates().size()<=3,"S7-02 after both one-time summons <=3 general candidates disables reroll rule 13")
 	await close(f)
 
 func targeting_and_bt() -> void:
@@ -266,7 +265,7 @@ func immunity_and_push() -> void:
 	t.check(near(f.player.position,Vector2(-6,0)) and near(s.position,Vector2(18,0)),"S7-14 after dash real player-shadow push resumes")
 	f.player.position = Vector2(500,500)
 	s.position = Vector2.ZERO
-	var other = f.summons.summon()
+	var other = f.summons.summon("charger_test")
 	other.position = Vector2(20,0)
 	f.manager._resolve_contact_pushes()
 	t.check(near(s.position,Vector2(-6,0)) and near(other.position,Vector2(26,0)),"S7-14 real shadows push each other to radius sum")
@@ -395,7 +394,7 @@ func legacy_shadow_pass(f: Dictionary) -> void:
 func steering_fixes() -> void:
 	var f := fixture()
 	var s = f.summons.summon()
-	var other = f.summons.summon()
+	var other = f.summons.summon("charger_test")
 	s.position = Vector2(80,0)
 	other.position = Vector2(120,0)
 	t.check(s.separation_velocity().x<0 and other.separation_velocity().x>0,"S7-FIX-03 below 16px body-edge gap gives mutual away components")
@@ -418,7 +417,7 @@ func steering_fixes() -> void:
 	f = fixture()
 	f.player.position = Vector2(300,300)
 	s = f.summons.summon()
-	other = f.summons.summon()
+	other = f.summons.summon("charger_test")
 	s.position = Vector2(300,300)
 	other.position = Vector2(320,300)
 	var enemy: EnemyActor = t._spawn(f,Vector2(440,300))
@@ -437,7 +436,7 @@ func steering_fixes() -> void:
 	f = fixture()
 	f.player.position = Vector2(300,300)
 	s = f.summons.summon()
-	other = f.summons.summon()
+	other = f.summons.summon("charger_test")
 	other.position = Vector2(280,300)
 	enemy = t._spawn(f,Vector2(600,300))
 	var initial: Vector2 = s.position
@@ -455,12 +454,21 @@ func share_validation() -> void:
 		var valid: bool = value>=0.0 and value<=1.0
 		t.check(loaded.is_empty() and (error.is_empty() if valid else error.contains("Enemy_push_share")),"S7-FIX-06 Enemy_push_share validation value="+str(value))
 
+func summon_test_type(f: Dictionary, index: int) -> Node2D:
+	if index==0: return f.summons.summon("igrit")
+	if index==1: return f.summons.summon("charger_test")
+	# Test-only third type for the three-slot/region rule; never game data.
+	var record: Dictionary = f.store.get_row("shadow.csv","igrit").duplicate(true)
+	record.Id = "p0_third_type"
+	f.summons.records[record.Id] = record
+	return f.summons.summon(record.Id)
+
 func distributed_targets() -> void:
 	for screen_only in [false,true]:
 		var f := fixture()
 		f.player.position = Vector2(300,300)
 		var shadows: Array = []
-		for i in range(3): shadows.append(f.summons.summon())
+		for i in range(3): shadows.append(summon_test_type(f,i))
 		var enemies: Array = []
 		for x in ([600,640,680] if screen_only else [460,500,540]):
 			enemies.append(t._spawn(f,Vector2(x,300)))
@@ -474,7 +482,7 @@ func distributed_targets() -> void:
 		f = fixture()
 		f.player.position = Vector2(300,300)
 		shadows.clear()
-		for i in range(3): shadows.append(f.summons.summon())
+		for i in range(3): shadows.append(summon_test_type(f,i))
 		var one: EnemyActor = t._spawn(f,Vector2(600 if screen_only else 460,300))
 		var two: EnemyActor = t._spawn(f,Vector2(640 if screen_only else 500,300))
 		f.summons._physics_process(0.0)
@@ -485,7 +493,7 @@ func distributed_targets() -> void:
 	var f := fixture()
 	f.player.position = Vector2(300,300)
 	var first = f.summons.summon()
-	var second = f.summons.summon()
+	var second = f.summons.summon("charger_test")
 	var near_enemy: EnemyActor = t._spawn(f,Vector2(460,300))
 	t._spawn(f,Vector2(650,300))
 	f.summons._physics_process(0.0)
