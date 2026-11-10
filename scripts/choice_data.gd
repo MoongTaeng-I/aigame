@@ -1,7 +1,7 @@
 extends RefCounted
 
-enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL }
-const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL}
+enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT }
+const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT}
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("choice.csv",{"Id":"String","Name_ko":"String","Effect":{"type":"Enum","values":EFFECTS},"Weight":"Int","Note":"String"})

@@ -3,3 +3,4 @@ choice_attack_range,기본 공격 범위,attack_range_add,10,A단계 검증용 �
 choice_pickup_radius,경험치 획득 반경,pickup_radius_add,10,A단계 검증용 시작값
 choice_attack_interval,기본 공격 간격,attack_interval_sub,10,A단계 검증용 시작값
 choice_heal,체력 회복,heal,0,A단계 검증용 시작값
+choice_igrit,이그리트,shadow_igrit,10,A단계 검증용 시작값

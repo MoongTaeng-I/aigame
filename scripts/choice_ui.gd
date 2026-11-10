@@ -112,6 +112,8 @@ func _draw() -> void:
 		var level_box := Rect2(box.position+LEVEL_BOX.position,LEVEL_BOX.size)
 		if state.heal:
 			_centered("체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE,INK)
+		elif state.get("summon",false):
+			_centered("소환 %d → %d / %d" % [state.level,state.next,state.max],level_box,SMALL_FONT_SIZE,INK)
 		else:
 			var max_level: int = state.max
 			var square_width := minf(BOX_SIZE.x,(level_box.size.x-BOX_GAP*(max_level-1))/max_level)

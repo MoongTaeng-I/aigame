@@ -4,7 +4,7 @@
 - 승인일: 2026-11-10 (이번 요청의 규칙·A단계 시작값)
 - 완료일: 미정
 - 관련 개발 일지 항목 제목: [시스템 7 그림자 소환수] 기획·검토 / [시스템 7 그림자 소환수] A단계 기획·검토 (S7-IMPL-01)
-- 구현 상태: 기존 밀어내기 일반화·대역 검사를 재사용하며 이번에 이그리트·BT·공격·카드·텔레포트·잔상을 구현한다. 직접 플레이 검증 완료는 아니다.
+- 구현 상태: 이그리트·BT·공격·카드·텔레포트·출발 잔상과 기존 밀어내기 연결을 구현했다. P0 기존 774+신규 92개 통과(기존 S1-01 불일치 2개), 사용자 직접 플레이 확인 전이다.
 
 ## 개요
 
@@ -61,11 +61,11 @@ Chase_leash_distance는 ①·② 모두에 적용한다. 플레이어-그림자 
 - shadow.csv: Id, Search_radius, Chase_leash_distance, Follow_distance, Move_speed, Teleport_distance, Afterimage_sec, Body_radius, Push_weight, Attack_id
 - 시작 행: igrit,160,420,120,320,700,1,16,3,igrit_attack
 - shadow_attack.csv: Id, Damage, Range, Arc_deg, Interval_sec
-- 시작 행: igrit_attack,8,90,120,1.2
+- 시작 행: igrit_attack,10,90,120,1.2
 - shadow_motion.csv: Id, Attack_id, Motion_sec, Hit_time_sec
 - 시작 행: igrit_diagonal,igrit_attack,0.4,0.15 / igrit_sweep,igrit_attack,0.5,0.2
 
-Body_radius 16·Push_weight 3은 player.csv의 player_01 행(파일 2행)을 복사한다. Damage 8은 skill_rapid_slash_level.csv의 rapid_slash_01(Level 1, 파일 2행)을 복사한다. 피해 출처는 난도 Level 1로 해석한 시작값이며 확인 질문에 답이 오면 반영한다. 카드 Weight 10은 기존 일반 카드와 같은 검증용 시작값으로 최종 등장 빈도는 미정이다. choice_level.csv의 1·2·3은 소환 수를 표시한다.
+Body_radius 16·Push_weight 3은 player.csv의 player_01 행(파일 2행)을 복사한다. Damage 10은 basic_attack.csv의 attack_01(파일 2행)을 복사한다(추가 사용자 답변). 카드 Weight 10은 기존 일반 카드와 같은 검증용 시작값으로 사용자 답변을 반영했으며 최종 등장 빈도는 미정이다. choice_level.csv의 1·2·3은 소환 수를 표시한다.
 
 ## 예외·오류
 
@@ -87,7 +87,6 @@ CSV의 양수 거리·시간·무게·반경, 음수가 아닌 피해, 0보다 �
 - 질주 중 그림자-플레이어 밀어내기를 제외한다(2026-11-10).
 
 ## 승인·변경 이력
-
 
 - 2026-11-09 사용자 결정: 그림자 5종, 채용 한도 3, A단계 이그리트 1종.
 - 2026-11-10 사용자 결정: 상호 밀어내기, BT 순서와 단일 이동 한도, 은신 독립 탐색, 부채꼴 하나의 판정과 같은 피해·판정을 공유하는 두 모션을 S7-PLAN-01로 문서화했다. 미정과 확인 필요는 별도로 남겼다.

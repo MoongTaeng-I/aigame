@@ -1,0 +1,2 @@
+﻿Id,Search_radius,Chase_leash_distance,Follow_distance,Move_speed,Teleport_distance,Afterimage_sec,Body_radius,Push_weight,Attack_id
+igrit,160,420,120,320,700,1,16,3,igrit_attack

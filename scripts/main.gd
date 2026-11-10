@@ -10,6 +10,8 @@ const SkillData = preload("res://scripts/skill_data.gd")
 const SkillManager = preload("res://scripts/skill_manager.gd")
 const ChoiceData = preload("res://scripts/choice_data.gd")
 const ChoiceManager = preload("res://scripts/choice_manager.gd")
+const ShadowData = preload("res://scripts/shadow_data.gd")
+const ShadowManager = preload("res://scripts/shadow_manager.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const PlayerScene = preload("res://scenes/player.tscn")
 
@@ -28,6 +30,8 @@ func _ready() -> void:
 		combat_error = SkillData.validate(data_store)
 	if combat_error.is_empty():
 		combat_error = ChoiceData.validate(data_store,float(data_store.get_row("basic_attack.csv","attack_01").Interval_sec))
+	if combat_error.is_empty():
+		combat_error = ShadowData.validate(data_store)
 	if not combat_error.is_empty():
 		_show_data_error(combat_error)
 		return
@@ -78,8 +82,15 @@ func _ready() -> void:
 	skill_manager.configure(player,enemy_manager,data_store.get_table("skill.csv"),data_store.get_table("skill_rapid_slash_level.csv"),{"skill_dash":data_store.get_table("skill_dash_level.csv"),"skill_stealth":data_store.get_table("skill_stealth_level.csv"),"skill_dragon_fear":data_store.get_table("skill_dragon_fear_level.csv")},data_store.get_row("stealth_rule.csv","stealth_rule_01"))
 	map.add_child(skill_manager)
 	var choices := ChoiceManager.new()
+	var shadows := ShadowManager.new()
+	var capacity := 0
+	for row in data_store.get_table("choice_level.csv").values():
+		if row.Choice_id=="choice_igrit": capacity = maxi(capacity,int(row.Value))
+	shadows.name = "ShadowManager"
+	shadows.configure(player,enemy_manager,data_store.get_table("shadow.csv"),data_store.get_table("shadow_attack.csv"),data_store.get_table("shadow_motion.csv"),capacity)
+	map.add_child(shadows)
 	choices.name = "ChoiceManager"
-	choices.configure(player,data_store.get_table("choice.csv"),data_store.get_table("choice_level.csv"),data_store.get_row("choice_rule.csv","choice_rule_01"))
+	choices.configure(player,data_store.get_table("choice.csv"),data_store.get_table("choice_level.csv"),data_store.get_row("choice_rule.csv","choice_rule_01"),shadows)
 	map.add_child(choices)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
