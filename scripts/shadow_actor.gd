@@ -26,6 +26,7 @@ var motion_index: int = -1
 var motion_picker: Callable
 var angle_picker: Callable
 var random := RandomNumberGenerator.new()
+var diagnostic_sink: Callable
 var dash_goal := Vector2.ZERO
 var dash_updated_at: float = 0.0
 var dash_hit_at: float = 0.0
@@ -67,19 +68,25 @@ func can_retain_target() -> bool:
 	return global_position.distance_to(target.global_position)<=float(config.Search_radius) or manager.enemies._get_screen_world_rect().has_point(target.global_position)
 
 func choose_target(living: Array) -> void:
+	if diagnostic_sink.is_valid(): diagnostic_sink.call("choose_target",{})
 	var excluded: Array = manager.claimed_targets(self)
 	target = choose_in_stage(living,float(config.Search_radius),false,excluded)
 	if target==null: target = choose_in_stage(living,INF,true,excluded)
 	target_spawn_order = target.spawn_order if target!=null else -1
 
 func choose_in_stage(living: Array, radius: float, screen_only: bool, excluded: Array) -> EnemyActor:
+	if diagnostic_sink.is_valid(): diagnostic_sink.call("selection_call",{"stage":2 if screen_only else 1})
 	var selected: EnemyActor = null
 	if manager.actors.size()>1:
 		selected = nearest(living,radius,screen_only,excluded,0)
 		if selected==null: selected = nearest(living,radius,screen_only,excluded,1)
 	else:
 		selected = nearest(living,radius,screen_only,excluded)
-	return selected if selected!=null else nearest(living,radius,screen_only)
+	var result: EnemyActor = selected if selected!=null else nearest(living,radius,screen_only)
+	if diagnostic_sink.is_valid():
+		var rule := "none" if result==null else ("duplicate" if selected==null else ("single_free" if manager.actors.size()==1 else ("own_free" if manager.region_matches(self,result.global_position,0) else "other_free")))
+		diagnostic_sink.call("selection",{"stage":2 if screen_only else 1,"rule":rule,"order":result.spawn_order if result!=null else -1})
+	return result
 
 func tick(delta: float) -> void:
 	clock += delta
@@ -88,6 +95,7 @@ func tick(delta: float) -> void:
 		teleport()
 	var living: Array = manager.enemies.get_living_enemies()
 	if global_position.distance_to(player.global_position)>float(config.Chase_leash_distance):
+		if diagnostic_sink.is_valid(): diagnostic_sink.call("cancel",{"reason":"leash","had_cast":cast_active})
 		cancel_attack()
 		target = null
 		last_node = "follow"
@@ -188,6 +196,7 @@ func start_attack() -> void:
 	if is_circle_dash():
 		dash_goal = target.global_position
 		dash_updated_at = clock
+	if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_start" if is_circle_dash() else "fan_start",{"goal":[dash_goal.x,dash_goal.y]})
 	advance_attack(manager.enemies.get_living_enemies())
 
 func is_circle_dash() -> bool:
@@ -227,6 +236,7 @@ func advance_dash(living: Array) -> void:
 		if global_position.distance_to(dash_goal)<=DASH_ARRIVAL_DISTANCE or clock-cast_started_at+0.000000001>=float(attack.Dash_max_sec):
 			hit_done = true
 			dash_hit_at = clock
+			if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_end",{"reason":"arrival" if global_position.distance_to(dash_goal)<=DASH_ARRIVAL_DISTANCE else "time"})
 			var geometry := circle_geometry()
 			for enemy: EnemyActor in living:
 				if in_circle(enemy,geometry): enemy.apply_damage(int(attack.Damage))
@@ -276,6 +286,7 @@ func teleport() -> void:
 	var angle := float(angle_picker.call()) if angle_picker.is_valid() else random.randf_range(0,TAU)
 	global_position = manager.enemies._clamp_body_to_map(manager.player.global_position+Vector2.RIGHT.rotated(angle)*float(config.Follow_distance),body_radius)
 	target = null
+	if diagnostic_sink.is_valid(): diagnostic_sink.call("cancel",{"reason":"teleport","had_cast":cast_active})
 	cancel_attack()
 	last_node = "teleport"
 	queue_redraw()
