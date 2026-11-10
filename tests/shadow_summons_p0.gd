@@ -18,6 +18,12 @@ func run(tree: SceneTree) -> void:
 	await immunity_and_push()
 	await actual_chase_and_camera()
 	print("S7 NEW RESULT: %d checks, %d failures; pre-S7 baseline %d" % [t.checks-before,t.failures-failures,before])
+	var fix_before: int = t.checks
+	var fix_failures: int = t.failures
+	await push_share_fixes()
+	await steering_fixes()
+	share_validation()
+	print("S7-FIX NEW RESULT: %d checks, %d failures" % [t.checks-fix_before,t.failures-fix_failures])
 
 func fixture() -> Dictionary:
 	var f: Dictionary = t._xp_fixture()
@@ -240,7 +246,7 @@ func immunity_and_push() -> void:
 	f.manager.separation_gap = 8
 	f.manager.push_iterations = 1
 	f.manager._resolve_contact_pushes()
-	t.check(near(s.position,Vector2(-1,0)) and near(enemy.position,Vector2(23,0)),"S7-14 real shadow-enemy gap zero, inverse weight 3:1")
+	t.check(near(s.position,Vector2(-0.4,0)) and near(enemy.position,Vector2(23.6,0)),"S7-14 real shadow-enemy gap zero, Enemy_push_share 0.1 and remainder 0.9")
 	enemy.position = Vector2(300,0)
 	f.player.position = Vector2.ZERO
 	s.position = Vector2(12,0)
@@ -310,3 +316,133 @@ func actual_chase_and_camera() -> void:
 	print("S7 CAMERA center player=",player.global_position," shadow=",s.global_position," screen=",screen)
 	view.queue_free()
 	await t.process_frame
+
+func push_share_fixes() -> void:
+	for share in [0.0,0.1,1.0]:
+		for direct in [false,true]:
+			var f := fixture()
+			f.player.position = Vector2(500,500)
+			var s = f.summons.summon()
+			s.position = Vector2.ZERO
+			s.enemy_push_share = share
+			# Deliberately different weights prove this pair ignores Push_weight.
+			s.push_weight = 20.0
+			var enemy: EnemyActor = t._spawn(f,Vector2(20,0))
+			enemy.push_weight = 5.0
+			f.manager.push_iterations = 1
+			if direct: f.manager._resolve_contact_pair(s,enemy)
+			else: f.manager._resolve_contact_pushes()
+			t.check(near(s.position,Vector2(-4.0*share,0)) and near(enemy.position,Vector2(20.0+4.0*(1.0-share),0)),"S7-FIX-01 enemy-shadow split share=%s reverse-direct=%s ignores weights" % [str(share),str(direct)])
+			await close(f)
+	# Compare frozen pre-change equations and production pushes on identical
+	# genuinely spawned eight-enemy enclosures, without steering or movement.
+	var old := enclosure()
+	var current := enclosure()
+	for iteration in range(4): legacy_shadow_pass(old)
+	current.manager._resolve_contact_pushes()
+	var old_distance: float = old.s.position.length()
+	var new_distance: float = current.s.position.length()
+	print("S7-FIX ENCLOSURE ",JSON.stringify({"enemies":8,"iterations":4,"before_displacement":old_distance,"after_displacement":new_distance,"before_position":[old.s.position.x,old.s.position.y],"after_position":[current.s.position.x,current.s.position.y]}))
+	t.check(new_distance<old_distance,"S7-FIX-02 surrounded shadow displacement smaller than frozen weight-based result")
+	await close(old)
+	await close(current)
+
+func enclosure() -> Dictionary:
+	var f := fixture()
+	f.player.position = Vector2(500,500)
+	f.s = f.summons.summon()
+	f.s.position = Vector2.ZERO
+	f.manager.push_iterations = 4
+	f.manager.separation_gap = 8
+	for y in [-1,0,1]:
+		for x in [-1,0,1]:
+			if x==0 and y==0: continue
+			t._spawn(f,Vector2(x*18,y*18))
+	return f
+
+func legacy_shadow_pass(f: Dictionary) -> void:
+	# Same original grid and order as frozen Reference.resolve, extending its
+	# participant list with registered shadows. Reference.pair is unmodified.
+	var bodies: Array = [f.player]
+	bodies.append_array(f.manager.get_living_enemies())
+	bodies.append_array(f.summons.actors)
+	var radius := float(f.player.body_radius)
+	for body in bodies: radius = maxf(radius,float(body.body_radius))
+	var size := maxf(64.0,radius*2.0+float(f.manager.separation_gap))
+	var grid := {}
+	var cells: Array[Vector2i] = []
+	for i in range(bodies.size()):
+		var point: Vector2 = bodies[i].global_position
+		var cell := Vector2i(floori(point.x/size),floori(point.y/size))
+		cells.append(cell)
+		if not grid.has(cell): grid[cell] = []
+		grid[cell].append(i)
+	for i in range(bodies.size()):
+		for x in range(-1,2):
+			for y in range(-1,2):
+				for j in grid.get(cells[i]+Vector2i(x,y),[]):
+					if int(j)>i:
+						preload("res://tests/push_reference.gd").pair(f.manager,bodies[i],bodies[int(j)])
+
+func steering_fixes() -> void:
+	var f := fixture()
+	var s = f.summons.summon()
+	var other = f.summons.summon()
+	s.position = Vector2(80,0)
+	other.position = Vector2(120,0)
+	t.check(s.separation_velocity().x<0 and other.separation_velocity().x>0,"S7-FIX-03 below 16px body-edge gap gives mutual away components")
+	var before_s: Vector2 = s.position
+	var before_other: Vector2 = other.position
+	f.summons._physics_process(0.01)
+	t.check(s.position.distance_to(other.position)>before_s.distance_to(before_other),"S7-FIX-03 actual idle follow-area movement separates shadows")
+	t.check(s.position.distance_to(before_s)<=3.2+EPS and other.position.distance_to(before_other)<=3.2+EPS,"S7-FIX-03 steering and total displacement capped by Move_speed")
+	s.position = Vector2(80,0)
+	other.position = Vector2(128,0)
+	t.check(s.separation_velocity()==Vector2.ZERO and other.separation_velocity()==Vector2.ZERO,"S7-FIX-03 at 16px body-edge gap no steering influence")
+	other.position = Vector2(140,0)
+	s.tick(0.1)
+	t.check(s.position==Vector2(80,0),"S7-FIX-03 outside spacing preserves original stopped follow behavior")
+	s.position = Vector2(120,0)
+	other.position = Vector2(100,0)
+	s.tick(0.1)
+	t.check(s.position.distance_to(f.player.position)<=120.0+EPS,"S7-FIX-04 follow arrival is not undone by outward steering")
+	await close(f)
+	f = fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon()
+	other = f.summons.summon()
+	s.position = Vector2(300,300)
+	other.position = Vector2(320,300)
+	var enemy: EnemyActor = t._spawn(f,Vector2(390,300))
+	s.motion_picker = func(_count: int) -> int: return 0
+	s.ready_at = 100.0
+	s.tick(0.1)
+	t.check(s.target==enemy and s.position.distance_to(enemy.position)<=90.0+EPS,"S7-FIX-04 Range destination and arrival survive outward steering")
+	s.ready_at = 0.0
+	s.tick(0.0)
+	t.check(s.cast_active,"S7-FIX-04 arrived Range still starts attack")
+	var cast_position: Vector2 = s.position
+	other.position = s.position+Vector2(10,0)
+	s.tick(0.05)
+	t.check(s.cast_active and s.separation_velocity()==Vector2.ZERO and s.position==cast_position,"S7-FIX-05 active attack motion receives no steering")
+	await close(f)
+	f = fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon()
+	other = f.summons.summon()
+	other.position = Vector2(280,300)
+	enemy = t._spawn(f,Vector2(500,300))
+	var initial: Vector2 = s.position
+	s.tick(0.1)
+	t.check(s.target==enemy and s.last_node=="screen" and s.position.x>initial.x and s.position.distance_to(initial)<=32.0+EPS,"S7-FIX-05 chase goal retained and combined motion speed limited")
+	await close(f)
+
+func share_validation() -> void:
+	for value in [0.0,0.1,1.0,-0.01,1.01]:
+		var store = t._store()
+		var loaded: String = store.load_all()
+		var record: Dictionary = store.get_row("shadow.csv","igrit")
+		record.Enemy_push_share = value
+		var error := Data.validate(store)
+		var valid: bool = value>=0.0 and value<=1.0
+		t.check(loaded.is_empty() and (error.is_empty() if valid else error.contains("Enemy_push_share")),"S7-FIX-06 Enemy_push_share validation value="+str(value))

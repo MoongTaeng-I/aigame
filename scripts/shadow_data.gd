@@ -1,7 +1,7 @@
 extends RefCounted
 
 static func register_schemas(store: CsvDataStore) -> void:
-	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String"})
+	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float"})
 	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":"Float","Interval_sec":"Float"})
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":"Float"})
 
@@ -12,6 +12,8 @@ static func validate(store: CsvDataStore) -> String:
 		return error(store,"shadow.csv","igrit","Id","이그리트 행이 필요합니다.")
 	for id in store.get_table("shadow.csv"):
 		var row := store.get_row("shadow.csv",id)
+		if float(row.Enemy_push_share)<0.0 or float(row.Enemy_push_share)>1.0:
+			return error(store,"shadow.csv",id,"Enemy_push_share","0 이상 1 이하이어야 합니다.")
 		for key in ["Search_radius","Chase_leash_distance","Follow_distance","Move_speed","Teleport_distance","Afterimage_sec","Body_radius","Push_weight"]:
 			if float(row[key])<=0.0:
 				return error(store,"shadow.csv",id,key,"0보다 큰 값이어야 합니다.")

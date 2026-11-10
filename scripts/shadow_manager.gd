@@ -11,6 +11,7 @@ var attacks: Dictionary = {}
 var motions: Dictionary = {}
 var capacity: int = 0
 var actors: Array = []
+var _steering_positions: Dictionary = {}
 
 func configure(owner_player: Node2D, enemy_manager: EnemyManager, shadow_records: Dictionary, attack_records: Dictionary, motion_records: Dictionary, limit: int) -> void:
 	player = owner_player
@@ -44,8 +45,15 @@ func _remove_actor(actor: Node2D) -> void:
 
 func _physics_process(delta: float) -> void:
 	if player==null or player.is_dead: return
+	_steering_positions.clear()
+	for actor in actors:
+		_steering_positions[actor.get_instance_id()] = actor.global_position
 	for actor in actors:
 		actor.tick(delta)
+	_steering_positions.clear()
+
+func steering_position(actor: Node2D) -> Vector2:
+	return _steering_positions.get(actor.get_instance_id(),actor.global_position)
 
 func leave_afterimage(point: Vector2, pose: Dictionary, seconds: float) -> Node2D:
 	var copy := Afterimage.new()

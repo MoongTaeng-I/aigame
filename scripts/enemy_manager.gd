@@ -295,11 +295,13 @@ func _resolve_contact_push_pass() -> void:
 	var weights := PackedFloat64Array()
 	var active := PackedByteArray()
 	var kinds := PackedByteArray()
+	var shadow_push_shares := PackedFloat64Array()
 	positions.resize(count)
 	radii.resize(count)
 	weights.resize(count)
 	active.resize(count)
 	kinds.resize(count)
+	shadow_push_shares.resize(count)
 	kinds.fill(PushBodyKind.ENEMY)
 	positions[0] = _player.global_position
 	radii[0] = float(_player.body_radius)
@@ -323,6 +325,7 @@ func _resolve_contact_push_pass() -> void:
 		weights[index] = maxf(float(body.push_weight),0.0001)
 		active[index] = 1
 		kinds[index] = PushBodyKind.SHADOW
+		shadow_push_shares[index] = float(body.enemy_push_share)
 		maximum_radius = maxf(maximum_radius,radii[index])
 	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
 	var spatial_grid: Dictionary = {}
@@ -374,6 +377,12 @@ func _resolve_contact_push_pass() -> void:
 			var total_weight := first_weight+second_weight
 			var first_share := second_weight/total_weight
 			var second_share := first_weight/total_weight
+			if kinds[first_index]==PushBodyKind.ENEMY and kinds[second_index]==PushBodyKind.SHADOW:
+				second_share = shadow_push_shares[second_index]
+				first_share = 1.0-second_share
+			elif kinds[first_index]==PushBodyKind.SHADOW and kinds[second_index]==PushBodyKind.ENEMY:
+				first_share = shadow_push_shares[first_index]
+				second_share = 1.0-first_share
 			var first_position := positions[first_index]-direction*overlap*first_share
 			var second_position := positions[second_index]+direction*overlap*second_share
 			bodies[first_index].global_position = Vector2(clampf(first_position.x,bounds.position.x+first_radius,bounds.end.x-first_radius),clampf(first_position.y,bounds.position.y+first_radius,bounds.end.y-first_radius))
@@ -402,6 +411,12 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	var total_weight := first_weight + second_weight
 	var first_share := second_weight / total_weight
 	var second_share := first_weight / total_weight
+	if first is EnemyActor and _shadow_bodies.has(second):
+		second_share = float(second.enemy_push_share)
+		first_share = 1.0-second_share
+	elif _shadow_bodies.has(first) and second is EnemyActor:
+		first_share = float(first.enemy_push_share)
+		second_share = 1.0-first_share
 	var first_position: Vector2 = first.global_position - direction * overlap * first_share
 	var second_position: Vector2 = second.global_position + direction * overlap * second_share
 	first.global_position = _clamp_body_to_map(first_position, float(first.body_radius))

@@ -10,6 +10,7 @@ var t: SceneTree
 class ShadowBody extends Node2D:
 	var body_radius: float = 10.0
 	var push_weight: float = 2.0
+	var enemy_push_share: float = 0.1
 	var hp: int = 100
 	var damage_calls: int = 0
 	func apply_damage(amount: int) -> void:
@@ -66,8 +67,8 @@ func shadow_pairs() -> void:
 		var expected_distance := 18.0
 		if kind=="enemy":
 			b = t._spawn(f,Vector2(10,0))
-			expected_a = Vector2(-8.0/3.0,0)
-			expected_b = Vector2(10.0+16.0/3.0,0)
+			expected_a = Vector2(-0.8,0)
+			expected_b = Vector2(17.2,0)
 		elif kind=="player":
 			b = f.player
 			b.global_position = Vector2(10,0)
@@ -81,7 +82,7 @@ func shadow_pairs() -> void:
 		# Duplicate registration must not introduce a second body in the solve.
 		f.manager.register_shadow_body(a)
 		f.manager._resolve_contact_pushes()
-		t.check(near(a.global_position,expected_a) and near(b.global_position,expected_b),"SHADOW-02 shadow-%s inverse-weight displacement" % kind)
+		t.check(near(a.global_position,expected_a) and near(b.global_position,expected_b),"SHADOW-02 shadow-enemy Enemy_push_share displacement" if kind=="enemy" else "SHADOW-02 shadow-%s inverse-weight displacement" % kind)
 		t.check(absf(a.global_position.distance_to(b.global_position)-expected_distance)<=EPS,"SHADOW-02 shadow-%s radius sum only, gap zero (temporary)" % kind)
 		f.host.queue_free()
 		await t.process_frame
@@ -108,7 +109,7 @@ func mixed_spacing_and_dash() -> void:
 	a.position = Vector2(10,0)
 	b.position = Vector2(300,0)
 	f.manager._resolve_contact_pushes()
-	t.check(near(s.global_position,Vector2(-8.0/3.0,0)) and near(a.global_position,Vector2(10.0+16.0/3.0,0)),"SHADOW-04 dash keeps shadow-enemy push active")
+	t.check(near(s.global_position,Vector2(-0.8,0)) and near(a.global_position,Vector2(17.2,0)),"SHADOW-04 dash keeps shadow-enemy Enemy_push_share distribution active")
 	f.player.dash_pass_through = false
 	f.player.position = Vector2(100,100)
 	s.position = Vector2(110,100)

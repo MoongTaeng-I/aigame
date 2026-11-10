@@ -1,12 +1,15 @@
 extends Node2D
 
 const Visual = preload("res://scripts/shadow_visual.gd")
+# User-approved table-policy exception; proposed start value, not final balance.
+const SHADOW_SPACING := 16.0
 var manager: Node2D
 var config: Dictionary
 var attack: Dictionary
 var motions: Array = []
 var body_radius: float
 var push_weight: float
+var enemy_push_share: float
 var target: EnemyActor
 var last_node: String = "follow"
 var facing := Vector2.RIGHT
@@ -27,6 +30,7 @@ func configure(owner_manager: Node2D, record: Dictionary, attack_record: Diction
 	motions = motion_records.duplicate(true)
 	body_radius = float(config.Body_radius)
 	push_weight = float(config.Push_weight)
+	enemy_push_share = float(config.Enemy_push_share)
 	random.randomize()
 
 func apply_damage(_amount: int) -> bool:
@@ -79,9 +83,38 @@ func tick(delta: float) -> void:
 
 func move_to_distance(point: Vector2, stop_distance: float, delta: float) -> void:
 	var distance := global_position.distance_to(point)
-	if distance<=stop_distance: return
-	facing = global_position.direction_to(point)
-	global_position += facing*minf(float(config.Move_speed)*delta,distance-stop_distance)
+	var maximum_step := float(config.Move_speed)*delta
+	if maximum_step<=0.0: return
+	var base_motion := Vector2.ZERO
+	if distance>stop_distance:
+		facing = global_position.direction_to(point)
+		base_motion = facing*minf(maximum_step,distance-stop_distance)
+	var correction := separation_velocity()*maximum_step
+	if correction==Vector2.ZERO:
+		if base_motion!=Vector2.ZERO: global_position += base_motion
+		return
+	var motion := (base_motion+correction).limit_length(maximum_step)
+	var next_position := global_position+motion
+	# Preserve arrival membership. Steering must not undo Range/Follow arrival.
+	if stop_distance>0.0 and distance<=stop_distance+maximum_step and next_position.distance_to(point)>stop_distance:
+		next_position = point+point.direction_to(next_position)*stop_distance
+		if next_position.distance_to(global_position)>maximum_step+0.000001:
+			next_position = global_position+base_motion
+	global_position = next_position
+
+func separation_velocity() -> Vector2:
+	if cast_active: return Vector2.ZERO
+	var result := Vector2.ZERO
+	var origin: Vector2 = manager.steering_position(self)
+	for other in manager.actors:
+		if other==self: continue
+		var offset: Vector2 = origin-manager.steering_position(other)
+		var distance := offset.length()
+		var gap: float = distance-body_radius-float(other.body_radius)
+		if gap>=SHADOW_SPACING: continue
+		var direction := offset/distance if distance>0.000001 else (Vector2.LEFT if get_instance_id()<other.get_instance_id() else Vector2.RIGHT)
+		result += direction*clampf((SHADOW_SPACING-gap)/SHADOW_SPACING,0.0,1.0)
+	return result.limit_length(1.0)
 
 func start_attack() -> void:
 	cast_active = true
