@@ -2,6 +2,7 @@ extends CharacterBody2D
 class_name EnemyActor
 
 signal died(enemy: EnemyActor)
+signal damaged(world_position: Vector2)
 
 const ENEMY_COLOR := Color("#ff7d68")
 const OUTLINE_COLOR := Color("#ffe4df")
@@ -101,6 +102,7 @@ func apply_damage(amount: int) -> bool:
 	if not is_active or is_logically_dead or amount <= 0:
 		return false
 	hp = maxi(0, hp - amount)
+	damaged.emit(global_position)
 	if hp == 0:
 		begin_death()
 	return true

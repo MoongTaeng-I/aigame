@@ -1,0 +1,2 @@
+﻿Id,Enabled,Duration_sec,Radius,Core_radius,Max_active,Outer_color,Core_color
+hit_spark,1,0.25,28,7,200,#e81818,#ff6a6a

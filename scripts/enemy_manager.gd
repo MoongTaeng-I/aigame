@@ -2,6 +2,7 @@ extends Node2D
 class_name EnemyManager
 
 signal enemy_died(enemy: EnemyActor)
+signal enemy_damaged(world_position: Vector2)
 
 const EnemyScene = preload("res://scenes/enemy.tscn")
 const ProjectileScript = preload("res://scripts/projectile.gd")
@@ -141,12 +142,16 @@ func _spawn_from_row(row: Dictionary) -> void:
 			add_child(enemy)
 			if not enemy.died.is_connected(_on_enemy_died):
 				enemy.died.connect(_on_enemy_died)
+			enemy.damaged.connect(_on_enemy_damaged)
 		enemy.configure(enemy_record)
 		_contact_ready_at.erase(enemy.get_instance_id())
 		_spawn_order_counter += 1
 		enemy.activate_at(spawn_position, _spawn_order_counter)
 		enemy.map_bounds = _get_map_world_rect()
 		_active_enemies.append(enemy)
+
+func _on_enemy_damaged(world_position: Vector2) -> void:
+	enemy_damaged.emit(world_position)
 
 func _update_active_enemies(delta: float) -> void:
 	if _player.is_dead:

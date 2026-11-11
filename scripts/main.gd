@@ -12,6 +12,8 @@ const ChoiceData = preload("res://scripts/choice_data.gd")
 const ChoiceManager = preload("res://scripts/choice_manager.gd")
 const ShadowData = preload("res://scripts/shadow_data.gd")
 const ShadowManager = preload("res://scripts/shadow_manager.gd")
+const HitFxData = preload("res://scripts/hit_fx_data.gd")
+const HitFx = preload("res://scripts/hit_fx.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const PlayerScene = preload("res://scenes/player.tscn")
 
@@ -32,6 +34,8 @@ func _ready() -> void:
 		combat_error = ChoiceData.validate(data_store,float(data_store.get_row("basic_attack.csv","attack_01").Interval_sec))
 	if combat_error.is_empty():
 		combat_error = ShadowData.validate(data_store)
+	if combat_error.is_empty():
+		combat_error = HitFxData.validate(data_store)
 	if not combat_error.is_empty():
 		_show_data_error(combat_error)
 		return
@@ -73,6 +77,10 @@ func _ready() -> void:
 	)
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
+	var hit_fx := HitFx.new()
+	hit_fx.name = "HitFx"
+	hit_fx.configure(enemy_manager,data_store.get_row("hit_fx.csv","hit_spark"))
+	map.add_child(hit_fx)
 	var experience_manager := ExperienceManager.new()
 	experience_manager.name = "ExperienceManager"
 	experience_manager.configure(player,enemy_manager,data_store.get_row("xp_rule.csv","xp_rule_01"))
