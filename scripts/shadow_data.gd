@@ -5,7 +5,7 @@ const SHAPES := {"fan":Shape.FAN,"dash_through":Shape.DASH_THROUGH}
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float"})
-	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"}})
+	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"},"Aim_turn_deg_per_sec":{"type":"Optional","inner":"Float"},"Aim_deadband_deg":{"type":"Optional","inner":"Float"}})
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":{"type":"Optional","inner":"Float"}})
 
 static func validate(store: CsvDataStore) -> String:
@@ -27,6 +27,10 @@ static func validate(store: CsvDataStore) -> String:
 		if int(row.Damage)<0 or float(row.Range)<=0 or float(row.Interval_sec)<=0:
 			return error(store,"shadow_attack.csv",id,"Damage","공격 수치가 올바르지 않습니다.")
 		if int(row.Shape)==Shape.FAN:
+			if row.Aim_deadband_deg==null or not is_finite(float(row.Aim_deadband_deg)) or float(row.Aim_deadband_deg)<0.0:
+				return error(store,"shadow_attack.csv",id,"Aim_deadband_deg","fan 방향 데드존에는 0 이상의 유한한 값이 필요합니다.")
+			if row.Aim_turn_deg_per_sec==null or not is_finite(float(row.Aim_turn_deg_per_sec)) or float(row.Aim_turn_deg_per_sec)<=0.0:
+				return error(store,"shadow_attack.csv",id,"Aim_turn_deg_per_sec","fan 방향 갱신 속도에는 유한한 양수가 필요합니다.")
 			if row.Arc_deg==null or float(row.Arc_deg)<=0 or float(row.Arc_deg)>360:
 				return error(store,"shadow_attack.csv",id,"Arc_deg","fan 각도는 0 초과 360 이하이어야 합니다.")
 		else:

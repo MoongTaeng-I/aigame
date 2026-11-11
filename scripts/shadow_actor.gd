@@ -21,6 +21,7 @@ var cast_started_at: float = 0.0
 var cast_active: bool = false
 var hit_done: bool = false
 var motion_index: int = -1
+var fan_aim_updated_at: float = 0.0
 var motion_picker: Callable
 var angle_picker: Callable
 var random := RandomNumberGenerator.new()
@@ -99,7 +100,7 @@ func tick(delta: float) -> void:
 	if global_position.distance_to(player.global_position)>=float(config.Teleport_distance):
 		teleport()
 	var living: Array = manager.enemies.get_living_enemies()
-	if global_position.distance_to(player.global_position)>float(config.Chase_leash_distance) and not (is_dash_through() and cast_active):
+	if global_position.distance_to(player.global_position)>float(config.Chase_leash_distance) and not cast_active:
 		if diagnostic_sink.is_valid(): diagnostic_sink.call("cancel",{"reason":"leash","had_cast":cast_active})
 		cancel_attack()
 		target = null
@@ -201,6 +202,7 @@ func start_attack() -> void:
 	cast_active = true
 	hit_done = false
 	cast_started_at = clock
+	fan_aim_updated_at = clock
 	facing = global_position.direction_to(target.global_position)
 	if facing==Vector2.ZERO: facing = Vector2.RIGHT
 	motion_index = int(motion_picker.call(motions.size())) if motion_picker.is_valid() else random.randi_range(0,motions.size()-1)
@@ -221,6 +223,9 @@ func start_attack() -> void:
 func is_dash_through() -> bool:
 	return int(attack.Shape)==Data.Shape.DASH_THROUGH
 
+func is_fan_cast_active() -> bool:
+	return cast_active and int(attack.Shape)==Data.Shape.FAN
+
 func advance_attack(living: Array) -> void:
 	if is_dash_through():
 		advance_dash(living)
@@ -230,9 +235,19 @@ func advance_attack(living: Array) -> void:
 func advance_fan_attack(living: Array) -> void:
 	var motion: Dictionary = motions[motion_index]
 	var age := clock-cast_started_at
+	var aim_time := minf(clock,cast_started_at+float(motion.Hit_time_sec))
+	var aim_delta := maxf(aim_time-fan_aim_updated_at,0.0)
+	fan_aim_updated_at = aim_time
 	if not hit_done and target_is_live():
 		var direction := global_position.direction_to(target.global_position)
-		if direction!=Vector2.ZERO: facing = direction
+		if direction!=Vector2.ZERO:
+			var maximum_turn := deg_to_rad(float(attack.Aim_turn_deg_per_sec))*aim_delta
+			var deadband := deg_to_rad(float(attack.Aim_deadband_deg))
+			var difference := absf(angle_difference(facing.angle(),direction.angle()))
+			# Zero keeps the previous aiming path, including its float rounding.
+			if deadband==0.0 or difference>deadband:
+				if deadband>0.0: maximum_turn = minf(maximum_turn,difference-deadband)
+				facing = Vector2.RIGHT.rotated(rotate_toward(facing.angle(),direction.angle(),maximum_turn))
 	if not hit_done and age+0.000000001>=float(motion.Hit_time_sec):
 		hit_done = true
 		var geometry := attack_geometry()

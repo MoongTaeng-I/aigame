@@ -1,3 +1,3 @@
-﻿Id,Damage,Range,Arc_deg,Interval_sec,Shape,Dash_speed,Dash_distance,Dash_hit_radius,Dash_min_distance
-igrit_attack,10,140,120,1.2,fan,,,,
-charger_attack,10,180,360,1.0,dash_through,600,300,40,100
+﻿Id,Damage,Range,Arc_deg,Interval_sec,Shape,Dash_speed,Dash_distance,Dash_hit_radius,Dash_min_distance,Aim_turn_deg_per_sec,Aim_deadband_deg
+igrit_attack,10,140,120,1.2,fan,,,,,180,10
+charger_attack,10,180,360,1.0,dash_through,600,300,40,100,,

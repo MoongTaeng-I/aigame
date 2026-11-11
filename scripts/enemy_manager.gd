@@ -302,13 +302,16 @@ func _resolve_contact_push_pass() -> void:
 	var kinds := PackedByteArray()
 	var shadow_push_shares := PackedFloat64Array()
 	var shadow_enemy_skip := PackedByteArray()
+	var shadow_fan_skip := PackedByteArray()
 	positions.resize(count)
 	radii.resize(count)
 	weights.resize(count)
 	active.resize(count)
 	kinds.resize(count)
 	shadow_push_shares.resize(count)
-	if not _shadow_bodies.is_empty(): shadow_enemy_skip.resize(count)
+	if not _shadow_bodies.is_empty():
+		shadow_enemy_skip.resize(count)
+		shadow_fan_skip.resize(count)
 	kinds.fill(PushBodyKind.ENEMY)
 	positions[0] = _player.global_position
 	radii[0] = float(_player.body_radius)
@@ -333,7 +336,8 @@ func _resolve_contact_push_pass() -> void:
 		active[index] = 1
 		kinds[index] = PushBodyKind.SHADOW
 		shadow_push_shares[index] = float(body.enemy_push_share)
-		shadow_enemy_skip[index] = int(body.get("dash_through_active")==true)
+		shadow_fan_skip[index] = int(body.has_method("is_fan_cast_active") and body.is_fan_cast_active())
+		shadow_enemy_skip[index] = int(body.get("dash_through_active")==true or shadow_fan_skip[index])
 		maximum_radius = maxf(maximum_radius,radii[index])
 	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
 	var spatial_grid: Dictionary = {}
@@ -369,8 +373,11 @@ func _resolve_contact_push_pass() -> void:
 				continue
 			if not active[second_index]:
 				continue
+			if kinds[first_index]==PushBodyKind.PLAYER and kinds[second_index]==PushBodyKind.SHADOW and shadow_fan_skip[second_index]: continue
+			if kinds[first_index]==PushBodyKind.SHADOW and kinds[second_index]==PushBodyKind.PLAYER and shadow_fan_skip[first_index]: continue
 			if kinds[first_index]==PushBodyKind.ENEMY and kinds[second_index]==PushBodyKind.SHADOW and shadow_enemy_skip[second_index]: continue
 			if kinds[first_index]==PushBodyKind.SHADOW and kinds[second_index]==PushBodyKind.ENEMY and shadow_enemy_skip[first_index]: continue
+			if kinds[first_index]==PushBodyKind.SHADOW and kinds[second_index]==PushBodyKind.SHADOW and (shadow_fan_skip[first_index] or shadow_fan_skip[second_index]): continue
 			var second_radius := radii[second_index]
 			var combined_radius := first_radius+second_radius
 			# Until shadow spacing is decided, only enemy-enemy pairs get a gap.
@@ -402,6 +409,10 @@ func _resolve_contact_push_pass() -> void:
 			positions[second_index] = bodies[second_index].global_position
 
 func _resolve_contact_pair(first: Variant, second: Variant) -> void:
+	var first_shadow := _shadow_bodies.has(first)
+	var second_shadow := _shadow_bodies.has(second)
+	if first_shadow and (second==_player or second is EnemyActor or second_shadow) and first.has_method("is_fan_cast_active") and first.is_fan_cast_active(): return
+	if second_shadow and (first==_player or first is EnemyActor or first_shadow) and second.has_method("is_fan_cast_active") and second.is_fan_cast_active(): return
 	if first is EnemyActor and _shadow_bodies.has(second) and second.get("dash_through_active")==true: return
 	if second is EnemyActor and _shadow_bodies.has(first) and first.get("dash_through_active")==true: return
 	if _player.dash_pass_through and (first==_player or second==_player):

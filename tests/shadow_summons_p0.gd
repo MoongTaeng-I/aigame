@@ -31,6 +31,9 @@ func run(tree: SceneTree) -> void:
 	await retained_targets()
 	await hit_direction_and_visuals()
 	await last_direction_after_release()
+	await aim_deadband_rules()
+	await fan_player_push_exclusion()
+	await fan_leash_completion()
 	print("S7-FIX-02 NEW RESULT: %d checks, %d failures; previous baseline %d" % [t.checks-fix2_before,t.failures-fix2_failures,fix2_before])
 
 func fixture() -> Dictionary:
@@ -541,7 +544,7 @@ func retained_targets() -> void:
 	s.position = f.player.position+Vector2(561,0)
 	var before: Vector2 = s.position
 	s.tick(0.1)
-	t.check(s.target==null and not s.cast_active and s.last_node=="follow" and s.position.distance_to(f.player.position)<before.distance_to(f.player.position),"S7-FIX2-B leash releases target, cancels cast and returns")
+	t.check(s.cast_active and s.last_node=="attack" and s.position==before,"S7-FIX2-B active fan remains in place beyond leash until completion")
 	await close(f)
 	f = fixture()
 	f.player.position = Vector2(100,300)
@@ -574,30 +577,34 @@ func hit_direction_and_visuals() -> void:
 		var motion: Dictionary = s.motions[selected]
 		t.check(s.cast_active and near(s.facing,Vector2.RIGHT),"S7-FIX2-C attack begins toward original target")
 		target.position = Vector2(300,400)
+		var expected_pre := Vector2.RIGHT.rotated(deg_to_rad(180.0*(float(motion.Hit_time_sec)-0.01)))
+		var expected_hit := Vector2.RIGHT.rotated(deg_to_rad(180.0*float(motion.Hit_time_sec)))
 		s.tick(float(motion.Hit_time_sec)-0.01)
-		t.check(near(s.facing,Vector2.DOWN) and not s.hit_done and target.hp==100,"S7-FIX2-C follows moving target before hit without early damage")
+		t.check(near(s.facing,expected_pre) and not s.hit_done and target.hp==100,"S7-FIX2-C follows moving target within approved180deg/sec without early damage")
 		var before_hit: Dictionary = s.attack_visual_state()
-		t.check(before_hit.direction==Vector2.DOWN and before_hit.range==140 and before_hit.arc_deg==120 and near(before_hit.center,s.global_position) and before_hit.hit_age<0,"S7-FIX2-D live visualization uses actual pre-hit geometry")
+		t.check(near(before_hit.direction,expected_pre) and before_hit.range==140 and before_hit.arc_deg==120 and near(before_hit.center,s.global_position) and before_hit.hit_age<0,"S7-FIX2-D live visualization uses actual pre-hit geometry")
 		# Mimic a position displacement between cast start and hit; center must
 		# be the actor's current center, not the start location.
 		s.position = Vector2(310,300)
 		target.position = Vector2(210,300)
+		edge.position = Vector2(450,300)
+		outside.position = Vector2(450.1,300)
 		s.tick(0.01)
-		t.check(s.hit_done and near(s.facing,Vector2.LEFT) and target.hp==90 and old_direction.hp==100,"S7-FIX2-C hit uses target direction at hit, not attack-start direction, motion=%d" % selected)
+		t.check(s.hit_done and near(s.facing,expected_hit) and target.hp==100 and old_direction.hp==90,"S7-FIX2-C hit locks limited direction and its actual sector, motion=%d" % selected)
 		t.check(edge.hp==90 and outside.hp==100,"S7-FIX2-C Range140 boundary from hit-time center is inclusive")
 		var geometry: Dictionary = s.attack_geometry()
 		var state: Dictionary = s.attack_visual_state()
 		var same_geometry: bool = true
 		for key in ["center","direction","range","arc_deg"]:
 			same_geometry = same_geometry and state[key]==geometry[key]
-		t.check(same_geometry and state.center==Vector2(310,300) and state.direction==Vector2.LEFT,"S7-FIX2-D visualization and actual hit geometry share all four values")
+		t.check(same_geometry and state.center==Vector2(310,300) and near(state.direction,expected_hit),"S7-FIX2-D visualization and actual hit geometry share all four values")
 		var points := Visual.sector_points(state)
 		var same_edges: bool = points[0]==state.center
 		var half_angle := deg_to_rad(60.0)
 		for i in range(1,points.size()):
 			var offset: Vector2 = points[i]-Vector2(state.center)
-			same_edges = same_edges and absf(offset.length()-140.0)<EPS and absf(wrapf(offset.angle()-PI,-PI,PI))<=half_angle+EPS
-		t.check(same_edges and near(points[1],Vector2(310,300)+Vector2.LEFT.rotated(-half_angle)*140) and near(points[-1],Vector2(310,300)+Vector2.LEFT.rotated(half_angle)*140),"S7-FIX2-D renderer vertices use exact hit center, direction, range and arc")
+			same_edges = same_edges and absf(offset.length()-140.0)<EPS and absf(wrapf(offset.angle()-expected_hit.angle(),-PI,PI))<=half_angle+EPS
+		t.check(same_edges and near(points[1],Vector2(310,300)+expected_hit.rotated(-half_angle)*140) and near(points[-1],Vector2(310,300)+expected_hit.rotated(half_angle)*140),"S7-FIX2-D renderer vertices use exact hit center, direction, range and arc")
 		t.check(is_equal_approx(Visual.sector_flash(float(state.hit_age)),1.0),"S7-FIX2-D sector flashes once at hit")
 		var hp_before: int = target.hp
 		var position_before: Vector2 = s.position
@@ -609,7 +616,7 @@ func hit_direction_and_visuals() -> void:
 		t.check(target.hp==hp_before and s.position==position_before and f.summons.claimed_targets(null)==claimed and not s is CollisionObject2D,"S7-FIX2-D visualization has no damage, movement, claim or collider side effects")
 		target.position = Vector2(310,400)
 		s.tick(0.05)
-		t.check(near(s.facing,Vector2.LEFT) and target.hp==hp_before and Visual.sector_flash(float(s.attack_visual_state().hit_age))<1,"S7-FIX2-C direction stays locked after hit and flash fades without another hit")
+		t.check(near(s.facing,expected_hit) and target.hp==hp_before and Visual.sector_flash(float(s.attack_visual_state().hit_age))<1,"S7-FIX2-C direction stays locked after hit and flash fades without another hit")
 		s.tick(float(motion.Motion_sec)-float(motion.Hit_time_sec)-0.05)
 		t.check(not s.cast_active and s.attack_visual_state().is_empty(),"S7-FIX2-D sector disappears at exact motion end")
 		await close(f)
@@ -626,10 +633,172 @@ func last_direction_after_release() -> void:
 		s.tick(0.0)
 		target.position = Vector2(300,400)
 		s.tick(0.1)
-		t.check(s.facing==Vector2.DOWN,"S7-FIX2-C last valid facing is updated before target release, reason="+reason)
+		var last_valid := Vector2.RIGHT.rotated(deg_to_rad(18.0))
+		t.check(near(s.facing,last_valid),"S7-FIX2-C last valid facing is limited to18deg before target release, reason="+reason)
 		if reason=="death": target.apply_damage(100)
 		else: f.manager.recycle_enemy(target)
 		if reason=="reentry": t._spawn(f,Vector2(400,300))
 		s.tick(0.05)
-		t.check(s.target==null and s.facing==Vector2.DOWN and down.hp==90 and right.hp==100,"S7-FIX2-C released target keeps last facing through hit without redirecting to a new enemy, reason="+reason)
+		t.check(s.target==null and near(s.facing,last_valid) and down.hp==100 and right.hp==90,"S7-FIX2-C released target keeps last facing through hit without redirecting to a new enemy, reason="+reason)
+		await close(f)
+
+func aim_deadband_rules() -> void:
+	var store = t._store()
+	t.check(store.load_all().is_empty(),"S7-D-CSV actual deadband column loads")
+	t.check(store.get_row("shadow_attack.csv","igrit_attack").Aim_deadband_deg==10.0 and store.get_row("shadow_attack.csv","charger_attack").Aim_deadband_deg==null,"S7-D-CSV proposed fan10/dash blank")
+	var fan: Dictionary = store.get_row("shadow_attack.csv","igrit_attack")
+	for value in [null,-10.0,INF,NAN,0.0,5.0,10.0,15.0]:
+		fan.Aim_deadband_deg = value
+		var error: String = Data.validate(store)
+		var valid: bool = value!=null and is_finite(float(value)) and float(value)>=0.0
+		t.check(error.is_empty() if valid else (error.contains("shadow_attack.csv") and error.contains("행 2") and error.contains("Aim_deadband_deg")),"S7-D-CSV finite nonnegative fan deadband "+str(value))
+	for selected in [0,1]:
+		for side in [-1.0,1.0]:
+			var f := fixture()
+			f.player.position = Vector2(300,300)
+			var s = f.summons.summon()
+			s.motion_picker = func(_count: int) -> int: return selected
+			var target: EnemyActor = t._spawn(f,Vector2(400,300))
+			s.tick(0.0)
+			t.check(s.facing==Vector2.RIGHT,"S7-D-AIM initial target direction unchanged")
+			target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(side*5.0))*100.0
+			s.tick(1.0/60.0)
+			t.check(s.facing==Vector2.RIGHT,"S7-D-AIM inside10 holds exactly without turning")
+			target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(side*10.0))*100.0
+			s.tick(1.0/60.0)
+			t.check(near(s.facing,Vector2.RIGHT),"S7-D-AIM inclusive10 boundary holds within float tolerance")
+			target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(side*15.0))*100.0
+			s.tick(1.0/60.0)
+			t.check(near(s.facing,Vector2.RIGHT.rotated(deg_to_rad(side*3.0))),"S7-D-AIM error15 subtracts10 and respects3deg budget")
+			s.tick(1.0/60.0)
+			t.check(near(s.facing,Vector2.RIGHT.rotated(deg_to_rad(side*5.0))),"S7-D-AIM next turn is remaining2deg, not another3 or snap15")
+			var held: Vector2 = s.facing
+			target.position = s.position+held.rotated(deg_to_rad(side*5.0))*100.0
+			s.tick(1.0/60.0)
+			t.check(s.facing==held,"S7-D-AIM small reversal within band holds exact prior facing")
+			s.tick(float(s.motions[selected].Hit_time_sec)-s.clock)
+			t.check(s.hit_done and s.facing==held and target.hp==90 and s.attack_visual_state().direction==s.attack_geometry().direction,"S7-D-HIT limited/deadband direction locks with shared damage/display geometry")
+			target.position = s.position-Vector2.RIGHT*100.0
+			s.tick(1.0/60.0)
+			t.check(s.facing==held and target.hp==90,"S7-D-HIT no post-hit tracking or second damage")
+			await close(f)
+	var f := fixture()
+	f.player.position = Vector2(300,300)
+	var s = f.summons.summon()
+	s.attack.Aim_deadband_deg = 0.0
+	var target: EnemyActor = t._spawn(f,Vector2(400,300))
+	s.tick(0.0)
+	target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(15.0))*100.0
+	s.tick(1.0/60.0)
+	t.check(near(s.facing,Vector2.RIGHT.rotated(deg_to_rad(3.0))),"S7-D-ZERO zero deadband keeps original180deg/sec tracking")
+	await close(f)
+	f = fixture()
+	f.player.position = Vector2(300,300)
+	s = f.summons.summon()
+	target = t._spawn(f,s.position+Vector2.RIGHT.rotated(deg_to_rad(175.0))*100.0)
+	s.tick(0.0)
+	target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(-175.0))*100.0
+	s.tick(1.0/60.0)
+	t.check(near(s.facing,Vector2.RIGHT.rotated(deg_to_rad(175.0))),"S7-D-WRAP PI crossing10 boundary uses shortest difference")
+	target.position = s.position+Vector2.RIGHT.rotated(deg_to_rad(-170.0))*100.0
+	s.tick(1.0/60.0)
+	t.check(near(s.facing,Vector2.RIGHT.rotated(deg_to_rad(178.0))),"S7-D-WRAP outside band turns short way across PI within3deg")
+	await close(f)
+
+func fan_player_push_exclusion() -> void:
+	for selected in [0,1]:
+		var results: Array = []
+		for path in ["optimized","direct","reverse"]:
+			var f := fixture()
+			f.player.position = Vector2(300,300)
+			var s = f.summons.summon()
+			s.position = Vector2(500,300)
+			s.motion_picker = func(_count: int) -> int: return selected
+			var enemy: EnemyActor = t._spawn(f,Vector2(520,300))
+			s.tick(0.0)
+			f.manager.recycle_enemy(enemy)
+			f.player.position = Vector2(490,300)
+			f.manager.push_iterations = 1
+			if path=="optimized": f.manager._resolve_contact_pushes()
+			elif path=="direct": f.manager._resolve_contact_pair(f.player,s)
+			else: f.manager._resolve_contact_pair(s,f.player)
+			t.check(s.cast_active and s.position==Vector2(500,300) and f.player.position==Vector2(490,300),"S7-E-PUSH player-fan pair skips during cast even without enemies: "+path)
+			f.player.dash_pass_through = true
+			f.manager._resolve_contact_pushes()
+			t.check(f.player.dash_pass_through and s.position==Vector2(500,300) and f.player.position==Vector2(490,300),"S7-E-DASH fan exclusion leaves player dash flag and skip unchanged")
+			f.player.dash_pass_through = false
+			s.tick(float(s.motions[selected].Motion_sec))
+			if path=="optimized": f.manager._resolve_contact_pushes()
+			elif path=="direct": f.manager._resolve_contact_pair(f.player,s)
+			else: f.manager._resolve_contact_pair(s,f.player)
+			t.check(not s.cast_active and near(s.position,Vector2(507,300)) and near(f.player.position,Vector2(483,300)),"S7-E-END player-fan split restores immediately at motion end: "+path)
+			results.append([f.player.position,s.position])
+			await close(f)
+		t.check(results[0]==results[1] and results[1]==results[2],"S7-E-EQUAL optimized/direct/reverse restore same weighted positions")
+	var f := fixture()
+	f.player.position = Vector2(300,300)
+	var beru = f.summons.summon("charger_test")
+	t._spawn(f,Vector2(480,300))
+	beru.tick(0.0)
+	beru.tick(0.1)
+	f.player.position = beru.position-Vector2(10,0)
+	var before: Vector2 = beru.position
+	f.manager._resolve_contact_pair(f.player,beru)
+	t.check(beru.dash_through_active and beru.position!=before,"S7-E-BERU player pair still pushes during Beru dash")
+	f.player.position = beru.position-Vector2(10,0)
+	before = beru.position
+	var player_before: Vector2 = f.player.position
+	f.player.dash_pass_through = true
+	f.manager._resolve_contact_pushes()
+	t.check(beru.position==before and f.player.position==player_before and beru.dash_through_active,"S7-E-BERU player dash still excludes player-Beru pair")
+	await close(f)
+
+func fan_leash_completion() -> void:
+	for selected in [0,1]:
+		var f := fixture()
+		f.player.position = Vector2(-300,0)
+		var s = f.summons.summon()
+		s.position = Vector2(-100,0)
+		s.motion_picker = func(_count: int) -> int: return selected
+		var enemy: EnemyActor = t._spawn(f,Vector2(0,0))
+		s.tick(0.0)
+		var started: float = s.cast_started_at
+		var origin: Vector2 = s.position
+		f.player.position = Vector2(500,0)
+		s.tick(float(s.motions[selected].Hit_time_sec))
+		t.check(s.cast_active and s.hit_done and s.cast_started_at==started and s.position==origin,"S7-G-CAST fan continues and hits beyond leash, motion "+str(selected))
+		f.manager.recycle_enemy(enemy)
+		s.tick(0.0)
+		t.check(s.cast_active and not s.target_is_live(),"S7-G-TARGET invalid target keeps active fan beyond leash")
+		s.tick(float(s.motions[selected].Motion_sec)-float(s.motions[selected].Hit_time_sec))
+		var expected_ready: float = started+float(s.motions[selected].Motion_sec)+float(s.attack.Interval_sec)
+		t.check(not s.cast_active and absf(s.ready_at-expected_ready)<0.000001 and s.position==origin,"S7-G-END fan completes normally and sets normal Interval cooldown")
+		var old_position: Vector2 = s.position
+		s.tick(1.0/60.0)
+		t.check(not s.cast_active and s.last_node=="follow" and s.target==null and s.position.distance_to(f.player.position)<old_position.distance_to(f.player.position) and s.ready_at==s.clock,"S7-G-RETURN next outside-cast tick restores existing leash return and cooldown reset")
+		await close(f)
+		f = fixture()
+		f.player.position = Vector2(-300,0)
+		s = f.summons.summon()
+		s.position = Vector2(-100,0)
+		s.motion_picker = func(_count: int) -> int: return selected
+		t._spawn(f,Vector2(0,0))
+		s.tick(0.0)
+		f.player.position = Vector2(500,0)
+		s.tick(float(s.motions[selected].Motion_sec))
+		f.player.position = Vector2(-300,0)
+		expected_ready = s.ready_at
+		s.tick(float(s.attack.Interval_sec)/2.0)
+		t.check(not s.cast_active and s.ready_at==expected_ready,"S7-G-COOLDOWN inside leash waits normal cooldown after extended cast")
+		s.tick(float(s.attack.Interval_sec)/2.0)
+		t.check(s.cast_active,"S7-G-READY normal cooldown expiry permits next cast")
+		var events: Array = []
+		s.diagnostic_sink = func(event: String, details: Dictionary) -> void: events.append({"event":event,"details":details})
+		f.player.position = s.position+Vector2(float(s.config.Teleport_distance),0)
+		s.angle_picker = func() -> float: return PI
+		s.tick(0.0)
+		var cancelled := false
+		for event in events:
+			if event.event=="cancel" and event.details.reason=="teleport" and event.details.had_cast: cancelled = true
+		t.check(cancelled and not s.cast_active,"S7-G-TELEPORT exact threshold still cancels active fan")
 		await close(f)
