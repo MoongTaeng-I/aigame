@@ -1,5 +1,7 @@
 extends Node2D
 
+signal list_changed
+
 const Actor = preload("res://scripts/shadow_actor.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const ENABLE_DEBUG_TELEPORT := true
@@ -45,10 +47,12 @@ func summon(id: String = "igrit") -> Node2D:
 	actors.append(actor)
 	enemies.register_shadow_body(actor)
 	actor.tree_exiting.connect(_remove_actor.bind(actor),CONNECT_ONE_SHOT)
+	list_changed.emit()
 	return actor
 
 func _remove_actor(actor: Node2D) -> void:
 	actors.erase(actor)
+	list_changed.emit()
 
 func _physics_process(delta: float) -> void:
 	if player==null or player.is_dead: return

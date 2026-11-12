@@ -201,16 +201,16 @@ func targeting_and_geometry() -> void:
 	t.check(boss.dash_end==Vector2(1952,0),"S8 boss radius clips dash endpoint at map edge")
 	set_time(f,f.manager._elapsed_seconds+2)
 	t.check(boss.global_position==Vector2(1952,0),"S8 clipped boundary finish, no slide")
-	for distance in [0.0,109.9,110.0,110.1]:
-		t.check(Geometry.in_sector(Vector2.ZERO,Vector2.RIGHT,110,100,Vector2(distance,0))==(distance<=110),"S8 shared fan range boundary "+str(distance))
+	for distance in [0.0,149.9,150.0,150.1]:
+		t.check(Geometry.in_sector(Vector2.ZERO,Vector2.RIGHT,150,100,Vector2(distance,0))==(distance<=150),"S8 shared fan range boundary "+str(distance))
 	boss.global_position = Vector2.ZERO
-	f.player.global_position = Vector2(160,0)
+	f.player.global_position = Vector2(320,0)
 	boss.start_action(action(f,"ice_bear_slam"),Vector2.ZERO)
 	g = boss.telegraph_geometry()
 	boss.global_position = Vector2(1000,0)
 	hp = f.player.hp
-	set_time(f,f.manager._elapsed_seconds+1.2)
-	t.check(g.center==Vector2.ZERO and g.slam_radius==160 and f.player.hp==hp-30,"S8 slam fixed world circle and boundary damage equal display")
+	set_time(f,f.manager._elapsed_seconds+0.8)
+	t.check(g.center==Vector2.ZERO and g.slam_radius==320 and f.player.hp==hp-30,"S8 slam fixed world circle and boundary damage equal display")
 	await cleanup(f)
 
 func weight_and_plan() -> void:

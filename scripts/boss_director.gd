@@ -16,6 +16,8 @@ var completed := false
 var toast: Label
 var toast_text := ""
 var gate_position := Vector2.ZERO
+var toast_view: Control
+var warning_started: float = 0
 
 func configure(owner_manager: EnemyManager, records: Dictionary, action_rows: Dictionary, events: Dictionary, rules: Dictionary) -> void:
 	manager = owner_manager
@@ -30,9 +32,9 @@ func configure(owner_manager: EnemyManager, records: Dictionary, action_rows: Di
 func _ready() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
-	toast = Label.new()
-	toast.position = Vector2(160,28)
-	layer.add_child(toast)
+	toast_view = preload("res://scripts/boss_toast.gd").new()
+	layer.add_child(toast_view)
+	toast = toast_view.label
 
 func player_target() -> Node2D:
 	return manager._player
@@ -58,16 +60,21 @@ func advance(now: float, _delta: float) -> void:
 		phase = "active"
 		toast_text = ""
 	if is_instance_valid(toast): toast.text = toast_text
+	if is_instance_valid(toast_view):
+		var remaining := deadline-now+(float(rule.Emerge_sec) if phase=="warn" else 0.0)
+		toast_view.present(toast_text,now-warning_started,remaining,phase in ["warn","emerge"])
 	queue_redraw()
 
 func begin_warning(now: float) -> void:
 	active_id = String(pending.pop_front())
 	phase = "warn"
+	warning_started = now
 	deadline = now+float(rule.Warn_sec)
 	manager.set_normal_spawning_stopped(true)
 	var name_ko: String = manager._enemy_records[bosses[active_id].Enemy_id].Name_ko
 	toast_text = String(rule.Toast_text).replace("{name}",name_ko)
 	if is_instance_valid(toast): toast.text = toast_text
+	if is_instance_valid(toast_view): toast_view.present(toast_text,0,float(rule.Warn_sec)+float(rule.Emerge_sec),true)
 	queue_redraw()
 
 func _boss_died(_dead: EnemyActor) -> void:
@@ -79,6 +86,7 @@ func _boss_died(_dead: EnemyActor) -> void:
 		completed = true
 		toast_text = "완료"
 		if is_instance_valid(toast): toast.text = toast_text
+		if is_instance_valid(toast_view): toast_view.show_completion(toast_text)
 		get_tree().paused = true
 	elif not pending.is_empty(): begin_warning(manager._elapsed_seconds)
 	else: manager.set_normal_spawning_stopped(false)

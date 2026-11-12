@@ -7,6 +7,8 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float"})
 	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"},"Aim_turn_deg_per_sec":{"type":"Optional","inner":"Float"},"Aim_deadband_deg":{"type":"Optional","inner":"Float"}})
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":{"type":"Optional","inner":"Float"}})
+	store.schemas["shadow.csv"]["Name_ko"] = "String"
+	store.schemas["shadow.csv"]["Icon"] = {"type":"Optional","inner":"Path"}
 
 static func validate(store: CsvDataStore) -> String:
 	var attacks := store.get_table("shadow_attack.csv")
@@ -15,6 +17,10 @@ static func validate(store: CsvDataStore) -> String:
 		return error(store,"shadow.csv","igrit","Id","이그리트 행이 필요합니다.")
 	for id in store.get_table("shadow.csv"):
 		var row := store.get_row("shadow.csv",id)
+		if row.get("Icon")!=null:
+			var path := String(row.Icon)
+			if not ResourceLoader.exists(path) or not (load(path) is Texture2D):
+				return error(store,"shadow.csv",id,"Icon","사용 가능한 이미지 경로가 아닙니다.")
 		if float(row.Enemy_push_share)<0.0 or float(row.Enemy_push_share)>1.0:
 			return error(store,"shadow.csv",id,"Enemy_push_share","0 이상 1 이하이어야 합니다.")
 		for key in ["Search_radius","Chase_leash_distance","Follow_distance","Move_speed","Teleport_distance","Afterimage_sec","Body_radius","Push_weight"]:

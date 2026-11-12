@@ -51,6 +51,10 @@ UI(임시, 시스템 9에서 정식화): 상단 토스트, 게이트·사전 표
 
 상단 토스트, 맵 중앙 게이트, 큰 흰·청색 원형 보스, 실제 판정과 같은 사전 도형을 사용한다. 정식 UI는 시스템 9다. 체력은 기존 적 임시 표시 경로를 재사용한다.
 
+- S8-IMPL-01 추가 단계 B(2026-11-12, 사용자 "둘 다 승인할게"): 토스트는 상단 가운데 둥근 모서리 전용 패널(어두운 반투명 바탕·보라 테두리)에 가운데 정렬한다. 경고~출현 구간의 짧은 페이드 인/아웃을 적용하며 기존 바 형태는 사용하지 않는다. 문구는 boss_rule.csv Toast_text와 {name} 치환을 유지한다.
+- 화면 오른쪽 위에 기존 enemy_manager 경과 시간을 MM:SS로 표시한다. 분은 두 자리 이상을 그대로 쓰며 선택 화면·사망 정지 중 멈춘다. 왼쪽 위 임시 적 수 표시는 유지한다.
+- 패널 크기·색·여백·페이드 시간과 진행 시간 배치는 boss_toast.gd·temporary_hud.gd의 이름 붙인 연출 상수다. 게임 규칙/보스 BT는 변경하지 않는다. 임시 HUD이며 정식 UI는 시스템 9다.
+
 ## 테이블
 
 검증용 시작값은 아래 예시 열이며 최종 밸런스가 아니다. enemy.csv에는 boss_ice_bear 1행만 추가한다. Death_fade_sec는 기존 enemy_01 행의 문자열을 복사하고 기존 행·열·spawn.csv는 변경하지 않는다.
@@ -58,6 +62,19 @@ UI(임시, 시스템 9에서 정식화): 상단 토스트, 게이트·사전 표
 보스 검증용 enemy.csv 추가 행: `boss_ice_bear`, 이름 `아이스 베어 우두머리`, Move_speed `90`, Attack_range_type `melee`, Body_radius `48`, Push_weight `50`, Max_hp `1500`, Contact_damage `10`, Contact_rehit_sec `1`, Death_fade_sec는 `enemy_01`과 같은 값, Shot 세 열 빈칸, Xp_value `50`. 기존 행과 spawn.csv는 보존한다.
 
 `enemy.csv` 전체 컬럼 설명은 [시스템 2](02_enemy_spawn_and_movement.md#테이블-컬럼-설명) 참조.
+
+### 아이스 베어 추가 단계 B 수치 (2026-11-12)
+
+아래 여섯 칸은 사용자 확정 값이다. 그 밖의 칸은 유지하며 전체 최종 밸런스 승인으로 확대하지 않는다.
+
+| 행동 Id | 컬럼 | 이전 값 | 승인 값 |
+| --- | --- | --- | --- |
+| ice_bear_basic | Range | 110 | 150 |
+| ice_bear_basic | Use_range | 100 | 140 |
+| ice_bear_dash | Dash_speed | 700 | 1000 |
+| ice_bear_slam | Slam_radius | 160 | 320 |
+| ice_bear_slam | Telegraph_sec | 1.2 | 0.8 |
+| ice_bear_slam | Use_range | 140 | 240 |
 
 ## 테이블 컬럼 설명
 
@@ -94,17 +111,17 @@ UI(임시, 시스템 9에서 정식화): 상단 토스트, 게이트·사전 표
 | Id | 행 식별자 | ice_bear_basic (ice_bear_basic) | String | 해당 없음 | 문자열 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Boss_id | 대상 보스 | boss_early (ice_bear_basic) | String | 해당 없음 | 문자열 | 불가 | boss.csv.Id | 데이터 오류 화면 | 없음 |
 | Kind | 행동 종류 | basic (ice_bear_basic) | Enum | 해당 없음 | basic / dash / slam | 불가 | 없음 | 데이터 오류 화면 | 보스별 세 행동 각 1행 |
-| Use_range | 플레이어 중심 거리 기준 사용 범위 | 100 (ice_bear_basic) | Float | px | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
+| Use_range | 플레이어 중심 거리 기준 사용 범위 | 140 (ice_bear_basic) | Float | px | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Damage | 행동 피해 | 12 (ice_bear_basic) | Int | 해당 없음 | 0 이상 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Telegraph_sec | 고정된 실제 판정의 사전 표시 시간 | 0.4 (ice_bear_basic) | Float | 초 | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Recovery_sec | 행동 종료 후 대기 시간 | 0.4 (ice_bear_basic) | Float | 초 | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Cooldown_sec | 행동 종료 또는 공포 취소부터 재사용 대기 시간 | 1.5 (ice_bear_basic) | Float | 초 | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Pick_weight | 예정 스킬 선정 가중치 | (빈칸) (ice_bear_basic) | Optional Int | 해당 없음 | dash/slam: 1 이상; basic: 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
-| Range | 할퀴기 부채꼴 반경 | 110 (ice_bear_basic) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
+| Range | 할퀴기 부채꼴 반경 | 150 (ice_bear_basic) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
 | Arc_deg | 할퀴기 중심각 | 100 (ice_bear_basic) | Optional Float | 도 | basic: 0 초과 360 이하 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
-| Dash_speed | 돌진 이동 속도 | 700 (ice_bear_dash) | Optional Float | px/s | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
+| Dash_speed | 돌진 이동 속도 | 1000 (ice_bear_dash) | Optional Float | px/s | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
 | Dash_distance | 맵 제한 전 돌진 거리 | 400 (ice_bear_dash) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
-| Slam_radius | 내리찍기 고정 원 반경 | 160 (ice_bear_slam) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
+| Slam_radius | 내리찍기 고정 원 반경 | 320 (ice_bear_slam) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
 | Note | 설명용, 동작에 사용하지 않음 | A단계 검증용 시작값 (ice_bear_basic) | String | 해당 없음 | 문자열 | 허용 | 없음 | 검증 없음 | 없음 |
 
 ### boss_rule.csv
@@ -162,3 +179,5 @@ flowchart TD
 - 2026-11-12: 사용자 초안 전체 "승인한다"와 세부 결정에 따라 S8-IMPL-01 문서화. 수치 시작값은 검증용·제안 구분 유지. 사용자 그림자 대상 답변 추가 반영.
 
 - 2026-11-12 S8-IMPL-01: 공통 시스템·대표 보스를 구현하고 P0 1422개(신규 S8 89개) 실패 0·허용 S1-01 불일치 2, runtime 300 통과. 테스트 단계로 옮기며 사용자 직접 플레이 승인은 별도 대기한다.
+
+- 2026-11-12 S8-IMPL-01 추가 단계 B: 사용자 "테스트 자체는 문제 없는데, 추가 사항이 필요해" 및 "둘 다 승인할게"에 따라 토스트 전용 패널·진행 시간·보유 그림자 HUD와 지정 보스 수치 6칸을 반영한다. 보스 규칙·BT는 유지하며 UI 연출 세부는 이름 붙인 상수, 정식 UI는 시스템9에서 정한다.

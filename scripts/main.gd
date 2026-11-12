@@ -105,6 +105,10 @@ func _ready() -> void:
 	var boss_director := preload("res://scripts/boss_director.gd").new()
 	boss_director.configure(enemy_manager,data_store.get_table("boss.csv"),data_store.get_table("boss_action.csv"),data_store.get_table("stage_timeline.csv"),data_store.get_row("boss_rule.csv","boss_rule_01"))
 	map.add_child(boss_director)
+	var temporary_hud := preload("res://scripts/temporary_hud.gd").new()
+	temporary_hud.name = "TemporaryHud"
+	temporary_hud.configure(enemy_manager,shadows,skill_manager.ui)
+	map.add_child(temporary_hud)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:

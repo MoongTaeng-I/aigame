@@ -112,13 +112,17 @@ cast_active 동안 실제 판정과 같은 그림자 중심·현재 방향·Rang
 
 검증용 강제 텔레포트 키는 T 하나다. 그림자 관리자의 ENABLE_DEBUG_TELEPORT 상수 하나로 끈다. 정상 플레이·선택 화면 정지·사망 정지와 별개로 게임 시간을 진행시키지 않는다.
 
+## UI(임시 보유 그림자 표시)
+
+S8-IMPL-01 추가 단계 B(2026-11-12)에서 스킬 아이콘 줄 바로 위 오른쪽에 소환 순서대로 그림자 아이콘·Name_ko를 한 줄 표시한다. 실제 소환·제거 신호로 갱신한다. Icon이 빈칸이면 shadow_visual의 게임 내 임시 모양을 작게 그리며, 경로가 있으면 해당 Texture2D 이미지를 쓴다. 공통 Path 문법을 따르지 않거나 리소스가 없거나 이미지가 아니면 기존 데이터 오류 화면으로 보고한다. 정식 UI/외형·추가 콘텐츠 확정은 시스템9 및 별도 작업이다.
+
 ## 테이블과 A단계 시작값
 
-세 CSV는 UTF-8 BOM·LF·엑셀 숫자 표기이며 .import keep을 쓴다. Id/Attack_id는 String, Damage는 Int, Shape는 Enum(fan / dash_through), 나머지 수치는 Float이다. 선택하지 않는 공격·모션 수치는 빈 칸을 허용한다. 거리·반경은 픽셀, 시간은 초다.
+세 CSV는 UTF-8 BOM·LF·엑셀 숫자 표기이며 .import keep을 쓴다. Id/Attack_id/Name_ko는 String, Icon은 Optional Path, Damage는 Int, Shape는 Enum(fan / dash_through), 나머지 수치는 Float이다. 선택하지 않는 공격·모션 수치는 빈 칸을 허용한다. 거리·반경은 픽셀, 시간은 초다.
 
-- shadow.csv: Id, Search_radius, Chase_leash_distance, Follow_distance, Move_speed, Teleport_distance, Afterimage_sec, Body_radius, Push_weight, Attack_id, Enemy_push_share
-- 시작 행: igrit,280,560,200,320,900,1,16,3,igrit_attack,0.1
-- 임시 시작 행: charger_test,280,560,200,320,900,1,16,3,charger_attack,0.1 (이그리트의 현재 값 복사, Attack_id만 변경)
+- shadow.csv: Id, Search_radius, Chase_leash_distance, Follow_distance, Move_speed, Teleport_distance, Afterimage_sec, Body_radius, Push_weight, Attack_id, Enemy_push_share, Name_ko, Icon
+- 시작 행: igrit,280,560,200,320,900,1,16,3,igrit_attack,0.1,이그리트,
+- 임시 시작 행: charger_test,280,560,200,320,900,1,16,3,charger_attack,0.1,베르, (이그리트의 현재 값 복사, Attack_id만 변경)
 - shadow_attack.csv: Id, Damage, Range, Arc_deg, Interval_sec, Shape, Dash_speed, Dash_distance, Dash_hit_radius, Dash_min_distance, Aim_turn_deg_per_sec, Aim_deadband_deg
 - 시작 행: igrit_attack,10,140,120,1.2,fan,,,,,180,10 / charger_attack,10,180,360,1.0,dash_through,600,300,40,100,,
 - Aim_turn_deg_per_sec: Float·도/초, fan은 유한한 양수 필수, dash_through는 빈 칸 허용·미사용. 시작값180은 이전 정상 조건의 프레임 변화 대부분3.6도 이하와 60Hz당3도 제한을 근거로 한 제안이며 최종값이 아니다.
@@ -352,6 +356,8 @@ flowchart TD
 | Push_weight | 플레이어·그림자 쌍의 밀림 분배 무게 | 3 | Float | 상대 가중치 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Attack_id | 이 그림자가 사용하는 공격 | igrit_attack | String | 해당 없음 | shadow_attack.csv에 참조 행 존재 | 불가 | shadow_attack.csv.Id | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Enemy_push_share | 적-그림자 겹침 해소량 중 그림자가 받는 비율 | 0.1 | Float | 비율 | 0 이상 1 이하 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 적은 나머지 비율; 이 쌍은 Push_weight를 쓰지 않음 |
+| Name_ko | 보유 그림자 HUD에 표시할 이름 | 이그리트 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | Name_ko로 표시, Id를 표시 이름으로 하드코딩하지 않음 |
+| Icon | 보유 그림자 HUD의 이미지 경로 | (빈칸) | Optional Path | 해당 없음 | res:// 경로·역슬래시 없음·리소스 존재·Texture2D 이미지 | 허용 | 이미지 리소스 | 자료형/경로/이미지 오류: 데이터 오류 화면 | 빈칸은 shadow_visual 임시 모양으로 대체 |
 
 ### shadow_attack.csv
 
@@ -413,3 +419,5 @@ flowchart TD
 - 2026-11-11 (S7-FIX-03 G): 사용자 원문 "수정안은 A로 진행하자"로 fan 시전 중 leash 초과 취소 제외를 확정했다. cast_active이면 모양과 무관하게 예외로 처리하며 텔레포트 취소·시전 외 복귀·베르 기존 규칙은 유지한다. 구현 세부/검증 지표는 제안이고 플레이 승인은 아니다. E는 원본에 유지하되 포함/제외 비교 후 최종 정책을 사용자가 결정한다.
 
 - 2026-11-11 S7-FIX-03 마무리: 사용자 원문 "지금 상태에선 크게 문제가 발생하지 않는거 같아" / "승인한다"로 B·D·E·G를 종합 승인했다(C·F 진단만). 현재 상태의 E를 유지하기로 했다. 항목별 플레이 결과 미기록, 수정안 A 확정과180도/초·10도·B/E 밀기 제외 정책의 제안 구분은 유지한다. 쿨타임 정책/겹침·종료 밀림 완화/렌더링·카메라 측정은 미적용·미승인 후속 후보이며 이번에 추가 구현하지 않는다.
+
+- 2026-11-12 S8-IMPL-01 추가 단계 B: 사용자 "둘 다 승인할게"로 shadow.csv Name_ko·Icon 두 열 및 보유 그림자 아이콘/이름 HUD를 추가한다. 기존 열·값과 BT는 보존한다. igrit 이름 이그리트·charger_test 이름 베르, Icon은 두 행 모두 빈칸이다.
