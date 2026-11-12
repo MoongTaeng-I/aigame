@@ -331,6 +331,62 @@ flowchart TD
 - **도식 표현 경계:** 공통 BT는 시전 유지/무효 대상 처리 후 계속 진행을 표현한다. 코드의 `can_retain_target` 검사는 시전 중에도 실행되므로 범위 밖이면서 화면 밖인 대상도 해제될 수 있다. 새 선정을 시전 중 강제하지 않는다는 점은 같다.
 - 완료 후 한도 밖이면 다음 tick의 `cancel_attack`이 쿨타임을 초기화한다. 이는 본문에 명시된 유지 규칙과 일치하며 새 Interval_sec 잠금을 도식에 추가하지 않는다.
 
+## 테이블 컬럼 설명
+
+파일 공통 형식과 ID 규칙은 [game_design.md의 데이터 관리 원칙](../game_design.md#데이터-관리-원칙)을 따른다.
+
+### shadow.csv
+
+예시는 2026-11-12 기준 CSV의 `igrit` 행 값이며 최종 밸런스 값이 아니다.
+
+| 컬럼 | 설명(무엇을 정하는 값인가) | 예시 | 자료형 | 단위 | 허용 범위·허용값 | 빈칸 허용 | 참조(다른 테이블·컬럼) | 잘못된 값일 때 | 비고 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Id | 행을 조회·참조하는 식별자 | igrit | String | 해당 없음 | 공통 원칙 참조 | 공통 원칙 참조 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | igrit 행 필수; 카드 Effect와 소환 종류 연결은 코드에서 결정 |
+| Search_radius | 우선 탐색·공격 접근 후보를 고르는 그림자 중심 반경 | 280 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | Search_radius·Range 등 거리 간 크기 관계 검증 없음 |
+| Chase_leash_distance | 시전 외 추격을 중단하는 플레이어와 그림자 중심 거리 한도 | 560 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | Search_radius·Range 등 거리 간 크기 관계 검증 없음 |
+| Follow_distance | 복귀를 멈추는 플레이어 중심 거리 및 텔레포트 도착 기준 반경 | 200 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | Search_radius·Range 등 거리 간 크기 관계 검증 없음 |
+| Move_speed | 그림자의 일반 이동 속도 | 320 | Float | px/s | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Teleport_distance | 이상일 때 텔레포트하는 플레이어와 그림자 중심 거리 | 900 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | Search_radius·Range 등 거리 간 크기 관계 검증 없음 |
+| Afterimage_sec | 텔레포트 출발 잔상이 사라질 때까지 시간 | 1 | Float | 초 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Body_radius | 몸체 밀어내기·맵 보정 반경 | 16 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Push_weight | 플레이어·그림자 쌍의 밀림 분배 무게 | 3 | Float | 상대 가중치 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Attack_id | 이 그림자가 사용하는 공격 | igrit_attack | String | 해당 없음 | shadow_attack.csv에 참조 행 존재 | 불가 | shadow_attack.csv.Id | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Enemy_push_share | 적-그림자 겹침 해소량 중 그림자가 받는 비율 | 0.1 | Float | 비율 | 0 이상 1 이하 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 적은 나머지 비율; 이 쌍은 Push_weight를 쓰지 않음 |
+
+### shadow_attack.csv
+
+예시는 2026-11-12 기준 CSV의 `igrit_attack`, `charger_attack` 행 값이며 최종 밸런스 값이 아니다.
+
+| 컬럼 | 설명(무엇을 정하는 값인가) | 예시 | 자료형 | 단위 | 허용 범위·허용값 | 빈칸 허용 | 참조(다른 테이블·컬럼) | 잘못된 값일 때 | 비고 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Id | 행을 조회·참조하는 식별자 | igrit_attack (igrit_attack) | String | 해당 없음 | 공통 원칙 참조 | 공통 원칙 참조 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Damage | fan은 타격 시, dash_through는 경로 타격 시 주는 피해 | 10 (igrit_attack) | Int | 체력 | 0 이상 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 기본 공격값의 동적 참조가 아님; 범위 오류는 Damage 열로 보고 |
+| Range | fan의 부채꼴 반경 / dash_through의 돌진 시작 거리 | 140 (igrit_attack) | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 범위 오류는 Damage 열로 보고 |
+| Arc_deg | fan 부채꼴 중심각 | 120 (igrit_attack) | Optional Float | 도 | fan: 0 초과 360 이하; dash_through: 범위 검증 없음 | fan은 불가; dash_through는 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | dash_through에서는 미사용 |
+| Interval_sec | fan 모션 또는 돌진 후딜 종료 후 다음 공격 대기 시간 | 1.2 (igrit_attack) | Float | 초 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 범위 오류는 Damage 열로 보고 |
+| Shape | 공격 판정·진행 방식 | fan (igrit_attack) | Enum | 해당 없음 | fan / dash_through | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | circle_dash는 지원하지 않음 |
+| Dash_speed | 돌진 직선 이동 속도 | 600 (charger_attack) | Optional Float | px/s | dash_through: 0 초과; fan: 범위 검증 없음 | dash_through는 불가; fan은 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | fan에서는 미사용 |
+| Dash_distance | 한도·맵 제한 전 요청하는 고정 돌진 거리 | 300 (charger_attack) | Optional Float | px | dash_through: 0 초과; fan: 범위 검증 없음 | dash_through는 불가; fan은 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | fan에서는 미사용 |
+| Dash_hit_radius | 매 프레임 이동 선분의 적 중심 타격 반경 | 40 (charger_attack) | Optional Float | px | dash_through: 0 초과; fan: 범위 검증 없음 | dash_through는 불가; fan은 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | fan에서는 미사용 |
+| Dash_min_distance | leash 제한 단계에서 돌진을 허용하는 최소 길이 | 100 (charger_attack) | Optional Float | px | dash_through: 0 초과; fan: 범위 검증 없음 | dash_through는 불가; fan은 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | fan에서는 미사용; 맵 경계로 짧아진 길이에는 적용하지 않음 |
+| Aim_turn_deg_per_sec | fan 타격 전 조준 방향의 최대 회전 속도 | 180 (igrit_attack) | Optional Float | 도/초 | fan: 유한한 양수; dash_through: 범위 검증 없음 | fan은 불가; dash_through는 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | dash_through에서는 미사용; 큰 갱신도 타격 전 시간만 사용 |
+| Aim_deadband_deg | fan 조준에서 정면을 유지하는 각도 차이의 데드존 | 10 (igrit_attack) | Optional Float | 도 | fan: 0 이상의 유한값; dash_through: 범위 검증 없음 | fan은 불가; dash_through는 허용 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | dash_through에서는 미사용; 제안 정책 구분은 본문 유지 |
+
+### shadow_motion.csv
+
+예시는 2026-11-12 기준 CSV의 `igrit_diagonal` 행 값이며 최종 밸런스 값이 아니다.
+
+| 컬럼 | 설명(무엇을 정하는 값인가) | 예시 | 자료형 | 단위 | 허용 범위·허용값 | 빈칸 허용 | 참조(다른 테이블·컬럼) | 잘못된 값일 때 | 비고 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Id | 행을 조회·참조하는 식별자 | igrit_diagonal | String | 해당 없음 | 공통 원칙 참조 | 공통 원칙 참조 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Attack_id | 이 모션을 사용하는 공격 | igrit_attack | String | 해당 없음 | shadow_attack.csv에 참조 행 존재; 각 공격은 모션 행 필요 | 불가 | shadow_attack.csv.Id | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 참조 오류는 Motion_sec 열로 보고; 모션 누락은 Attack_id 열로 보고 |
+| Motion_sec | fan 모션 전체 길이 / dash_through 이동 종료 후 후딜 | 0.4 | Float | 초 | 0 초과 | 불가 | shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+| Hit_time_sec | fan 공격 시작 기준 피해 시점 | 0.15 | Optional Float | 초 | fan: 0 이상 Motion_sec 이하; dash_through: 범위 검증 없음 | fan은 불가; dash_through는 허용 | shadow_motion.csv.Motion_sec; shadow_attack.csv.Shape | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | dash_through는 미사용; 문서는 빈칸 지침, 코드는 비어 있지 않은 Float도 허용 |
+
+`choice.csv` 컬럼 설명은 [06_level_up_choices.md](06_level_up_choices.md#테이블-컬럼-설명) 참조.
+
+`choice_level.csv` 컬럼 설명은 [06_level_up_choices.md](06_level_up_choices.md#테이블-컬럼-설명) 참조.
+
 ## 승인·변경 이력
 
 - 2026-11-09 사용자 결정: 그림자 5종, 채용 한도 3, A단계 이그리트 1종.
