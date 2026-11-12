@@ -1,4 +1,8 @@
-﻿Id,Boss_id,Kind,Use_range,Damage,Telegraph_sec,Recovery_sec,Cooldown_sec,Pick_weight,Range,Arc_deg,Dash_speed,Dash_distance,Slam_radius,Note
-ice_bear_basic,boss_early,basic,140,12,0.4,0.4,1.5,,150,100,,,,A단계 검증용 시작값
-ice_bear_dash,boss_early,dash,400,25,0.8,0.6,6,1,,,1000,400,,A단계 검증용 시작값
-ice_bear_slam,boss_early,slam,240,30,0.8,0.8,8,1,,,,,320,A단계 검증용 시작값
+﻿Id,Boss_id,Kind,Use_range,Damage,Telegraph_sec,Recovery_sec,Cooldown_sec,Pick_weight,Range,Arc_deg,Dash_speed,Dash_distance,Slam_radius,Note,Projectile_id,Shot_interval_sec,Duration_sec,Push_distance,Push_sec
+ice_bear_basic,boss_early,basic,140,12,0.4,0.4,1.5,,150,100,,,,A단계 검증용 시작값,,,,,
+ice_bear_dash,boss_early,dash,400,25,0.8,0.6,6,1,,,1000,400,,A단계 검증용 시작값,,,,180,0.4
+ice_bear_slam,boss_early,slam,240,30,0.8,0.8,8,1,,,,,320,A단계 검증용 시작값,,,,220,0.4
+ice_elf_basic,boss_middle,ranged_basic,416,12,0,0,0.8,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,elf_arrow,0.8,,,
+ice_elf_push,boss_middle,push,120,0,0,0,8,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,,,,440,0.4
+ice_elf_burst,boss_middle,burst,416,8,0.3,0.6,9,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,elf_burst_arrow,0.15,2.4,,
+ice_elf_stealth,boss_middle,stealth,450,0,0,0,12,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,,,5,,

@@ -18,6 +18,7 @@ var dash_length: float = 0
 var dash_started: float = 0
 var dash_hit := false
 var rng := RandomNumberGenerator.new()
+var elf: RefCounted
 
 func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable) -> void:
 	manager = owner_manager
@@ -26,6 +27,23 @@ func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable
 	clock = manager._elapsed_seconds
 	rng.randomize()
 	for row in actions: ready_at[row.Id] = clock
+	for row in actions:
+		if int(row.Kind)==3:
+			elf = preload("res://scripts/boss_elf_behavior.gd").new()
+			elf.configure(self)
+			break
+
+func is_auto_targetable() -> bool:
+	return is_active and not is_logically_dead and (elf==null or not elf.hidden)
+
+func apply_damage(amount: int) -> bool:
+	if elf!=null and elf.hidden and is_active and not is_logically_dead and amount>0:
+		elf.end_stealth(manager._elapsed_seconds)
+	return super.apply_damage(amount)
+
+func begin_death() -> void:
+	if elf!=null: elf.cleanup()
+	super.begin_death()
 
 func start_knockback(_source: Vector2, _distance: float, _duration: float) -> void:
 	pass
@@ -33,6 +51,7 @@ func start_knockback(_source: Vector2, _distance: float, _duration: float) -> vo
 func apply_fear(duration: float) -> void:
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
+	if elf!=null: elf.interrupt_burst()
 	if not current.is_empty(): finish_action(clock)
 	super.apply_fear(duration)
 
@@ -42,6 +61,9 @@ func is_boss_dashing() -> bool:
 func boss_tick(delta: float) -> void:
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
+	if elf!=null:
+		elf.tick(delta)
+		return
 	var locked := minf(delta,fear_remaining)
 	fear_remaining = maxf(0,fear_remaining-delta)
 	if locked>0 or is_feared():
@@ -121,7 +143,9 @@ func advance_action() -> void:
 			collision_layer = 0
 		else:
 			var hit := Geometry.in_sector(origin,facing,float(current.Range),float(current.Arc_deg),target.global_position) if int(current.Kind)==0 else origin.distance_to(target.global_position)<=float(current.Slam_radius)
-			if hit: target.apply_damage(int(current.Damage))
+			if hit:
+				target.apply_damage(int(current.Damage))
+				if int(current.Kind)==2: push_skill_hit(target)
 			finish_action(phase_end)
 			return
 	if phase=="dash":
@@ -132,7 +156,11 @@ func advance_action() -> void:
 		if not dash_hit and Geometry.in_corridor(target.global_position,previous,global_position,facing,body_radius):
 			dash_hit = true
 			target.apply_damage(int(current.Damage))
+			push_skill_hit(target)
 		if travelled>=dash_length: finish_action(dash_started+dash_length/float(current.Dash_speed))
+
+func push_skill_hit(target: Node2D) -> void:
+	target.start_boss_push(global_position,float(current.Push_distance),float(current.Push_sec),map_bounds)
 
 func finish_action(at: float) -> void:
 	if current.is_empty(): return
@@ -148,6 +176,9 @@ func telegraph_geometry() -> Dictionary:
 	return {"kind":int(current.Kind),"center":origin,"direction":facing,"end":dash_end,"body_radius":body_radius,"range":current.Range,"arc_deg":current.Arc_deg,"slam_radius":current.Slam_radius}
 
 func _draw() -> void:
+	if elf!=null:
+		elf.draw()
+		return
 	draw_circle(Vector2.ZERO,body_radius,Color("#c5edff"))
 	draw_arc(Vector2.ZERO,body_radius,0,TAU,48,Color.WHITE,2)
 	# Reuse the existing enemy hp/max_hp state; temporary compact health bar.

@@ -1,6 +1,7 @@
 extends CanvasLayer
 
 const Portrait = preload("res://scripts/shadow_portrait.gd")
+const COMBAT_UI_SCALE := 0.75
 const TIMER_MARGIN := Vector2(24,16)
 const TIMER_SIZE := Vector2(160,36)
 const TIMER_FONT_SIZE := 22
@@ -50,7 +51,8 @@ func _ready() -> void:
 	roster.name = "OwnedShadows"
 	roster.add_theme_constant_override("separation",int(ROSTER_GAP))
 	roster.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root_control.add_child(roster)
+	# Share the skill control transform so logical layout and input remain aligned.
+	skill_ui.add_child(roster)
 	summons.list_changed.connect(rebuild_roster)
 	rebuild_roster()
 	refresh()
@@ -64,6 +66,8 @@ func _process(_delta: float) -> void:
 
 func refresh() -> void:
 	if not is_instance_valid(manager) or not is_instance_valid(skill_ui): return
+	skill_ui.pivot_offset = skill_ui.size
+	skill_ui.scale = Vector2.ONE*COMBAT_UI_SCALE
 	timer_label.text = format_elapsed(manager._elapsed_seconds)
 	var skill_box: Rect2 = skill_ui.card_rect(skill_ui.manager.SkillData.IDS.size()-1)
 	var width := ROSTER_CARD.x*entries.size()+ROSTER_GAP*maxi(0,entries.size()-1)

@@ -56,6 +56,7 @@ func nearest(enemies: Array, radius: float, screen_only: bool = false, excluded:
 	var screen: Rect2 = manager.enemies._get_screen_world_rect()
 	for candidate: EnemyActor in enemies:
 		if not candidate.is_active or candidate.is_logically_dead: continue
+		if candidate.has_method("is_auto_targetable") and not candidate.is_auto_targetable(): continue
 		if excluded.has(candidate): continue
 		if not manager.region_matches(self,candidate.global_position,region_mode): continue
 		if screen_only and not screen.has_point(candidate.global_position): continue
@@ -71,6 +72,7 @@ func target_is_live() -> bool:
 
 func can_retain_target() -> bool:
 	if not target_is_live(): return false
+	if target.has_method("is_auto_targetable") and not target.is_auto_targetable(): return false
 	return global_position.distance_to(target.global_position)<=float(config.Search_radius) or manager.enemies._get_screen_world_rect().has_point(target.global_position)
 
 func choose_target(living: Array) -> void:

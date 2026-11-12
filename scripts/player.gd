@@ -2,6 +2,7 @@ extends CharacterBody2D
 
 const PLAYER_COLOR := Color("#b18cff")
 signal leveled_up(new_level: int)
+signal damaged(world_position: Vector2)
 var level: int = 1
 var experience: int = 0
 var enhancement_points: int = 0
@@ -89,6 +90,7 @@ func apply_damage(amount: int) -> void:
     if is_dead or amount <= 0 or is_fear_casting():
         return
     hp = maxi(0, hp - amount)
+    damaged.emit(global_position)
     _update_hp_label()
     if hp == 0:
         is_dead = true
@@ -127,6 +129,8 @@ func choose_target(enemies: Array, range_override: float = -1.0) -> Variant:
     var chosen: Variant = null
     for candidate in enemies:
         if candidate == null or not candidate.is_active or candidate.is_logically_dead:
+            continue
+        if candidate.has_method("is_auto_targetable") and not candidate.is_auto_targetable():
             continue
         var distance := global_position.distance_to(candidate.global_position)
         if distance > (range_override if range_override>=0.0 else float(_attack_data["Range"])):
@@ -218,6 +222,35 @@ func _physics_process(delta: float) -> void:
     # Resolve each axis independently so a blocked component does not cancel motion along the wall.
     move_and_collide(Vector2(direction.x * travel, 0.0))
     move_and_collide(Vector2(0.0, direction.y * travel))
+    _advance_boss_push(delta)
+
+var boss_push_direction := Vector2.ZERO
+var boss_push_distance: float = 0
+var boss_push_duration: float = 0
+var boss_push_elapsed: float = 0
+var boss_push_bounds := Rect2()
+
+func start_boss_push(source: Vector2, distance: float, duration: float, bounds: Rect2) -> void:
+    if is_dead or distance<=0 or duration<=0: return
+    boss_push_direction = source.direction_to(global_position)
+    if boss_push_direction==Vector2.ZERO: boss_push_direction = Vector2.RIGHT
+    boss_push_distance = distance
+    boss_push_duration = duration
+    boss_push_elapsed = 0
+    boss_push_bounds = bounds
+
+func _advance_boss_push(delta: float) -> void:
+    if boss_push_duration<=0 or boss_push_elapsed>=boss_push_duration: return
+    var end_time := minf(boss_push_duration,boss_push_elapsed+delta)
+    var start_speed := 2.0*boss_push_distance/boss_push_duration
+    var elapsed := end_time-boss_push_elapsed
+    var displacement := start_speed*(elapsed-(end_time*end_time-boss_push_elapsed*boss_push_elapsed)/(2.0*boss_push_duration))
+    var collision := move_and_collide(boss_push_direction*displacement)
+    var bounded := Vector2(clampf(global_position.x,boss_push_bounds.position.x+body_radius,boss_push_bounds.end.x-body_radius),clampf(global_position.y,boss_push_bounds.position.y+body_radius,boss_push_bounds.end.y-body_radius))
+    if collision!=null or bounded!=global_position:
+        global_position = bounded
+        boss_push_elapsed = boss_push_duration
+    else: boss_push_elapsed = end_time
 
 func _draw() -> void:
     draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)

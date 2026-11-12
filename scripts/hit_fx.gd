@@ -2,6 +2,9 @@ extends Node2D
 
 # One batch-drawn node, fixed slots. No per-hit Node/Timer/scene allocation.
 const SPARK_VERTICES := 8
+const PLAYER_OUTER_COLOR := Color("#187ce8")
+const PLAYER_CORE_COLOR := Color("#6abfff")
+var player_fx: Node2D
 var enabled := false
 var duration: float
 var radius: float
@@ -17,6 +20,19 @@ var overwritten := 0
 var spark := PackedVector2Array()
 
 func configure(enemies: Node, row: Dictionary) -> void:
+	configure_shape(row)
+	if not enabled: return
+	enemies.enemy_damaged.connect(emit_at)
+	if enemies is EnemyManager and is_instance_valid(enemies._player):
+		player_fx = get_script().new()
+		player_fx.name = "PlayerHitFx"
+		player_fx.configure_shape(row)
+		player_fx.outer_color = PLAYER_OUTER_COLOR
+		player_fx.core_color = PLAYER_CORE_COLOR
+		enemies._player.damaged.connect(player_fx.emit_at)
+		enemies._player.get_parent().add_child(player_fx)
+
+func configure_shape(row: Dictionary) -> void:
 	enabled = int(row.Enabled)==1
 	set_physics_process(enabled)
 	z_index = 1
@@ -31,7 +47,6 @@ func configure(enemies: Node, row: Dictionary) -> void:
 	ages.fill(duration)
 	for index in range(SPARK_VERTICES):
 		spark.append(Vector2.RIGHT.rotated(TAU*index/SPARK_VERTICES)*(radius if index%2==0 else core_radius))
-	enemies.enemy_damaged.connect(emit_at)
 
 func emit_at(world_position: Vector2) -> void:
 	if not enabled: return
