@@ -1,0 +1,55 @@
+extends RefCounted
+
+static func register_schemas(store: CsvDataStore) -> void:
+	store.register_schema("boss.csv",{"Id":"String","Enemy_id":"String","Is_final":"Bool","Note":"String"})
+	store.register_schema("stage_timeline.csv",{"Id":"String","Time_mmss":"Int","Boss_id":"String","Note":"String"})
+	var action := {"Id":"String","Boss_id":"String","Kind":{"type":"Enum","values":{"basic":0,"dash":1,"slam":2}},"Use_range":"Float","Damage":"Int","Telegraph_sec":"Float","Recovery_sec":"Float","Cooldown_sec":"Float","Note":"String"}
+	for field in ["Range","Arc_deg","Dash_speed","Dash_distance","Slam_radius"]:
+		action[field] = {"type":"Optional","inner":"Float"}
+	action["Pick_weight"] = {"type":"Optional","inner":"Int"}
+	store.register_schema("boss_action.csv",action)
+	store.register_schema("boss_rule.csv",{"Id":"String","Warn_sec":"Float","Emerge_sec":"Float","Gate_radius":"Float","Toast_text":"String","Note":"String"})
+
+static func mmss_seconds(value: int) -> int:
+	if value<0 or value%100>59: return -1
+	return (value/100)*60+value%100
+
+static func validate(store: CsvDataStore) -> String:
+	var bosses := store.get_table("boss.csv")
+	for row in store.get_table("boss_action.csv").values():
+		if int(row.Kind) not in [0,1,2]: return error(store,"boss_action.csv",row.Id,"Kind","basic·dash·slam 중 하나여야 합니다.")
+	for id in bosses:
+		var boss: Dictionary = bosses[id]
+		if not store.get_table("enemy.csv").has(boss.Enemy_id): return error(store,"boss.csv",id,"Enemy_id","참조하는 적이 없습니다.")
+		var counts := [0,0,0]
+		for row in store.get_table("boss_action.csv").values():
+			if row.Boss_id==id: counts[int(row.Kind)]+=1
+		if counts!=[1,1,1]: return error(store,"boss_action.csv","","Kind","보스마다 basic·dash·slam이 정확히 한 행씩 필요합니다.")
+	for id in store.get_table("stage_timeline.csv"):
+		var row := store.get_row("stage_timeline.csv",id)
+		if mmss_seconds(int(row.Time_mmss))<0: return error(store,"stage_timeline.csv",id,"Time_mmss","음수 또는 초 부분이 59를 넘습니다.")
+		if not bosses.has(row.Boss_id): return error(store,"stage_timeline.csv",id,"Boss_id","보스 참조가 없습니다.")
+	for id in store.get_table("boss_action.csv"):
+		var row := store.get_row("boss_action.csv",id)
+		if not bosses.has(row.Boss_id): return error(store,"boss_action.csv",id,"Boss_id","보스 참조가 없습니다.")
+		for field in ["Use_range","Telegraph_sec","Recovery_sec","Cooldown_sec"]:
+			if not positive(row[field]): return error(store,"boss_action.csv",id,field,"유한한 양수가 필요합니다.")
+		if int(row.Damage)<0: return error(store,"boss_action.csv",id,"Damage","0 이상이어야 합니다.")
+		var used: Array = ["Range","Arc_deg"] if int(row.Kind)==0 else ["Dash_speed","Dash_distance","Pick_weight"] if int(row.Kind)==1 else ["Slam_radius","Pick_weight"]
+		for field in ["Range","Arc_deg","Dash_speed","Dash_distance","Pick_weight","Slam_radius"]:
+			if field in used:
+				if not positive(row[field]): return error(store,"boss_action.csv",id,field,"행동에 필요한 양수를 입력하세요.")
+			elif row[field]!=null: return error(store,"boss_action.csv",id,field,"사용하지 않는 열은 비워야 합니다.")
+		if int(row.Kind)==0 and float(row.Arc_deg)>360: return error(store,"boss_action.csv",id,"Arc_deg","360 이하여야 합니다.")
+	var rule := store.get_row("boss_rule.csv","boss_rule_01")
+	if rule.is_empty(): return error(store,"boss_rule.csv","boss_rule_01","Id","필수 행이 없습니다.")
+	for field in ["Warn_sec","Emerge_sec","Gate_radius"]:
+		if not positive(rule[field]): return error(store,"boss_rule.csv","boss_rule_01",field,"유한한 양수가 필요합니다.")
+	if String(rule.Toast_text).is_empty(): return error(store,"boss_rule.csv","boss_rule_01","Toast_text","문구가 필요합니다.")
+	return ""
+
+static func positive(value: Variant) -> bool:
+	return value!=null and is_finite(float(value)) and float(value)>0
+
+static func error(store: CsvDataStore, file: String, id: String, field: String, detail: String) -> String:
+	return "res://data/%s, 행 %d, 열 %s: %s" % [file,maxi(1,store.get_source_line(file,id)),field,detail]

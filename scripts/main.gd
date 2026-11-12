@@ -39,6 +39,10 @@ func _ready() -> void:
 	if not combat_error.is_empty():
 		_show_data_error(combat_error)
 		return
+	var boss_error := preload("res://scripts/boss_data.gd").validate(data_store)
+	if not boss_error.is_empty():
+		_show_data_error(boss_error)
+		return
 	var player_record: Dictionary = data_store.get_row("player.csv", "player_01")
 	if player_record.is_empty():
 		_show_data_error("res://data/player.csv, 행 1, 열 Id: 플레이어 ID player_01이 없습니다.")
@@ -98,6 +102,9 @@ func _ready() -> void:
 	choices.name = "ChoiceManager"
 	choices.configure(player,data_store.get_table("choice.csv"),data_store.get_table("choice_level.csv"),data_store.get_row("choice_rule.csv","choice_rule_01"),shadows)
 	map.add_child(choices)
+	var boss_director := preload("res://scripts/boss_director.gd").new()
+	boss_director.configure(enemy_manager,data_store.get_table("boss.csv"),data_store.get_table("boss_action.csv"),data_store.get_table("stage_timeline.csv"),data_store.get_row("boss_rule.csv","boss_rule_01"))
+	map.add_child(boss_director)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:

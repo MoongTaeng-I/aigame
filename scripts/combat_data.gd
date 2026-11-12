@@ -43,6 +43,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	ChoiceData.register_schemas(store)
 	ShadowData.register_schemas(store)
 	HitFxData.register_schemas(store)
+	preload("res://scripts/boss_data.gd").register_schemas(store)
 
 static func validate(store: CsvDataStore) -> String:
 	var projectiles: Dictionary = store.get_table("projectile.csv")

@@ -329,10 +329,7 @@ func attack_visual_state() -> Dictionary:
 func in_sector(enemy: EnemyActor, geometry: Dictionary = {}) -> bool:
 	if not enemy.is_active or enemy.is_logically_dead: return false
 	if geometry.is_empty(): geometry = attack_geometry()
-	var offset: Vector2 = enemy.global_position-Vector2(geometry.center)
-	if offset.length_squared()>float(geometry.range)*float(geometry.range): return false
-	if offset==Vector2.ZERO: return true
-	return absf(wrapf(offset.angle()-Vector2(geometry.direction).angle(),-PI,PI))<=deg_to_rad(float(geometry.arc_deg))*0.5+0.000000001
+	return preload("res://scripts/combat_geometry.gd").in_sector(Vector2(geometry.center),Vector2(geometry.direction),float(geometry.range),float(geometry.arc_deg),enemy.global_position)
 
 func cancel_attack() -> void:
 	dash_through_active = false

@@ -33,6 +33,7 @@ var _elapsed_seconds: float = 0.0
 var _random := RandomNumberGenerator.new()
 var wander_radius: float = 0.0
 var _count_label: Label
+var boss_director: Node2D
 
 func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0, iterations: int = 1) -> void:
 	_player = player
@@ -49,6 +50,8 @@ func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictiona
 		_spawn_timers[String(spawn_id)] = 0.0
 
 func set_normal_spawning_stopped(stopped: bool) -> void:
+	if _stop_normal_spawning and not stopped:
+		for id in _spawn_timers: _spawn_timers[id] = 0.0
 	_stop_normal_spawning = stopped
 
 func get_alive_count() -> int:
@@ -89,6 +92,7 @@ func _physics_process(delta: float) -> void:
 		return
 	# 임시 타이머이며 시스템 8의 스테이지 시간으로 대체한다.
 	_elapsed_seconds += delta
+	if is_instance_valid(boss_director): boss_director.advance(_elapsed_seconds,delta)
 	_advance_spawn_rows(delta)
 	_update_active_enemies(delta)
 	_update_dying_enemies(delta)
@@ -104,6 +108,9 @@ func _physics_process(delta: float) -> void:
 	_update_count_label()
 
 func _advance_spawn_rows(delta: float) -> void:
+	if _stop_normal_spawning:
+		for id in _spawn_timers: _spawn_timers[id] = 0.0
+		return
 	for spawn_id_variant in _spawn_records:
 		var spawn_id := String(spawn_id_variant)
 		var row: Dictionary = _spawn_records[spawn_id]
@@ -158,6 +165,9 @@ func _update_active_enemies(delta: float) -> void:
 		return
 	var screen_rect := _get_screen_world_rect()
 	for enemy in _active_enemies.duplicate():
+		if enemy.has_method("boss_tick"):
+			enemy.boss_tick(delta)
+			continue
 		var target: Vector2 = _player.global_position
 		var wandering: bool = _player.is_stealthed()
 		if wandering:
@@ -325,7 +335,7 @@ func _resolve_contact_push_pass() -> void:
 		positions[index] = enemy.global_position
 		radii[index] = enemy.body_radius
 		weights[index] = maxf(enemy.push_weight,0.0001)
-		active[index] = int(enemy.is_active)
+		active[index] = int(enemy.is_active and not (enemy.has_method("is_boss_dashing") and enemy.is_boss_dashing()))
 		maximum_radius = maxf(maximum_radius,radii[index])
 	for shadow_index in range(_shadow_bodies.size()):
 		var index := 1+_active_enemies.size()+shadow_index
@@ -409,6 +419,8 @@ func _resolve_contact_push_pass() -> void:
 			positions[second_index] = bodies[second_index].global_position
 
 func _resolve_contact_pair(first: Variant, second: Variant) -> void:
+	if first.has_method("is_boss_dashing") and first.is_boss_dashing(): return
+	if second.has_method("is_boss_dashing") and second.is_boss_dashing(): return
 	var first_shadow := _shadow_bodies.has(first)
 	var second_shadow := _shadow_bodies.has(second)
 	if first_shadow and (second==_player or second is EnemyActor or second_shadow) and first.has_method("is_fan_cast_active") and first.is_fan_cast_active(): return
@@ -454,6 +466,7 @@ func _update_contact_damage() -> void:
 			return
 
 func _apply_contact_damage(enemy: EnemyActor) -> void:
+	if enemy.has_method("is_boss_dashing") and enemy.is_boss_dashing(): return
 	if not enemy.is_active or enemy.is_logically_dead or enemy.is_feared() or enemy.contact_damage <= 0 or _player.is_fear_casting():
 		return
 	var key := enemy.get_instance_id()
@@ -483,3 +496,27 @@ func _create_temporary_enemy_counter() -> void:
 func _update_count_label() -> void:
 	if _count_label != null:
 		_count_label.text = "적 수: %d / %d" % [_active_enemies.size(), _max_alive]
+
+func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyActor:
+	var boss := preload("res://scripts/boss_actor.gd").new()
+	var shape := CollisionShape2D.new()
+	shape.name = "CollisionShape2D"
+	shape.shape = CircleShape2D.new()
+	boss.add_child(shape)
+	boss.configure(_enemy_records[enemy_id])
+	boss.map_bounds = _get_map_world_rect()
+	add_child(boss)
+	boss.collision_layer = 0
+	boss.collision_mask = 0
+	boss.configure_boss(self,actions,provider)
+	boss.died.connect(_on_enemy_died)
+	boss.damaged.connect(_on_enemy_damaged)
+	return boss
+
+func activate_boss(boss: EnemyActor) -> void:
+	_spawn_order_counter += 1
+	boss.activate_at(boss.global_position,_spawn_order_counter)
+	boss.collision_mask = 0
+	_active_enemies.append(boss)
+	# Resolve the emergence overlap immediately with the existing pair rules.
+	_resolve_contact_pushes()

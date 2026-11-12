@@ -1,0 +1,4 @@
+﻿Id,Boss_id,Kind,Use_range,Damage,Telegraph_sec,Recovery_sec,Cooldown_sec,Pick_weight,Range,Arc_deg,Dash_speed,Dash_distance,Slam_radius,Note
+ice_bear_basic,boss_early,basic,100,12,0.4,0.4,1.5,,110,100,,,,A단계 검증용 시작값
+ice_bear_dash,boss_early,dash,400,25,0.8,0.6,6,1,,,700,400,,A단계 검증용 시작값
+ice_bear_slam,boss_early,slam,140,30,1.2,0.8,8,1,,,,,160,A단계 검증용 시작값

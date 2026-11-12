@@ -1,0 +1,2 @@
+﻿Id,Warn_sec,Emerge_sec,Gate_radius,Toast_text,Note
+boss_rule_01,2,1.5,64,<경고> 던전 브레이크가 발생해 보스 몬스터 : '{name}'이 나타납니다,A단계 검증용 시작값
