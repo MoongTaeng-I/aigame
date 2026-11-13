@@ -29,7 +29,7 @@ func run(tree: SceneTree) -> void:
 
 func data_checks() -> void:
 	t.check(Data.validate(store).is_empty(),"S8-I2-B actual extended boss tables validate")
-	t.check(store.get_row("enemy.csv","boss_ice_bear").Max_hp==1050,"S8-I2-B bear approved HP1050")
+	t.check(store.get_row("enemy.csv","boss_ice_bear").Max_hp==525,"S8-I2-B bear approved HP525")
 	t.check(store.get_row("boss.csv","boss_early").Detect_range==null and store.get_row("boss.csv","boss_middle").Detect_range==416,"S8-I2-B only elf has fixed boss detection416")
 	for id in ["ice_elf_basic","ice_elf_burst"]:
 		t.check(store.get_row("boss_action.csv",id).Use_range==416,"S8-I2-B action use416 "+id)
@@ -52,7 +52,7 @@ func bear_push() -> void:
 	for id in ["ice_bear_dash","ice_bear_slam","ice_bear_basic"]:
 		var f: Dictionary = base.active_fixture()
 		var b: Variant = f.boss
-		t.check(b.max_hp==1050,"S8-I2-B real spawned bear HP1050 "+id)
+		t.check(b.max_hp==525,"S8-I2-B real spawned bear HP525 "+id)
 		b.global_position = Vector2.ZERO
 		f.player.global_position = Vector2(50 if id=="ice_bear_dash" else 100,0)
 		var row := store.get_row("boss_action.csv",id)

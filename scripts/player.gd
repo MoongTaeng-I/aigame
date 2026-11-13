@@ -16,6 +16,14 @@ var dash_speed: float = 0.0
 var dash_pass_through: bool = false
 var stealth_remaining: float = 0.0
 var fear_cast_remaining: float = 0.0
+var freeze_remaining: float = 0.0
+
+func is_frozen() -> bool:
+    return freeze_remaining > 0.000000001
+
+func apply_freeze(seconds: float) -> void:
+    if not is_dead:
+        freeze_remaining = seconds
 
 func is_fear_casting() -> bool:
     return fear_cast_remaining > 0.000000001
@@ -116,7 +124,7 @@ func update_basic_attack(now: float, enemies: Array) -> void:
             _attack_ready_at = _next_hit_at + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
         _remaining_hits -= 1
         _next_hit_at += float(_attack_data["Hit_gap_sec"])
-    if _remaining_hits == 0 and now + 0.000000001 >= _attack_ready_at:
+    if not is_frozen() and _remaining_hits == 0 and now + 0.000000001 >= _attack_ready_at:
         var first_target: Variant = choose_target(enemies)
         if first_target != null:
             _attack_cast_range = float(_attack_data["Range"])
@@ -207,9 +215,11 @@ func _physics_process(delta: float) -> void:
     if is_dead:
         return
     stealth_remaining = maxf(0.0,stealth_remaining-delta)
+    var frozen_time := minf(delta,freeze_remaining)
+    freeze_remaining = maxf(0.0,freeze_remaining-delta)
     var locked_time := minf(delta,fear_cast_remaining)
     fear_cast_remaining = maxf(0.0,fear_cast_remaining-delta)
-    var movement_delta := delta-locked_time
+    var movement_delta := delta-maxf(locked_time,frozen_time)
     var direction := movement_input()
     dash_pass_through = dash_remaining > 0.0
     var travel := move_speed * movement_delta

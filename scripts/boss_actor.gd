@@ -19,6 +19,7 @@ var dash_started: float = 0
 var dash_hit := false
 var rng := RandomNumberGenerator.new()
 var elf: RefCounted
+var baruka: RefCounted
 
 func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable) -> void:
 	manager = owner_manager
@@ -28,6 +29,10 @@ func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable
 	rng.randomize()
 	for row in actions: ready_at[row.Id] = clock
 	for row in actions:
+		if int(row.Kind)==7:
+			baruka = preload("res://scripts/boss_baruka_behavior.gd").new()
+			baruka.configure(self)
+			break
 		if int(row.Kind)==3:
 			elf = preload("res://scripts/boss_elf_behavior.gd").new()
 			elf.configure(self)
@@ -43,6 +48,7 @@ func apply_damage(amount: int) -> bool:
 
 func begin_death() -> void:
 	if elf!=null: elf.cleanup()
+	if baruka!=null: baruka.cleanup()
 	super.begin_death()
 
 func start_knockback(_source: Vector2, _distance: float, _duration: float) -> void:
@@ -51,6 +57,7 @@ func start_knockback(_source: Vector2, _distance: float, _duration: float) -> vo
 func apply_fear(duration: float) -> void:
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
+	if baruka!=null: baruka.interrupt()
 	if elf!=null: elf.interrupt_burst()
 	if not current.is_empty(): finish_action(clock)
 	super.apply_fear(duration)
@@ -61,6 +68,9 @@ func is_boss_dashing() -> bool:
 func boss_tick(delta: float) -> void:
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
+	if baruka!=null:
+		baruka.tick(delta)
+		return
 	if elf!=null:
 		elf.tick(delta)
 		return
@@ -116,6 +126,9 @@ func move_boss(point: Vector2, delta: float, stop: bool = false) -> void:
 	queue_redraw()
 
 func start_action(row: Dictionary, target_position: Vector2) -> void:
+	if baruka!=null:
+		baruka.start(row,target_position)
+		return
 	current = row.duplicate(true)
 	phase = "telegraph"
 	phase_end = clock+float(row.Telegraph_sec)
@@ -172,10 +185,14 @@ func finish_action(at: float) -> void:
 	queue_redraw()
 
 func telegraph_geometry() -> Dictionary:
+	if baruka!=null: return baruka.geometry()
 	if current.is_empty(): return {}
 	return {"kind":int(current.Kind),"center":origin,"direction":facing,"end":dash_end,"body_radius":body_radius,"range":current.Range,"arc_deg":current.Arc_deg,"slam_radius":current.Slam_radius}
 
 func _draw() -> void:
+	if baruka!=null:
+		baruka.draw()
+		return
 	if elf!=null:
 		elf.draw()
 		return

@@ -1,13 +1,13 @@
 # 시스템 8. 보스와 시간 진행
 
-- 현재 단계: 구현(초반 보스 A단계 승인 2026-11-12, 중간 보스 A~C단계 승인 2026-11-12, 최종 보스 바루카 구현 중·직접 플레이 확인 대기) 
+- 현재 단계: 테스트·사용자 확인 대기(초반 보스 A단계 승인 2026-11-12, 중간 보스 A~C단계 승인 2026-11-12, 최종 보스 바루카 구현·자동 검사 통과, 직접 플레이 확인 대기)
 - 승인일: 2026-11-12
 - 완료일:
 - 관련 개발 일지: [시스템 8 보스와 시간 진행] 기획·검토 / [시스템 8 보스와 시간 진행] 구현·테스트 / [시스템 8 보스와 시간 진행] 초반 보스 승인
 
 ## 개요
 
-초반·중간·최종 보스 공통 시간/대기열/등장/행동 시스템을 만들고 초반 보스 아이스 베어 우두머리와 중간 보스 아이스 엘프 정예병을 검증한다.
+초반·중간·최종 보스 공통 시간/대기열/등장/행동 시스템을 만들고 초반 보스 아이스 베어 우두머리, 중간 보스 아이스 엘프 정예병과 최종 보스 바루카를 검증한다.
 
 ## 시스템과 콘텐츠 구분
 
@@ -69,7 +69,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | --- | --- |
 | boss.csv / boss_middle | Enemy_id=boss_ice_elf, Is_final=0, Detect_range=416 |
 | stage_timeline.csv / timeline_middle_boss | Time_mmss=200, Boss_id=boss_middle |
-| enemy.csv / boss_ice_elf | Name_ko=아이스 엘프 정예병, Move_speed=110, Attack_range_type=ranged, Body_radius=28, Push_weight=10, Max_hp=2200, Contact_damage=0, Contact_rehit_sec=1, Death_fade_sec=0.4, Shot_interval_sec=0.8, Shot_range=416, Projectile_id=elf_arrow, Xp_value=70 |
+| enemy.csv / boss_ice_elf | Name_ko=아이스 엘프 정예병, Move_speed=110, Attack_range_type=ranged, Body_radius=28, Push_weight=10, Max_hp=1100(S8-IMPL-03 테스트 절반값), Contact_damage=0, Contact_rehit_sec=1, Death_fade_sec=0.4, Shot_interval_sec=0.8, Shot_range=416, Projectile_id=elf_arrow, Xp_value=70 |
 | projectile.csv / elf_arrow | Speed=450, Damage=12, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
 | projectile.csv / elf_burst_arrow | Speed=450, Damage=8, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
 
@@ -97,7 +97,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 
 ### 판단 지점·검증용 기본값
 
-미지정 Use_range는 전광석화 400·추격 300·빙결 350, Recovery_sec는 0, 전광석화·추격 경로 반폭은 몸 반경을 사용하는 제안값이다. 미지정 일반 접촉 재피격·사망 흐려짐은 기존 enemy_01 값을 복사한다. 경로는 플레이어 중심 기준 기존 베어 corridor를 재사용한다. 원 안 최소 거리 목적지의 난수 거절 추출은 유한 횟수 뒤 기하학적 대체점을 찾아 무한 반복을 막으며, 플레이어 위치와 무관하다. 유효 목적지가 없으면 남은 이동을 종료하고 쿨타임을 시작한다. 잔상 수명·간격은 순수 표시 상수다.
+미지정 Use_range는 전광석화 400·추격 300·빙결 350, Recovery_sec는 0, 전광석화·추격 경로 반폭은 몸 반경을 사용하는 제안값이다. 사용자 추가 답변 "제안값으로 진행"을 받았으며 최종 밸런스 확정으로 확대하지 않는다. 미지정 일반 접촉 재피격·사망 흐려짐은 기존 enemy_01 값을 복사한다. 경로는 플레이어 중심 기준 기존 베어 corridor를 재사용한다. 원 안 최소 거리 목적지의 난수 거절 추출은 유한 횟수 뒤 기하학적 대체점을 찾아 무한 반복을 막으며, 플레이어 위치와 무관하다. 유효 목적지가 없으면 남은 이동을 종료하고 쿨타임을 시작한다. 잔상 수명·간격은 순수 표시 상수다.
 
 ### 바루카 추가 행·열
 
@@ -136,7 +136,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 
 검증용 시작값은 아래 예시 열이며 최종 밸런스가 아니다. enemy.csv에는 boss_ice_bear 1행만 추가한다. Death_fade_sec는 기존 enemy_01 행의 문자열을 복사하고 기존 행·열·spawn.csv는 변경하지 않는다.
 
-보스 검증용 enemy.csv 추가 행: `boss_ice_bear`, 이름 `아이스 베어 우두머리`, Move_speed `90`, Attack_range_type `melee`, Body_radius `48`, Push_weight `50`, Max_hp `1050`, Contact_damage `10`, Contact_rehit_sec `1`, Death_fade_sec는 `enemy_01`과 같은 값, Shot 세 열 빈칸, Xp_value `50`. 기존 행과 spawn.csv는 보존한다.
+보스 검증용 enemy.csv 추가 행: `boss_ice_bear`, 이름 `아이스 베어 우두머리`, Move_speed `90`, Attack_range_type `melee`, Body_radius `48`, Push_weight `50`, Max_hp `525`(S8-IMPL-03 테스트 절반값), Contact_damage `10`, Contact_rehit_sec `1`, Death_fade_sec는 `enemy_01`과 같은 값, Shot 세 열 빈칸, Xp_value `50`. HP 외 기존 행과 spawn.csv는 보존한다.
 
 `enemy.csv` 전체 컬럼 설명은 [시스템 2](02_enemy_spawn_and_movement.md#테이블-컬럼-설명) 참조.
 
@@ -209,13 +209,13 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Id | 행 식별자 | ice_bear_basic (ice_bear_basic) | String | 해당 없음 | 문자열 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Boss_id | 대상 보스 | boss_early (ice_bear_basic) | String | 해당 없음 | 문자열 | 불가 | boss.csv.Id | 데이터 오류 화면 | 없음 |
-| Kind | 행동 종류 | basic (ice_bear_basic) | Enum | 해당 없음 | basic / dash / slam / ranged_basic / push / burst / stealth / tri_dash / blink_strike / chase / ice_zone | 불가 | 없음 | 데이터 오류 화면 | 초반 세 행동 또는 중간 네 행동 각 한 행, 혼합 불가 |
+| Kind | 행동 종류 | basic (ice_bear_basic) | Enum | 해당 없음 | basic / dash / slam / ranged_basic / push / burst / stealth / tri_dash / blink_strike / chase / ice_zone | 불가 | 없음 | 데이터 오류 화면 | 초반 세 행동·중간 네 행동·최종 네 행동 중 한 프로필 각 한 행, 혼합 불가 |
 | Use_range | 플레이어 중심 거리 기준 사용 범위 | 140 (ice_bear_basic) | Float | px | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
 | Damage | 행동 피해 | 12 (ice_bear_basic) | Int | 해당 없음 | 0 이상 | 불가 | 없음 | 데이터 오류 화면 | 없음 |
-| Telegraph_sec | 초반 사전 표시 또는 중간 연발 준비 시간 | 0.4 (ice_bear_basic) | Float | 초 | 초반: 유한한 양수; 중간: 연발은 확정 준비 시간, 나머지는 준비 없음 | 불가 | 없음 | 데이터 오류 화면 | 중간 은신 지속 시간은 Duration_sec |
-| Recovery_sec | 행동 종료 후 대기 시간 | 0.4 (ice_bear_basic) | Float | 초 | 초반: 유한한 양수; 중간: 유한한 비음수 | 불가 | 없음 | 데이터 오류 화면 | 중간 연발은 회복 종료 후 쿨타임 시작 |
+| Telegraph_sec | 사전 표시 또는 중간 연발 준비 시간 | 0.4 (ice_bear_basic) | Float | 초 | 초반·최종: 유한한 양수; 중간: 연발은 확정 준비 시간, 나머지는 준비 없음 | 불가 | 없음 | 데이터 오류 화면 | 중간 은신 지속 시간은 Duration_sec |
+| Recovery_sec | 행동 종료 후 대기 시간 | 0.4 (ice_bear_basic), 0 (baruka_basic) | Float | 초 | 초반: 유한한 양수; 중간·최종: 유한한 비음수 | 불가 | 없음 | 데이터 오류 화면 | 중간 연발은 회복 종료 후 쿨타임 시작 |
 | Cooldown_sec | 행동별 재사용 대기 시간 | 1.5 (ice_bear_basic) | Float | 초 | 유한한 양수 | 불가 | 없음 | 데이터 오류 화면 | 초반 종료·공포 취소, 중간 push 발동·stealth 해제·burst 자연 회복 종료 또는 공포/플레이어 은신 중단 순간부터; ranged_basic 실제 간격은 Shot_interval_sec |
-| Pick_weight | 예정 스킬 선정 가중치 | (빈칸) (ice_bear_basic) | Optional Int | 해당 없음 | dash/slam: 1 이상; basic: 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
+| Pick_weight | 예정 스킬 선정 가중치 | (빈칸) (ice_bear_basic), 1 (baruka_blink) | Optional Int | 해당 없음 | dash/slam/blink_strike/chase/ice_zone: 1 이상; 기본 공격: 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 바루카 세 스킬은 사용할 때까지 선정 고정 |
 | Range | 할퀴기 부채꼴 반경 | 150 (ice_bear_basic) | Optional Float | px | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
 | Arc_deg | 할퀴기 중심각 | 100 (ice_bear_basic) | Optional Float | 도 | basic: 0 초과 360 이하 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
 | Dash_speed | 돌진 이동 속도 | 1000 (ice_bear_dash) | Optional Float | px/s | 사용 행동: 0 초과; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 없음 |
@@ -224,7 +224,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | Note | 설명용, 동작에 사용하지 않음 | A단계 검증용 시작값 (ice_bear_basic) | String | 해당 없음 | 문자열 | 허용 | 없음 | 검증 없음 | 없음 |
 | Projectile_id | 발사할 적 투사체 | elf_arrow (ice_elf_basic) | Optional String | 해당 없음 | ranged_basic/burst: 존재하는 Id; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | projectile.csv.Id | 데이터 오류 화면 | Damage가 참조 행과 같아야 함 |
 | Shot_interval_sec | 기본 공격 또는 연발의 발사 간격 | 0.15 (ice_elf_burst) | Optional Float | 초 | ranged_basic/burst: 유한한 양수; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 매 발 플레이어 현재 위치 조준 |
-| Duration_sec | 연발 지속 또는 은신 지속 시간 | 5 (ice_elf_stealth) | Optional Float | 초 | burst/stealth: 유한한 양수; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 연발은 준비 종료부터, 은신은 즉시 시작 |
+| Duration_sec | 연발·은신·추격 지속 시간 | 5 (ice_elf_stealth), 3 (baruka_chase) | Optional Float | 초 | burst/stealth/chase: 유한한 양수; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 추격은 시전 시작부터이며 마지막 진행 공격은 완료 |
 | Push_distance | 밀쳐내기 또는 베어 스킬 명중 시 플레이어를 밀어낼 전체 거리 | 440 (ice_elf_push) | Optional Float | px | push/dash/slam: 유한한 양수; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 벽에 닿으면 실제 거리는 짧아짐 |
 | Push_sec | 플레이어 밀기 감속 지속 시간 | 0.4 (ice_elf_push) | Optional Float | 초 | push/dash/slam: 유한한 양수; 나머지 빈칸 | 사용하지 않는 행동은 필수 빈칸 | 없음 | 데이터 오류 화면 | 기존 적 넉백 공식 재사용 |
 

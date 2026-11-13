@@ -59,7 +59,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			try_use(id)
 
 func try_use(id: String) -> bool:
-	if player.is_dead or get_tree().paused or player.is_stealthed() or player.is_fear_casting():
+	if player.is_dead or get_tree().paused or player.is_frozen() or player.is_stealthed() or player.is_fear_casting():
 		return false
 	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
 		return false
@@ -67,7 +67,7 @@ func try_use(id: String) -> bool:
 
 func try_upgrade(id: String) -> bool:
 	var cast = skills[id]
-	if player.is_dead or get_tree().paused or not cast.implemented or player.enhancement_points<1 or cast.level>=cast.max_level():
+	if player.is_dead or get_tree().paused or player.is_frozen() or not cast.implemented or player.enhancement_points<1 or cast.level>=cast.max_level():
 		return false
 	player.enhancement_points -= 1
 	cast.level += 1
