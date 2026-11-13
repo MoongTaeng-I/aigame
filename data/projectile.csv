@@ -1,4 +1,4 @@
 ﻿Id,Speed,Damage,Body_radius,Expire_rule,Max_distance,Max_lifetime_sec,Note
 proj_test_01,300,8,6,distance,500,,A단계 검증용 임시
-elf_arrow,450,12,6,distance,500,,S8-IMPL-02 플레이 조정 전제 초안
-elf_burst_arrow,450,8,6,distance,500,,S8-IMPL-02 플레이 조정 전제 초안
+elf_arrow,585,12,6,distance,500,,S8-IMPL-02 플레이 조정 전제 초안
+elf_burst_arrow,585,8,6,distance,500,,S8-IMPL-02 플레이 조정 전제 초안

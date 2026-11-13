@@ -13,8 +13,27 @@ const FADE_IN_SEC := 0.16
 const FADE_OUT_SEC := 0.2
 var panel: PanelContainer
 var label: Label
+var entries: Array = []
+var warning: Dictionary = {}
+var completion_label: Label
+var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+
+static func particle(word: String, consonant: String, vowel: String) -> String:
+	if word.is_empty(): return word+vowel
+	var code := word.unicode_at(word.length()-1)
+	return word+(consonant if code>=0xAC00 and code<=0xD7A3 and (code-0xAC00)%28!=0 else vowel)
+
+static func notify(source: Node, text: String) -> void:
+	var views := source.get_tree().get_nodes_in_group("combat_toasts")
+	# A fixture without a director legitimately has no HUD.
+	for view in views:
+		if view.get_parent().get_parent().manager==source.enemies:
+			view.push_message(text)
+			return
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	add_to_group("combat_toasts")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel = PanelContainer.new()
@@ -45,15 +64,64 @@ func _ready() -> void:
 	label.add_theme_font_size_override("font_size",FONT_SIZE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(label)
+	panel.hide()
 	hide()
 
 func present(text: String, age: float, remaining: float, showing: bool) -> void:
-	label.text = text
-	visible = showing
-	modulate.a = minf(clampf(age/FADE_IN_SEC,0,1),clampf(remaining/FADE_OUT_SEC,0,1)) if showing else 0.0
+	if not warning.is_empty() and not warning.retiring:
+		warning.age = age+float(warning.pause_elapsed)
+		warning.remaining = remaining-float(warning.pause_elapsed) if showing else 0.0
+		_refresh()
+
+func push_message(text: String, duration: float = -1.0, is_warning: bool = false) -> void:
+	var copy := panel.duplicate() as PanelContainer
+	add_child(copy)
+	copy.show()
+	var content := copy.get_child(0) as Label
+	content.text = text
+	var entry := {"panel":copy,"text":text,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
+	entries.push_front(entry)
+	if is_warning:
+		warning = entry
+		label = content
+	var count := 0
+	for item in entries:
+		if item.retiring: continue
+		count+=1
+		if count>int(presentation.Toast_max):
+			item.retiring = true
+			item.remaining = minf(float(item.remaining),FADE_OUT_SEC)
+	_refresh()
+
+func _process(delta: float) -> void:
+	for entry in entries:
+		if not entry.warning or entry.retiring or get_tree().paused:
+			entry.age+=delta
+			entry.remaining-=delta
+			if entry.warning and get_tree().paused: entry.pause_elapsed+=delta
+	_refresh()
+
+func _refresh() -> void:
+	for index in range(entries.size()-1,-1,-1):
+		if float(entries[index].remaining)<=0:
+			entries[index].panel.queue_free()
+			entries.remove_at(index)
+	var row := 0
+	for entry in entries:
+		var view: PanelContainer = entry.panel
+		if not entry.retiring:
+			view.offset_top = TOP_MARGIN+row*(PANEL_SIZE.y+float(presentation.Toast_gap_px))
+			view.offset_bottom = view.offset_top+PANEL_SIZE.y
+			row+=1
+		view.modulate.a = minf(clampf(float(entry.age)/FADE_IN_SEC,0,1),clampf(float(entry.remaining)/FADE_OUT_SEC,0,1))
+	visible = not entries.is_empty() or is_instance_valid(completion_label)
 
 func show_completion(text: String) -> void:
-	# Preserve the previous temporary completion message without a new game screen.
-	label.text = text
-	modulate.a = 1
+	completion_label = Label.new()
+	completion_label.text = text
+	completion_label.add_theme_font_size_override("font_size",48)
+	completion_label.z_index = -1
+	add_child(completion_label)
+	completion_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	completion_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	show()

@@ -1,6 +1,11 @@
 extends CharacterBody2D
 
 const PLAYER_COLOR := Color("#b18cff")
+const Geometry = preload("res://scripts/combat_geometry.gd")
+const Afterimage = preload("res://scripts/shadow_afterimage.gd")
+var presentation: Dictionary = Afterimage.presentation()
+var visuals_enabled := true
+var trail_elapsed := 0.0
 signal leveled_up(new_level: int)
 signal damaged(world_position: Vector2)
 var level: int = 1
@@ -119,7 +124,7 @@ func update_basic_attack(now: float, enemies: Array) -> void:
     while _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
         var target: Variant = choose_target(enemies,_attack_cast_range)
         if target != null:
-            _apply_basic_hit(target)
+            _apply_basic_triangle(target,enemies)
         if _remaining_hits==1:
             _attack_ready_at = _next_hit_at + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
         _remaining_hits -= 1
@@ -128,7 +133,7 @@ func update_basic_attack(now: float, enemies: Array) -> void:
         var first_target: Variant = choose_target(enemies)
         if first_target != null:
             _attack_cast_range = float(_attack_data["Range"])
-            _apply_basic_hit(first_target)
+            _apply_basic_triangle(first_target,enemies)
             _remaining_hits = int(_attack_data["Hits_per_attack"]) - 1
             _next_hit_at = now + float(_attack_data["Hit_gap_sec"])
             _attack_ready_at = now + _remaining_hits * float(_attack_data["Hit_gap_sec"]) + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
@@ -166,6 +171,17 @@ func heal_percent(percent: float) -> void:
         return
     hp = healed_hp(percent)
     _update_hp_label()
+
+func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
+    var facing: Vector2 = global_position.direction_to(target.global_position)
+    if facing==Vector2.ZERO: facing = last_move_direction
+    var base := global_position+facing*body_radius
+    var struck: Array = []
+    # Snapshot the target set before damage signals/knockback can alter it.
+    for enemy in enemies:
+        if is_instance_valid(enemy) and enemy.is_active and not enemy.is_logically_dead and not struck.has(enemy) and Geometry.in_triangle(enemy.global_position,base,facing,_attack_cast_range,_attack_cast_range*160.0/140.0):
+            struck.append(enemy)
+    for enemy in struck: _apply_basic_hit(enemy)
 
 func _apply_basic_hit(enemy: Variant) -> void:
     enemy.apply_damage(int(_attack_data["Damage"]))
@@ -210,6 +226,7 @@ func begin_dash(distance: float, duration: float) -> void:
     dash_remaining = duration
     dash_speed = distance / duration
     dash_pass_through = true
+    trail_elapsed = 0.0
 
 func _physics_process(delta: float) -> void:
     if is_dead:
@@ -223,6 +240,8 @@ func _physics_process(delta: float) -> void:
     var direction := movement_input()
     dash_pass_through = dash_remaining > 0.0
     var travel := move_speed * movement_delta
+    var dash_step := minf(delta,dash_remaining)
+    var before := global_position
     if dash_pass_through:
         direction = dash_direction
         travel = dash_speed * minf(delta,dash_remaining)
@@ -232,6 +251,15 @@ func _physics_process(delta: float) -> void:
     # Resolve each axis independently so a blocked component does not cancel motion along the wall.
     move_and_collide(Vector2(direction.x * travel, 0.0))
     move_and_collide(Vector2(0.0, direction.y * travel))
+    if dash_pass_through and visuals_enabled:
+        var at := trail_elapsed
+        while at<=dash_step+0.000000001:
+            var copy := Afterimage.new()
+            copy.configure({"kind":"player","radius":body_radius},float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
+            get_parent().add_child(copy)
+            copy.global_position = before.lerp(global_position,clampf(at/maxf(dash_step,0.000000001),0,1))
+            at+=float(presentation.Trail_interval_sec)
+        trail_elapsed = at-dash_step
     _advance_boss_push(delta)
 
 var boss_push_direction := Vector2.ZERO

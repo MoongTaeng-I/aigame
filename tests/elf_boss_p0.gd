@@ -52,7 +52,7 @@ func validate_data() -> void:
 	var basic := store.get_row("boss_action.csv","ice_elf_basic")
 	t.check(basic.Shot_interval_sec<store.get_row("enemy.csv","enemy_test_ranged").Shot_interval_sec,"S8-I2 basic faster interval than normal ranged")
 	for id in ["elf_arrow","elf_burst_arrow"]:
-		t.check(store.get_row("projectile.csv",id).Speed==450,"S8-I2-B approved arrow speed "+id)
+		t.check(store.get_row("projectile.csv",id).Speed==585,"S8-I2-B approved arrow speed "+id)
 	var row := store.get_row("boss_action.csv","ice_elf_burst")
 	for col in ["Shot_interval_sec","Duration_sec"]:
 		var old: Variant = row[col]
@@ -155,6 +155,9 @@ func concealment_and_damage() -> void:
 	e.start_stealth()
 	f.player.global_position = Vector2(300,0)
 	b.ready_at.ice_elf_burst = 0
+	# The earlier close-range basic shot committed a flee; finish it before
+	# checking the unchanged offensive-skill concealment rule.
+	if e.fleeing: step(f,1)
 	step(f,0)
 	t.check(e.burst and e.hidden,"S8-I2 offensive skill keeps stealth")
 	step(f,0.3)

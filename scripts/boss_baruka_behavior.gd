@@ -3,8 +3,7 @@ extends RefCounted
 const Geometry = preload("res://scripts/combat_geometry.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const Visual = preload("res://scripts/shadow_visual.gd")
-const TRAIL_LIFE := 0.3
-const TRAIL_INTERVAL := 0.045
+var presentation: Dictionary = Afterimage.presentation()
 const PREVIEW := Color(0.3,0.8,1,0.28)
 const ICE := Color(0.4,0.85,1,0.48)
 var boss: Node2D
@@ -202,27 +201,23 @@ func advance() -> void:
 
 func triangle_points() -> PackedVector2Array:
 	var base: Vector2 = boss.dash_end+boss.facing*boss.body_radius
-	var side: Vector2 = boss.facing.orthogonal()*float(boss.current.Tri_width)*0.5
-	return PackedVector2Array([base+side,base-side,base+boss.facing*float(boss.current.Tri_length)])
+	return Geometry.triangle_points(base,boss.facing,float(boss.current.Tri_length),float(boss.current.Tri_width))
 
 func triangle_contains(point: Vector2) -> bool:
 	var base: Vector2 = boss.dash_end+boss.facing*boss.body_radius
-	var offset := point-base
-	var along: float = offset.dot(boss.facing)
-	var length: float = boss.current.Tri_length
-	return along>=-0.000001 and along<=length+0.000001 and absf(offset.dot(boss.facing.orthogonal()))<=float(boss.current.Tri_width)*0.5*(1-along/length)+0.000001
+	return Geometry.in_triangle(point,base,boss.facing,float(boss.current.Tri_length),float(boss.current.Tri_width))
 
 func leave_trails(until: float) -> void:
 	for i in range(trails.size()-1,-1,-1):
 		if not is_instance_valid(trails[i]): trails.remove_at(i)
 	while next_trail_at<=until+0.000000001:
 		var copy := Afterimage.new()
-		copy.configure({"radius":boss.body_radius,"facing":boss.facing,"motion":-1,"phase":0.0},TRAIL_LIFE)
+		copy.configure({"radius":boss.body_radius,"facing":boss.facing,"motion":-1,"phase":0.0},float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
 		boss.add_child(copy)
 		copy.top_level = true
 		copy.global_position = boss.origin+boss.facing*minf(boss.dash_length,maxf(0,next_trail_at-boss.dash_started)*float(boss.current.Dash_speed))
 		trails.append(copy)
-		next_trail_at+=TRAIL_INTERVAL
+		next_trail_at+=float(presentation.Trail_interval_sec)
 
 func update_zones() -> void:
 	var player := target()

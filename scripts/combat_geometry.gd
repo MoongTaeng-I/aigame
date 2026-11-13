@@ -1,5 +1,15 @@
 extends RefCounted
 
+static func triangle_points(base: Vector2, direction: Vector2, length: float, width: float) -> PackedVector2Array:
+	var side := direction.orthogonal()*width*0.5
+	return PackedVector2Array([base+side,base-side,base+direction*length])
+
+static func in_triangle(point: Vector2, base: Vector2, direction: Vector2, length: float, width: float) -> bool:
+	if length<=0: return false
+	var offset := point-base
+	var along := offset.dot(direction)
+	return along>=-0.000001 and along<=length+0.000001 and absf(offset.dot(direction.orthogonal()))<=width*0.5*(1-along/length)+0.000001
+
 static func in_sector(center: Vector2, direction: Vector2, radius: float, arc_deg: float, point: Vector2) -> bool:
 	var offset := point-center
 	if offset.length_squared()>radius*radius: return false

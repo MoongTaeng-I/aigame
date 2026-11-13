@@ -36,7 +36,7 @@ func data_checks() -> void:
 	t.check(store.get_row("enemy.csv","boss_ice_elf").Shot_range==416,"S8-I2-B enemy shot range matches416")
 	for id in ["elf_arrow","elf_burst_arrow"]:
 		var row := store.get_row("projectile.csv",id)
-		t.check(row.Speed==450 and row.Max_distance==500,"S8-I2-B arrow450 distance500 "+id)
+		t.check(row.Speed==585 and row.Max_distance==500,"S8-I2-B arrow585 distance500 "+id)
 	for value in [null,0,-1,INF]:
 		store.tables["boss.csv"].boss_middle.Detect_range = value
 		t.check(not Data.validate(store).is_empty(),"S8-I2-B invalid detect rejected "+str(value))

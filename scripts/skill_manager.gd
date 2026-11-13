@@ -4,6 +4,10 @@ const SkillData = preload("res://scripts/skill_data.gd")
 const Cast = preload("res://scripts/skill_cast.gd")
 const Area = preload("res://scripts/skill_area.gd")
 const UI = preload("res://scripts/skill_ui.gd")
+const Toast = preload("res://scripts/boss_toast.gd")
+var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+var visual_rng := RandomNumberGenerator.new()
+var visuals_enabled := true
 
 var player: Node2D
 var enemies: EnemyManager
@@ -63,7 +67,9 @@ func try_use(id: String) -> bool:
 		return false
 	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
 		return false
-	return skills[id].start(clock)
+	var started: bool = skills[id].start(clock)
+	if started: Toast.notify(self,"[스킬 : %s 사용합니다]" % Toast.particle(String(records[id].Name_ko),"을","를"))
+	return started
 
 func try_upgrade(id: String) -> bool:
 	var cast = skills[id]
@@ -88,7 +94,16 @@ func _slash_tick(stats: Dictionary, at: float) -> void:
 	if player.is_dead or player.is_stealthed():
 		return
 	Area.damage_circle(player.global_position,float(stats.Range),int(stats.Damage),enemies.get_living_enemies())
-	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(stats.Hit_interval_sec)})
+	if visuals_enabled:
+		var lines: Array = []
+		for index in range(int(presentation.Slash_count)):
+			var angle := visual_rng.randf()*TAU
+			var direction := Vector2.RIGHT.rotated(angle)
+			var offset := visual_rng.randf_range(-0.6,0.6)*float(stats.Range)
+			var center: Vector2 = player.global_position+direction.orthogonal()*offset
+			var half_length := sqrt(float(stats.Range)*float(stats.Range)-offset*offset)
+			lines.append([center-direction*half_length,center+direction*half_length])
+		effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(presentation.Slash_sec),"lines":lines})
 	queue_redraw()
 
 func icon_state(id: String) -> Dictionary:
@@ -120,4 +135,10 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	UI.draw_ranges(self,effects)
+	for effect in effects:
+		if not effect.has("lines"):
+			UI.draw_ranges(self,[effect])
+			continue
+		for line in effect.lines:
+			draw_line(to_local(line[0]),to_local(line[1]),Color(presentation.Slash_outer_color),float(presentation.Slash_width),true)
+			draw_line(to_local(line[0]),to_local(line[1]),Color(presentation.Slash_core_color),float(presentation.Slash_core_width),true)

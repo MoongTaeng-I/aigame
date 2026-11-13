@@ -108,7 +108,7 @@ func select(index: int) -> bool:
 	if id==heal_id:
 		player.heal_percent(float(level_rows[id][0].Value))
 	elif not Data.shadow_id(int(records[id].Effect)).is_empty():
-		if shadow_manager==null or shadow_manager.summon(Data.shadow_id(int(records[id].Effect)))==null: return false
+		if shadow_manager==null or shadow_manager.summon(Data.shadow_id(int(records[id].Effect)),true)==null: return false
 		levels[id] += 1
 	else:
 		levels[id] += 1

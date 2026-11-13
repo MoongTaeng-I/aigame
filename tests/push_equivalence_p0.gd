@@ -26,7 +26,10 @@ func run(tree: SceneTree) -> void:
 	# The task artifact is optional for future clean checkouts; the frozen run above is permanent.
 	if FileAccess.file_exists("res://.local/s5-fix-03-reference.json"):
 		var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://.local/s5-fix-03-reference.json"))
-		error = Profile.compare(saved,optimized.state)
+		# Keep the archived expected state unchanged: it predates the explicitly
+		# requested triangle attack. EQ-02 above compares today's full combat.
+		var historical: Dictionary = helper.scenario(t,8,true,600,false,false,true)
+		error = Profile.compare(saved,historical.state)
 		t.check(error<=0.001,"PUSH-EQ-03 pre-optimization saved 600-frame state max_error=%.12f" % error)
 
 func layout(seed_value: int, iterations: int, dash: bool) -> Dictionary:

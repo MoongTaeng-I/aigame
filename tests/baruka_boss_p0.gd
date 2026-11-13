@@ -83,7 +83,7 @@ func triangle_and_pass_through() -> void:
 	for point in [Vector2(189.99,0),Vector2(330.01,0),Vector2(260,40.01),Vector2(260,-40.01)]:
 		t.check(not v.triangle_contains(point),"S8-I3 triangle outside "+str(point))
 	var hp: int = f.player.hp
-	step(f,0.399)
+	step(f,0.309)
 	t.check(f.player.hp==hp and b.global_position==Vector2.ZERO,"S8-I3 triangle preview does not deal early damage")
 	f.player.global_position = Vector2(0,500)
 	step(f,0.001)
@@ -94,9 +94,9 @@ func triangle_and_pass_through() -> void:
 	f.manager._resolve_contact_pushes()
 	t.check(normal.global_position==position,"S8-I3 high-speed body excluded from both push paths")
 	f.player.global_position = Vector2(250,0)
-	step(f,160.0/900.0)
+	step(f,160.0/1170.0)
 	t.check(f.player.hp==hp-15 and b.current.is_empty() and b.global_position.is_equal_approx(Vector2(160,0)),"S8-I3 arrival triangle deals15 once")
-	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.4+160.0/900.0+1.8),"S8-I3 basic cooldown from arrival")
+	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.31+160.0/1170.0+1.26),"S8-I3 basic cooldown from arrival")
 	b.global_position = Vector2(1900,0)
 	f.player.global_position = Vector2(2500,0)
 	start(f,"baruka_basic")
@@ -135,7 +135,7 @@ func blink_randomness() -> void:
 	var midpoint: Vector2 = (b.origin+b.dash_end)*0.5
 	f.player.global_position = midpoint
 	var hp: int = f.player.hp
-	step(f,b.dash_length/1400.0*0.6)
+	step(f,b.dash_length/2100.0*0.6)
 	t.check(f.player.hp==hp-15,"S8-I3 blink path hit remains enabled")
 	step(f,0)
 	t.check(f.player.hp==hp-15,"S8-I3 each blink movement hits same target once")

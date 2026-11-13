@@ -5,7 +5,7 @@ const ProfileManager = preload("res://tests/profile_enemy_manager.gd")
 const ProfilePlayer = preload("res://tests/profile_player.gd")
 const Skills = preload("res://scripts/skill_manager.gd")
 
-func fixture(tree: SceneTree, n: int, reference: bool = false) -> Dictionary:
+func fixture(tree: SceneTree, n: int, reference: bool = false, legacy_single_target: bool = false) -> Dictionary:
 	# Same scenes, CSV configuration and production spawning as the crowd regression.
 	var store := Crowd.Store.new()
 	Crowd.Data.register_schemas(store)
@@ -14,6 +14,7 @@ func fixture(tree: SceneTree, n: int, reference: bool = false) -> Dictionary:
 	tree.root.add_child(host)
 	var player = Crowd.Player.instantiate()
 	player.set_script(ProfilePlayer)
+	player.legacy_single_target = legacy_single_target
 	var row: Dictionary = store.get_row("player.csv","player_01")
 	player.configure_body(float(row.Body_radius),float(row.Push_weight))
 	player.configure_combat(1000000000,store.get_row("basic_attack.csv","attack_01"))
@@ -67,8 +68,8 @@ func press_fear(f: Dictionary) -> int:
 		Input.flush_buffered_events()
 	return Time.get_ticks_usec()-started
 
-func scenario(tree: SceneTree, n: int, fear: bool, frames: int = 180, reference: bool = false, detail: bool = true) -> Dictionary:
-	var f := fixture(tree,n,reference)
+func scenario(tree: SceneTree, n: int, fear: bool, frames: int = 180, reference: bool = false, detail: bool = true, legacy_single_target: bool = false) -> Dictionary:
+	var f := fixture(tree,n,reference,legacy_single_target)
 	f.manager.collecting = detail
 	for i in range(120): frame(f)
 	var application_us := press_fear(f) if fear else 0

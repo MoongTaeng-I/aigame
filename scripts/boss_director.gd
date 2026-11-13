@@ -31,6 +31,7 @@ func configure(owner_manager: EnemyManager, records: Dictionary, action_rows: Di
 
 func _ready() -> void:
 	var layer := CanvasLayer.new()
+	layer.layer = 100
 	add_child(layer)
 	toast_view = preload("res://scripts/boss_toast.gd").new()
 	layer.add_child(toast_view)
@@ -59,7 +60,6 @@ func advance(now: float, _delta: float) -> void:
 		actor.died.connect(_boss_died)
 		phase = "active"
 		toast_text = ""
-	if is_instance_valid(toast): toast.text = toast_text
 	if is_instance_valid(toast_view):
 		var remaining := deadline-now+(float(rule.Emerge_sec) if phase=="warn" else 0.0)
 		toast_view.present(toast_text,now-warning_started,remaining,phase in ["warn","emerge"])
@@ -72,12 +72,16 @@ func begin_warning(now: float) -> void:
 	deadline = now+float(rule.Warn_sec)
 	manager.set_normal_spawning_stopped(true)
 	var name_ko: String = manager._enemy_records[bosses[active_id].Enemy_id].Name_ko
-	toast_text = String(rule.Toast_text).replace("{name}",name_ko)
-	if is_instance_valid(toast): toast.text = toast_text
-	if is_instance_valid(toast_view): toast_view.present(toast_text,0,float(rule.Warn_sec)+float(rule.Emerge_sec),true)
+	var subject: String = preload("res://scripts/boss_toast.gd").particle(name_ko,"이","가").trim_prefix(name_ko)
+	toast_text = String(rule.Toast_text).replace("'{name}'이","'{name}'"+subject).replace("{name}",name_ko)
+	if is_instance_valid(toast_view):
+		toast_view.push_message(toast_text,float(rule.Warn_sec)+float(rule.Emerge_sec),true)
+		toast = toast_view.label
 	queue_redraw()
 
 func _boss_died(_dead: EnemyActor) -> void:
+	if active_id.is_empty(): return
+	if is_instance_valid(toast_view): toast_view.push_message("[보스 몬스터를 처치했습니다]")
 	var final := bool(bosses[active_id].Is_final)
 	active_id = ""
 	phase = "idle"
@@ -85,7 +89,6 @@ func _boss_died(_dead: EnemyActor) -> void:
 	if final:
 		completed = true
 		toast_text = "완료"
-		if is_instance_valid(toast): toast.text = toast_text
 		if is_instance_valid(toast_view): toast_view.show_completion(toast_text)
 		get_tree().paused = true
 	elif not pending.is_empty(): begin_warning(manager._elapsed_seconds)

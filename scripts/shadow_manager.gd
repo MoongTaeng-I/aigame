@@ -34,7 +34,7 @@ func can_summon(id: String = "") -> bool:
 		if actor.config.Id==id: return false
 	return true
 
-func summon(id: String = "igrit") -> Node2D:
+func summon(id: String = "igrit", from_selection: bool = false) -> Node2D:
 	if not can_summon(id): return null
 	var record: Dictionary = records[id]
 	var matching: Array = []
@@ -48,6 +48,8 @@ func summon(id: String = "igrit") -> Node2D:
 	enemies.register_shadow_body(actor)
 	actor.tree_exiting.connect(_remove_actor.bind(actor),CONNECT_ONE_SHOT)
 	list_changed.emit()
+	if from_selection:
+		preload("res://scripts/boss_toast.gd").notify(self,"[그림자 병사 %s 소환합니다]" % preload("res://scripts/boss_toast.gd").particle(String(record.Name_ko),"을","를"))
 	return actor
 
 func _remove_actor(actor: Node2D) -> void:

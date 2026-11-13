@@ -60,6 +60,7 @@ func _run() -> void:
 	await preload("res://tests/elf_boss_p0.gd").new().run(self)
 	await preload("res://tests/boss_adjustments_p0.gd").new().run(self)
 	await preload("res://tests/baruka_boss_p0.gd").new().run(self)
+	await preload("res://tests/combat_adjustments_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
@@ -200,13 +201,13 @@ func _test_timing() -> void:
 	var first := _spawn(f, Vector2(20,0), 100)
 	var second := _spawn(f, Vector2(40,0), 110)
 	f.player.update_basic_attack(0.0, f.manager._active_enemies)
-	check(first.hp == 90 and _effects(f.host) == 1, "P0-04 first damage/effect at attack start")
+	check(first.hp == 90 and second.hp == 100 and _effects(f.host) == 2, "P0-04 first triangle damages both inside targets at attack start")
 	f.player.update_basic_attack(0.149, f.manager._active_enemies)
-	check(first.hp == 90 and second.hp == 110, "P0-04 no second damage before 0.15")
+	check(first.hp == 90 and second.hp == 100, "P0-04 no second damage before 0.15")
 	second.hp = 80
 	f.player.update_basic_attack(0.15, f.manager._active_enemies)
-	check(first.hp == 90 and second.hp == 70, "P0-04 second damage at 0.15 reselects current target")
-	check(_effects(f.host) == 2, "P0-04 second effect overlaps first without waiting")
+	check(first.hp == 80 and second.hp == 70, "P0-04 second damage at 0.15 reselects direction and hits both")
+	check(_effects(f.host) == 4, "P0-04 second effects overlap first without waiting")
 	f.player.update_basic_attack(0.949999, f.manager._active_enemies)
 	check(second.hp == 70, "P0-04 next attack cannot start before 0.95")
 	f.player.update_basic_attack(0.95, f.manager._active_enemies)
@@ -236,7 +237,7 @@ func _test_timing() -> void:
 	f.player.update_basic_attack(0.0, f.manager._active_enemies)
 	check(first.is_logically_dead, "P0-05 first hit really kills its target")
 	f.player.update_basic_attack(0.15, f.manager._active_enemies)
-	check(second.hp == 40, "P0-05 second hit targets surviving candidate")
+	check(second.hp == 30, "P0-05 surviving candidate receives both triangle hits")
 	f.host.queue_free()
 	await process_frame
 

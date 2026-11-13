@@ -20,6 +20,9 @@ var push_effect_until: float = 0
 var push_effect_center := Vector2.ZERO
 var shots_fired := 0
 var last_branch := ""
+var fleeing := false
+var flee_direction := Vector2.ZERO
+var flee_travelled := 0.0
 
 func configure(actor: Node2D) -> void:
 	boss = actor
@@ -37,6 +40,7 @@ func tick(delta: float) -> void:
 	var locked: float = minf(delta,boss.fear_remaining)
 	boss.fear_remaining = maxf(0,boss.fear_remaining-delta)
 	if locked>0 or boss.is_feared():
+		fleeing = false
 		interrupt_burst()
 		last_branch = "fear"
 		boss.queue_redraw()
@@ -44,6 +48,7 @@ func tick(delta: float) -> void:
 	var target: Node2D = boss.target_provider.call()
 	if not is_instance_valid(target): return
 	if target.is_stealthed():
+		fleeing = false
 		interrupt_burst()
 		last_branch = "wander"
 		if not boss.has_wander_target or boss.global_position.distance_to(boss.wander_target)<=0.000001:
@@ -53,7 +58,10 @@ func tick(delta: float) -> void:
 		boss.queue_redraw()
 		return
 	boss.has_wander_target = false
-	if burst:
+	if fleeing:
+		last_branch = "flee"
+		advance_flee(delta)
+	elif burst:
 		last_branch = "burst"
 		advance_burst(target)
 	elif now()<recovery_until:
@@ -87,10 +95,25 @@ func tick(delta: float) -> void:
 			if ready(3):
 				fire(rows[3],target)
 				boss.ready_at[rows[3].Id] = now()+float(rows[3].Shot_interval_sec)
+				if distance<=float(rows[3].Flee_trigger_range):
+					fleeing = true
+					flee_direction = target.global_position.direction_to(boss.global_position)
+					if flee_direction==Vector2.ZERO: flee_direction = Vector2.RIGHT
+					flee_travelled = 0.0
 		else:
 			last_branch = "follow"
 			boss.move_boss(target.global_position,delta)
 	boss.queue_redraw()
+
+func advance_flee(delta: float) -> void:
+	var previous: Vector2 = boss.global_position
+	var distance := minf(float(rows[3].Flee_distance)-flee_travelled,float(rows[3].Flee_speed)*delta)
+	# Map clamp resolves axes independently, retaining the component along a wall.
+	boss.global_position = boss.clamp_position_to_map(previous+flee_direction*distance,boss.map_bounds)
+	var moved := previous.distance_to(boss.global_position)
+	flee_travelled+=moved
+	var next: Vector2 = boss.clamp_position_to_map(boss.global_position+flee_direction,boss.map_bounds)
+	if flee_travelled+0.000001>=float(rows[3].Flee_distance) or next.is_equal_approx(boss.global_position) or (delta>0 and moved<=0.000001): fleeing = false
 
 func fire(row: Dictionary, target: Node2D) -> void:
 	var arrow := Projectile.new()
@@ -131,6 +154,7 @@ func end_stealth(at: float) -> void:
 	boss.queue_redraw()
 
 func cleanup() -> void:
+	fleeing = false
 	burst = false
 	hidden = false
 	hidden_until = 0

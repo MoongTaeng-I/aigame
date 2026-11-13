@@ -1,0 +1,13 @@
+﻿Id,Value
+Trail_life_sec,0.3
+Trail_interval_sec,0.045
+Trail_alpha,0.45
+Slash_count,9
+Slash_width,3
+Slash_core_width,1
+Slash_sec,0.12
+Slash_outer_color,#83d9ff
+Slash_core_color,#ffffff
+Toast_sec,2
+Toast_gap_px,8
+Toast_max,4

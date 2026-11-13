@@ -46,7 +46,7 @@ UI(임시, 시스템 9에서 정식화): 상단 토스트, 게이트·사전 표
 
 S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조정 전 초안이며 최종 밸런스가 아니다. 초반 보스는 아래 B단계에서 승인한 스킬 피격 밀기·체력 변경 외 행동·수치를 유지한다. 위 초반 보스의 가중치 예정 스킬·고정 조준·시전 중 플레이어 은신 무시 규칙을 이 보스에 적용하지 않는다.
 
-- 활을 사용하는 원거리 보스다. 빠른 공격은 처음 발사 간격만 뜻했으며, S8-IMPL-02-B 사용자 확정으로 두 화살 속도도 별도 상향한다. 기존 일반 적 투사체 속도는 유지한다. 기본 공격은 `Use_range` 안에서 정지해 `Shot_interval_sec`마다 `Projectile_id`를 발사하고, 밖이면 `Move_speed`로 플레이어 쪽으로 이동한다. 거리 유지·후퇴·카이팅은 없다.
+- 활을 사용하는 원거리 보스다. 빠른 공격은 처음 발사 간격만 뜻했으며, S8-IMPL-02-B 사용자 확정으로 두 화살 속도도 별도 상향한다. 기존 일반 적 투사체 속도는 유지한다. 기본 공격은 `Use_range` 안에서 정지해 `Shot_interval_sec`마다 `Projectile_id`를 발사하고, 밖이면 `Move_speed`로 플레이어 쪽으로 이동한다. 기본 화살 발사 직후 근접 조건의 도주만 예외로 허용한다. 상시 거리 유지·카이팅은 없다.
 - 인식 범위는 boss.csv의 Detect_range 고정값이다. 범위 밖에서는 새 기본 공격·연발·밀쳐내기를 시작하지 않고 플레이어 쪽으로 이동하며, 준비된 은신은 범위와 관계없이 기존 우선순위대로 사용한다. 범위 안에서는 기존 고정 우선순위를 따른다. 사용자 추가 확인: "진행 중 연발은 끝까지, 새 공격 시작만 금지"이므로 이미 시작한 연발은 범위를 벗어나도 정지 사격을 완료한다. 자연 종료 회복도 유지한다.
 - 화살은 발사 순간 플레이어 위치로 직선 이동한다. 플레이어 명중 시 피해 한 번 후 소멸하고 그림자는 통과한다. 유도·관통이 없고 기존 투사체 소멸 규칙을 재사용한다. 발사 후 플레이어 은신·보스 공포·보스 사망으로 화살을 제거하지 않는다.
 - 밀쳐내기(`push`): 사전 안내 없이 보스 중심 `Use_range` 원 안의 플레이어만 즉시 밀기 시작한다. 방향은 보스→플레이어 직선, 피해는 없다. `Push_distance`를 `Push_sec` 동안 이동하며 초기 속도 `2 × Push_distance ÷ Push_sec`에서 일정하게 감속한다. 플레이어 입력 이동에 더해지고 벽에 닿으면 남은 밀기를 멈춘다. 그림자는 밀지 않는다. 발동 후 원형 효과만 보이며 쿨타임은 발동 순간부터 센다.
@@ -54,7 +54,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 - 은신(`stealth`): `Duration_sec`는 시전 지연이 아닌 은신 지속 시간이다. 몸체·체력바·이름표·발밑 그림자·부착 효과를 숨긴다. 무적이 아니며 피해 판정과 충돌·몸 밀어내기를 유지한다. 유효 피해를 받으면 즉시 해제하며 피격 해제 또는 자연 종료 시점부터 `Cooldown_sec`를 센다. 은신 중 이동·기본 공격·밀쳐내기·연발을 계속 사용하고 사용으로 해제되지 않는다. 밀쳐내기 효과와 발사된 화살은 보인다. 공포는 적용되지만 은신을 해제하지 않는다.
 - 자동 조준의 탐색과 피해 판정은 별개다. 보스 은신 시 플레이어 자동 기본 공격·그림자 새 대상 탐색에서 제외한다. 보스를 쫓던 그림자는 대상을 즉시 해제하되 이미 시작한 공격은 끝까지 판정하고 숨은 보스에도 피해를 줄 수 있다. 범위 공격도 계속 맞는다. 보스 자신의 조준 능력은 유지하며 상대인 플레이어가 은신한 동안에만 탐색하지 않는다.
 - 플레이어 은신 시 연발은 준비 중을 포함해 즉시 중단하고 배회한다. 초반 보스의 돌진·내려찍기는 기존대로 끝까지 진행한다. 공포도 연발을 즉시 중단한다. 사망하면 연발·은신을 즉시 정리하며 이미 쏜 화살은 남긴다.
-- BT 우선순위: 등장 → 공포(연발 중단) → 플레이어 은신(연발 중단·배회) → 진행 중 연발 → 회복 대기 → 인식 범위 판단 → 범위 안은 밀쳐내기 → 은신(현재 은신 아님) → 연발 → 기본 공격/이동, 범위 밖은 은신 가능 여부 → 추적 이동. 준비된 행동 중 고정 순서로 선택하며 랜덤 가중치·예정 스킬은 없다. 밀쳐내기·연발은 각각 `Use_range`도 만족해야 한다.
+- BT 우선순위: 등장 → 공포(도주·연발 중단) → 플레이어 은신(도주·연발 중단·배회) → 진행 중 도주 → 진행 중 연발 → 회복 대기 → 인식 범위 판단 → 범위 안은 밀쳐내기 → 은신(현재 은신 아님) → 연발 → 기본 공격/이동, 범위 밖은 은신 가능 여부 → 추적 이동. 준비된 행동 중 고정 순서로 선택하며 랜덤 가중치·예정 스킬은 없다. 밀쳐내기·연발은 각각 `Use_range`도 만족해야 한다.
 - `stage_timeline.csv`의 `Time_mmss`에 따라 중간 보스는 2:00에 등장한다. 초반 보스 생존 시 대기열에 넣고 처치 후 공통 경고·게이트 경로로 등장한다. 공통 토스트·생성 중단·잔류·플레이어만 공격 대상으로 삼는 규칙을 유지한다. 새로운 처치 보상이나 생성 재개 방식을 추가하지 않는다.
 
 ### 중간 보스 임시 표시
@@ -70,8 +70,8 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | boss.csv / boss_middle | Enemy_id=boss_ice_elf, Is_final=0, Detect_range=416 |
 | stage_timeline.csv / timeline_middle_boss | Time_mmss=200, Boss_id=boss_middle |
 | enemy.csv / boss_ice_elf | Name_ko=아이스 엘프 정예병, Move_speed=110, Attack_range_type=ranged, Body_radius=28, Push_weight=10, Max_hp=1100(S8-IMPL-03 테스트 절반값), Contact_damage=0, Contact_rehit_sec=1, Death_fade_sec=0.4, Shot_interval_sec=0.8, Shot_range=416, Projectile_id=elf_arrow, Xp_value=70 |
-| projectile.csv / elf_arrow | Speed=450, Damage=12, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
-| projectile.csv / elf_burst_arrow | Speed=450, Damage=8, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
+| projectile.csv / elf_arrow | Speed=585, Damage=12, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
+| projectile.csv / elf_burst_arrow | Speed=585, Damage=8, Body_radius=6, Expire_rule=distance, Max_distance=500, Max_lifetime_sec=(빈칸) |
 
 | boss_action.csv Id | Kind | Use_range | Damage | Telegraph_sec | Recovery_sec | Cooldown_sec | Projectile_id | Shot_interval_sec | Duration_sec | Push_distance | Push_sec |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -88,8 +88,8 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 
 - 몸체: Body_radius 30, Push_weight 20, Contact_damage 10, Xp_value 0, Max_hp 1750. 테스트 편의로 베어 Max_hp 1050→525, 엘프 2200→1100만 변경한다. 그 밖의 기존 보스 수치는 보존한다.
 - 일반 이동: boss.csv의 Move_speed_ref_enemy=enemy_01과 Move_speed_mult=1.3을 불러올 때 enemy.csv.Move_speed와 곱해 156으로 계산한다. 기존 보스는 두 열을 비워 기존 이동 속도를 유지한다. 스킬 Dash_speed에는 배율을 적용하지 않는다. 고속 이동은 기존 베어처럼 몸 통과·맵 경계 정지이며 피해 판정은 유지한다.
-- 기본 공격 tri_dash: 사전 표시 시작 시 방향 고정, Telegraph_sec 0.4 동안 실제 도착 지점의 역삼각형을 표시한다. 넓은 변은 도착한 보스 몸 앞(body radius)에 붙고 꼭짓점은 진행 방향을 향한다. Tri_width 160, Tri_length 140, Dash_distance 160, Dash_speed 900. 도착 순간 실제 삼각형 안 플레이어 중심에 Damage 15를 1회 준다. Use_range 220, Cooldown_sec 1.8. 부채꼴·원 판정으로 바꾸지 않는다.
-- 전광석화 blink_strike: 시전 시작 바루카 중심의 Area_radius 400 원을 종료까지 고정한다. Telegraph_sec 0.8 뒤 원 안 무작위 목적지로 Strike_count 5회 이동한다. 목적지 선정은 플레이어 위치를 읽지 않는다. 직전 위치에서 Strike_min_distance 120 이상이며 맵 안인 지점을 뽑는다. Dash_speed 1400, 이동 사이 Strike_interval_sec 0.25. 각 이동 경로에서 같은 대상에 Damage 15를 1회 준다. 그림자 텔레포트의 반투명·시간 경과 소멸 잔상 노드를 재사용하며 잔상은 피해·충돌·대상 선정이 없다.
+- 기본 공격 tri_dash: 사전 표시 시작 시 방향 고정, Telegraph_sec 0.31 동안 실제 도착 지점의 역삼각형을 표시한다. 넓은 변은 도착한 보스 몸 앞(body radius)에 붙고 꼭짓점은 진행 방향을 향한다. Tri_width 160, Tri_length 140, Dash_distance 160, Dash_speed 1170. 도착 순간 실제 삼각형 안 플레이어 중심에 Damage 15를 1회 준다. Use_range 220, Cooldown_sec 1.26. 부채꼴·원 판정으로 바꾸지 않는다.
+- 전광석화 blink_strike: 시전 시작 바루카 중심의 Area_radius 400 원을 종료까지 고정한다. Telegraph_sec 0.8 뒤 원 안 무작위 목적지로 Strike_count 5회 이동한다. 목적지 선정은 플레이어 위치를 읽지 않는다. 직전 위치에서 Strike_min_distance 120 이상이며 맵 안인 지점을 뽑는다. Dash_speed 2100, 이동 사이 Strike_interval_sec 0.2. 각 이동 경로에서 같은 대상에 Damage 15를 1회 준다. 그림자 텔레포트의 반투명·시간 경과 소멸 잔상 노드를 재사용하며 잔상은 피해·충돌·대상 선정이 없다.
 - 추격 chase: Duration_sec 3 동안 공격 시작마다 플레이어 위치를 확인해 Telegraph_sec 0.25 동안 실제 경로를 표시한다. 고정한 지점까지 최대 Dash_distance 300, Dash_speed 1100으로 이동한다. 이동 중 재조준하지 않는다. 각 공격 경로에 Damage 12를 1회, 공격 사이 Strike_interval_sec 0.4. 지속 시간 경계가 와도 진행 중 공격은 끝까지 마친다.
 - 빙결 ice_zone: 시전 순간 플레이어 중심 Area_radius 350 안에 Zone_count 5개 위치를 무작위로 정한다. 겹침·플레이어 바로 위를 허용한다. Telegraph_sec 0.8 예고 뒤 반경 Zone_radius 60 지대를 Zone_life_sec 4 동안 유지하며 피해는 0이다. 플레이어 중심이 각 지대에 진입하는 순간만 Freeze_sec 1.5를 건다. 계속 서 있으면 재적용하지 않으며 나갔다 다시 들어오면 다시 건다. 빙결 중 다른 지대에 진입하면 남은 시간을 새 Freeze_sec로 갱신하고 누적하지 않는다. 재빙결 제한 시간은 없다.
 - 빙결 중 플레이어 이동·새 기본 공격·키 스킬·스킬 아이콘 강화 클릭을 막는다. 이미 시작한 기본 공격의 남은 타·스킬 효과와 질주는 유지한다. 무적·피해·이동 속도 감소를 추가하지 않는다. 그림자는 계속 행동한다.
@@ -97,7 +97,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 
 ### 판단 지점·검증용 기본값
 
-미지정 Use_range는 전광석화 400·추격 300·빙결 350, Recovery_sec는 0, 전광석화·추격 경로 반폭은 몸 반경을 사용하는 제안값이다. 사용자 추가 답변 "제안값으로 진행"을 받았으며 최종 밸런스 확정으로 확대하지 않는다. 미지정 일반 접촉 재피격·사망 흐려짐은 기존 enemy_01 값을 복사한다. 경로는 플레이어 중심 기준 기존 베어 corridor를 재사용한다. 원 안 최소 거리 목적지의 난수 거절 추출은 유한 횟수 뒤 기하학적 대체점을 찾아 무한 반복을 막으며, 플레이어 위치와 무관하다. 유효 목적지가 없으면 남은 이동을 종료하고 쿨타임을 시작한다. 잔상 수명·간격은 순수 표시 상수다.
+미지정 Use_range는 전광석화 400·추격 300·빙결 350, Recovery_sec는 0, 전광석화·추격 경로 반폭은 몸 반경을 사용하는 제안값이다. 사용자 추가 답변 "제안값으로 진행"을 받았으며 최종 밸런스 확정으로 확대하지 않는다. 미지정 일반 접촉 재피격·사망 흐려짐은 기존 enemy_01 값을 복사한다. 경로는 플레이어 중심 기준 기존 베어 corridor를 재사용한다. 원 안 최소 거리 목적지의 난수 거절 추출은 유한 횟수 뒤 기하학적 대체점을 찾아 무한 반복을 막으며, 플레이어 위치와 무관하다. 유효 목적지가 없으면 남은 이동을 종료하고 쿨타임을 시작한다. 잔상 수명·간격·투명도는 combat_presentation.csv에서 질주와 공유한다.
 
 ### 바루카 추가 행·열
 
@@ -106,8 +106,8 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | boss.csv / boss_final | Enemy_id=boss_baruka, Is_final=1, Detect_range=빈칸, Move_speed_ref_enemy=enemy_01, Move_speed_mult=1.3 |
 | stage_timeline.csv / timeline_final_boss | Time_mmss=300, Boss_id=boss_final |
 | enemy.csv / boss_baruka | Name_ko=바루카, Move_speed=0(일반 이동은 참조 계산), Attack_range_type=melee, Body_radius=30, Push_weight=20, Max_hp=1750, Contact_damage=10, Contact_rehit_sec=1, Death_fade_sec=0.4, Xp_value=0; 원거리 세 열 빈칸 |
-| boss_action.csv / baruka_basic | Kind=tri_dash, Use_range=220, Damage=15, Telegraph_sec=0.4, Recovery_sec=0, Cooldown_sec=1.8, Dash_speed=900, Dash_distance=160, Tri_width=160, Tri_length=140 |
-| boss_action.csv / baruka_blink | Kind=blink_strike, Use_range=400, Damage=15, Telegraph_sec=0.8, Recovery_sec=0, Cooldown_sec=10, Pick_weight=1, Dash_speed=1400, Area_radius=400, Strike_count=5, Strike_interval_sec=0.25, Strike_min_distance=120 |
+| boss_action.csv / baruka_basic | Kind=tri_dash, Use_range=220, Damage=15, Telegraph_sec=0.31, Recovery_sec=0, Cooldown_sec=1.26, Dash_speed=1170, Dash_distance=160, Tri_width=160, Tri_length=140 |
+| boss_action.csv / baruka_blink | Kind=blink_strike, Use_range=400, Damage=15, Telegraph_sec=0.8, Recovery_sec=0, Cooldown_sec=10, Pick_weight=1, Dash_speed=2100, Area_radius=400, Strike_count=5, Strike_interval_sec=0.2, Strike_min_distance=120 |
 | boss_action.csv / baruka_chase | Kind=chase, Use_range=300, Damage=12, Telegraph_sec=0.25, Recovery_sec=0, Cooldown_sec=12, Pick_weight=1, Dash_speed=1100, Dash_distance=300, Duration_sec=3, Strike_interval_sec=0.4 |
 | boss_action.csv / baruka_ice | Kind=ice_zone, Use_range=350, Damage=0, Telegraph_sec=0.8, Recovery_sec=0, Cooldown_sec=14, Pick_weight=1, Area_radius=350, Zone_count=5, Zone_radius=60, Zone_life_sec=4, Freeze_sec=1.5 |
 
@@ -296,9 +296,14 @@ flowchart TD
     E{"등장 중인가 / Warn_sec·Emerge_sec"}
     EW["등장 대기 / 행동·충돌 없음"]
     F{"공포 상태인가"}
-    FX["연발 즉시 종료 / Cooldown_sec 즉시 시작 / 기절"]
+    FX["도주·연발 즉시 종료 / Cooldown_sec 즉시 시작 / 기절"]
     P{"플레이어 은신 중인가"}
-    PW["연발 즉시 종료 / Cooldown_sec 즉시 시작 / Wander_radius 배회"]
+    PW["도주·연발 즉시 종료 / Cooldown_sec 즉시 시작 / Wander_radius 배회"]
+    FL{"도주 진행 중인가"}
+    FS["고정 방향 Flee_speed / Flee_distance 이동 / 벽 미끄러짐·완전 차단 종료"]
+    FT{"기본 화살 발사 직후 Flee_trigger_range 안인가"}
+    FB["플레이어→엘프 방향 고정 / 도주 시작"]
+    FW["사격 종료 / 다음 판단 대기"]
     B{"연발 준비 또는 진행 중인가"}
     BS["정지 / Telegraph_sec 뒤 즉시 첫 발 / Duration_sec 동안 Shot_interval_sec마다 재조준 발사 / 종료 발 포함"]
     R{"Recovery_sec 대기 중인가"}
@@ -319,7 +324,9 @@ flowchart TD
     F -->|예| FX
     F -->|아니오| P
     P -->|예| PW
-    P -->|아니오| B
+    P -->|아니오| FL
+    FL -->|예| FS
+    FL -->|아니오| B
     B -->|예| BS
     B -->|아니오| R
     R -->|예| RW
@@ -336,6 +343,9 @@ flowchart TD
     U -->|아니오| A
     A -->|예| AS
     A -->|아니오| M
+    AS --> FT
+    FT -->|예| FB
+    FT -->|아니오| FW
 ```
 
 진행 중 연발 BS는 인식 범위 D보다 먼저 판단하므로 범위를 벗어나도 끝까지 실행한다. 은신은 별도 지속 상태이므로 SS 이후 다음 판단에서도 이동·사격·스킬을 사용할 수 있다. 공포·공격으로는 은신을 해제하지 않는다. 사망은 BT 진입 전 처리하며 연발·은신을 정리하고 이미 발사된 화살은 유지한다.
@@ -382,6 +392,22 @@ flowchart TD
 
 바루카 직접 플레이 체감·정식 시각 외형, 시간대별 적 강화, 정식 UI·외형·소리, 보스 그림자 보상과 공통 BT의 그림자 제작, 최종 밸런스. 공개 전 원작 명칭 '아이스 엘프 정예병'을 포함해 '아이스 베어 우두머리'·바루카·이그리트·베르의 명칭 점검이 필요하다. 중간 보스의 회피 가능성·예고 없는 밀기·은신 위치 단서·은신 지속 체감·정지 사격의 자연스러움은 직접 플레이 확인 대기다.
 
+### 도주와 공통 토스트 (S8-IMPL-03-B)
+
+엘프 ranged_basic 1발 발사 직후 플레이어가 Flee_trigger_range=250 안일 때만 도주한다. 발동 순간 플레이어→엘프 방향을 고정하고 Flee_speed=260으로 실제 이동 거리 Flee_distance=200까지 진행한다. 벽에서는 경계를 향한 성분만 막아 미끄러지며 완전 차단되면 즉시 종료한다. 방향을 다시 조준하지 않는다. 도주는 공포·플레이어 은신만 중단시키며 밀쳐내기·은신·연발은 종료 후 판단한다. 연발 발사 후에는 도주하지 않는다. 다음 기본 공격의 Shot_interval_sec 기준은 발사 순간 그대로다.
+
+| boss_action.csv 새 열 | 자료형·단위 | ice_elf_basic | 다른 행 | 검증 |
+| --- | --- | --- | --- | --- |
+| Flee_trigger_range | Optional Float, px | 250 | 빈칸 | 기본 화살에서 유한한 양수, 나머지 필수 빈칸 |
+| Flee_speed | Optional Float, px/s | 260 | 빈칸 | 동일 |
+| Flee_distance | Optional Float, px | 200 | 빈칸 | 동일 |
+
+기존 보스 경고의 상단 가운데를 모든 토스트에 공유한다. 보스 경고 시간 Warn_sec+Emerge_sec는 유지한다. 이름의 한글 끝 글자 받침으로 을/를·이/가를 자동 선택한다. boss_rule.csv 형식은 그대로 두고 `'{name}'이`를 런타임 치환한다.
+
+플레이어 스킬 실제 성립·선택창 그림자 소환 실제 성립·세 보스 논리적 처치마다 각 한 번 표시한다. 처치는 `[보스 몬스터를 처치했습니다]`이며 사망 연출/제거에서 다시 출력하지 않는다. 대괄호는 실제 표시 문자다.
+
+새 메시지는 위, 기존 메시지는 아래다. 일반 메시지2초, 간격8px, 최대4개이며 초과한 가장 오래된 메시지는 즉시0.2초 페이드 아웃을 시작한다. 페이드 인0.16초·아웃0.2초를 유지한다. 전용 CanvasLayer는 완료 표시 위에 있고 일시정지 중에도 표시/페이드가 진행된다. 최종 처치는 기존 함수 호출에서 즉시 completed·paused를 설정하고 완료 문구는 화면 중앙에 따로 표시하므로 기다리지 않는다.
+
 ## 승인·변경 이력
 
 - 2026-11-12: 사용자 초안 전체 "승인한다"와 세부 결정에 따라 S8-IMPL-01 문서화. 수치 시작값은 검증용·제안 구분 유지. 사용자 그림자 대상 답변 추가 반영.
@@ -401,3 +427,5 @@ flowchart TD
 - 2026-11-12 S8-DONE-02: 사용자가 직접 플레이로 중간 보스 아이스 엘프 정예병의 S8-IMPL-02 및 B·C단계를 승인했다. 사용자 확정 사항 "진행 중 연발은 끝까지, 새 공격 시작만 금지"를 유지한다. 최종 보스는 미기획이므로 시스템 전체 완료일은 비워 둔다.
 
 - 2026-11-13 S8-IMPL-03: 사용자 확정 바루카 최종 보스·네 행동·빙결·3:00/처치 완료와 보스 HP 절반 테스트값을 기록한다. 미지정 수치는 제안으로 구분하며 직접 플레이 승인은 대기다.
+
+- 2026-11-13 S8-IMPL-03-B: 사용자 요청으로 기본 화살 직후 도주에 한해 기존 후퇴 없음 규칙을 변경했다. 바루카 지정5칸·화살2종 속도 조정, 도주 BT/열, 공통 토스트·처치1회·완료 즉시 정지를 반영했다.

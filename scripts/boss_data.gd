@@ -1,12 +1,13 @@
 extends RefCounted
 
 static func register_schemas(store: CsvDataStore) -> void:
+	store.register_schema("combat_presentation.csv",{"Id":"String","Value":"String"})
 	store.register_schema("boss.csv",{"Id":"String","Enemy_id":"String","Is_final":"Bool","Note":"String","Detect_range":{"type":"Optional","inner":"Float"}})
 	store.schemas["boss.csv"]["Move_speed_ref_enemy"] = {"type":"Optional","inner":"String"}
 	store.schemas["boss.csv"]["Move_speed_mult"] = {"type":"Optional","inner":"Float"}
 	store.register_schema("stage_timeline.csv",{"Id":"String","Time_mmss":"Int","Boss_id":"String","Note":"String"})
 	var action := {"Id":"String","Boss_id":"String","Kind":{"type":"Enum","values":{"basic":0,"dash":1,"slam":2,"ranged_basic":3,"push":4,"burst":5,"stealth":6,"tri_dash":7,"blink_strike":8,"chase":9,"ice_zone":10}},"Use_range":"Float","Damage":"Int","Telegraph_sec":"Float","Recovery_sec":"Float","Cooldown_sec":"Float","Note":"String"}
-	for field in ["Tri_width","Tri_length","Area_radius","Strike_interval_sec","Strike_min_distance","Zone_radius","Zone_life_sec","Freeze_sec"]:
+	for field in ["Tri_width","Tri_length","Area_radius","Strike_interval_sec","Strike_min_distance","Zone_radius","Zone_life_sec","Freeze_sec","Flee_trigger_range","Flee_speed","Flee_distance"]:
 		action[field] = {"type":"Optional","inner":"Float"}
 	for field in ["Strike_count","Zone_count"]:
 		action[field] = {"type":"Optional","inner":"Int"}
@@ -52,6 +53,10 @@ static func validate(store: CsvDataStore) -> String:
 		if not bosses.has(row.Boss_id): return error(store,"stage_timeline.csv",id,"Boss_id","보스 참조가 없습니다.")
 	for id in store.get_table("boss_action.csv"):
 		var row := store.get_row("boss_action.csv",id)
+		for field in ["Flee_trigger_range","Flee_speed","Flee_distance"]:
+			if int(row.Kind)==3:
+				if not positive(row.get(field)): return error(store,"boss_action.csv",id,field,"기본 화살 도주에 필요한 양수입니다.")
+			elif row.get(field)!=null: return error(store,"boss_action.csv",id,field,"기본 화살 외 행동은 비웁니다.")
 		if not bosses.has(row.Boss_id): return error(store,"boss_action.csv",id,"Boss_id","보스 참조가 없습니다.")
 		if int(row.Kind)>=7:
 			var detail := validate_baruka(store,id,row)

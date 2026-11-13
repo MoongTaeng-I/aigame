@@ -120,7 +120,7 @@ func timeline_and_resume() -> void:
 	tick(f,0)
 	tick(f,3.5)
 	f.director.actor.apply_damage(f.director.actor.hp)
-	t.check(f.director.completed and t.paused and f.director.toast.text=="완료","S8 final boss death completes and pauses")
+	t.check(f.director.completed and t.paused and f.director.toast_view.completion_label.text=="완료","S8 final boss death completes and pauses")
 	await cleanup(f)
 
 func set_time(f: Dictionary, time: float) -> void:
