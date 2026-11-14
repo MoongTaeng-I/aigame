@@ -46,26 +46,26 @@ func timeline(queued: bool) -> void:
 	var first: Variant = d.actor
 	t.check(first.enemy_id=="boss_ice_elf" and first.hp==525 and first.elf!=null and first.baruka==null,"S8-I3-D actual first elf525 with ranged Kind profile")
 	if not queued: first.apply_damage(first.hp)
-	at(f,119.999)
+	at(f,179.999)
 	t.check(d.active_id==("boss_early" if queued else ""),"S8-I3-D middle not early")
-	at(f,120)
+	at(f,180)
 	if queued:
 		t.check(d.pending==["boss_middle"] and d.actor==first,"S8-I3-D living elf queues bear")
-		at(f,180)
+		at(f,300)
 		t.check(d.pending==["boss_middle","boss_final"] and not d.completed,"S8-I3-D living first queues final after bear")
 		first.apply_damage(first.hp)
 	t.check(d.active_id=="boss_middle" and d.toast_text.contains("'아이스 베어 우두머리'가") and f.manager._stop_normal_spawning,"S8-I3-D bear warning subject and spawning stop")
-	var bear_at := 183.5 if queued else 123.5
+	var bear_at := 303.5 if queued else 183.5
 	at(f,bear_at)
 	var second: Variant = d.actor
 	t.check(second.enemy_id=="boss_ice_bear" and second.hp==1100 and second.elf==null and second.baruka==null,"S8-I3-D actual second bear1100 with melee Kind profile")
 	second.apply_damage(second.hp)
 	if not queued:
-		at(f,179.999)
+		at(f,299.999)
 		t.check(d.active_id.is_empty(),"S8-I3-D final not early")
-		at(f,180)
+		at(f,300)
 	t.check(d.active_id=="boss_final" and not d.completed,"S8-I3-D final is Baruka, time never completes run")
-	at(f,(bear_at if queued else 180)+3.5)
+	at(f,(bear_at if queued else 300)+3.5)
 	var final: Variant = d.actor
 	t.check(final.enemy_id=="boss_baruka" and final.baruka!=null and final.hp==1750,"S8-I3-D final profile and unchanged HP1750")
 	t.check(d.fired.size()==3 and d.pending.is_empty(),"S8-I3-D all three actual timeline rows fire once")
@@ -86,8 +86,8 @@ func profile_checks() -> void:
 	elf.boss_tick(0.1)
 	t.check(elf.elf.detect_range==416 and elf.elf.last_branch=="follow" and elf.elf.shots_fired==0 and elf.global_position.x>0,"S8-I3-D elf416 applies to boss_early")
 	elf.apply_damage(elf.hp)
-	at(f,120)
-	at(f,123.5)
+	at(f,180)
+	at(f,183.5)
 	var bear: Variant = f.director.actor
 	bear.global_position = Vector2.ZERO
 	f.player.global_position = Vector2(1000,0)
@@ -110,5 +110,5 @@ func profile_checks() -> void:
 	t.check(f.boss.phase=="telegraph" and f.boss.global_position==Vector2.ZERO,"S8-I3-D basic waits full reduced telegraph")
 	helper.step(f,0.001)
 	t.check(f.boss.is_boss_dashing() and f.boss.facing==Vector2.RIGHT,"S8-I3-D basic starts at0.155 without reaim")
-	t.check(store.get_row("boss_action.csv","baruka_blink").Dash_speed==13440,"S8-I3-D blink fixed speed13440")
+	t.check(store.get_row("boss_action.csv","baruka_blink").Dash_speed==8064,"S8-I3-D blink fixed speed8064")
 	await cleanup(f)

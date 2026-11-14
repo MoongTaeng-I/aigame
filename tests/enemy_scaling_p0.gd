@@ -196,11 +196,11 @@ func bosses_and_shadows() -> void:
 	t.check(f.manager.get_alive_count()==before+3 and f.manager.get_living_enemies().back().max_hp==45 and old.max_hp==30,"S8-I4 resume emits current stage3 scaled enemies after full interval")
 	await cleanup(f)
 	f = roles.fixture()
-	roles.at(f,180)
-	for pair in [[183.5,"boss_ice_elf",525,110],[187.0,"boss_ice_bear",1100,90],[190.5,"boss_baruka",1750,156]]:
+	roles.at(f,300)
+	for pair in [[303.5,"boss_ice_elf",525,110],[307.0,"boss_ice_bear",1100,90],[310.5,"boss_baruka",1750,156]]:
 		roles.at(f,pair[0])
 		boss = f.director.actor
-		t.check(boss.enemy_id==pair[1] and boss.max_hp==pair[2] and is_equal_approx(boss.move_speed,pair[3]) and boss.xp_value==store.get_row("enemy.csv",pair[1]).Xp_value,"S8-I4 boss stats and XP unscaled at3min "+pair[1])
+		t.check(boss.enemy_id==pair[1] and boss.max_hp==pair[2] and is_equal_approx(boss.move_speed,pair[3]) and boss.xp_value==store.get_row("enemy.csv",pair[1]).Xp_value,"S8-I4 boss stats and XP unscaled after5min "+pair[1])
 		boss.apply_damage(boss.hp)
 	t.paused = false
 	var shadows: Node2D = f.host.get_child(0).get_node("ShadowManager")

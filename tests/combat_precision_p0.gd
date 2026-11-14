@@ -30,7 +30,7 @@ func run(tree: SceneTree) -> void:
 	print("S8-IMPL-03-C NEW RESULT: %d checks, %d failures" % [t.checks-before,t.failures-failures])
 
 func data_and_imports() -> void:
-	for pair in [["baruka_blink","Strike_interval_sec",0.04],["baruka_blink","Area_radius",894.4],["baruka_blink","Dash_speed",13440],["baruka_blink","Strike_count",20],["baruka_basic","Dash_speed",2340],["baruka_basic","Cooldown_sec",0.63],["ice_elf_basic","Flee_distance",100]]:
+	for pair in [["baruka_blink","Strike_interval_sec",0.04],["baruka_blink","Area_radius",894.4],["baruka_blink","Dash_speed",8064],["baruka_blink","Strike_count",20],["baruka_basic","Dash_speed",2340],["baruka_basic","Cooldown_sec",0.63],["ice_elf_basic","Flee_distance",100]]:
 		t.check(is_equal_approx(float(baruka.store.get_row("boss_action.csv",pair[0])[pair[1]]),float(pair[2])),"S8-I3-C exact fixed value "+pair[0]+"."+pair[1])
 	var attack: Dictionary = baruka.store.get_row("basic_attack.csv","attack_01")
 	t.check(float(attack.Tri_width_ratio)==0.381 and attack.Range==90,"S8-I3-C ratio and unchanged range")

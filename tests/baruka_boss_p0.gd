@@ -44,7 +44,7 @@ func start(f: Dictionary, id: String) -> void:
 func data_checks() -> void:
 	t.check(Data.validate(store).is_empty(),"S8-I3 all three profiles validate")
 	t.check(store.get_row("enemy.csv","boss_ice_bear").Max_hp==1100 and store.get_row("enemy.csv","boss_ice_elf").Max_hp==525 and store.get_row("enemy.csv","boss_baruka").Max_hp==1750,"S8-I3 all three exact test HP values")
-	t.check(store.get_row("stage_timeline.csv","timeline_final_boss").Time_mmss==300 and store.get_row("boss.csv","boss_final").Is_final,"S8-I3 3:00 final boss data")
+	t.check(store.get_row("stage_timeline.csv","timeline_final_boss").Time_mmss==500 and store.get_row("boss.csv","boss_final").Is_final,"S8-I3 5:00 final boss data")
 	for pair in [["baruka_basic","Tri_width"],["baruka_basic","Tri_length"],["baruka_blink","Area_radius"],["baruka_blink","Strike_count"],["baruka_blink","Strike_min_distance"],["baruka_chase","Duration_sec"],["baruka_chase","Strike_interval_sec"],["baruka_ice","Zone_count"],["baruka_ice","Zone_radius"],["baruka_ice","Zone_life_sec"],["baruka_ice","Freeze_sec"]]:
 		var row := store.get_row("boss_action.csv",pair[0])
 		var old: Variant = row[pair[1]]
@@ -135,7 +135,7 @@ func blink_randomness() -> void:
 	var midpoint: Vector2 = (b.origin+b.dash_end)*0.5
 	f.player.global_position = midpoint
 	var hp: int = f.player.hp
-	step(f,b.dash_length/13440.0*0.6)
+	step(f,b.dash_length/8064.0*0.6)
 	t.check(f.player.hp==hp-15,"S8-I3 blink path hit remains enabled")
 	step(f,0)
 	t.check(f.player.hp==hp-15,"S8-I3 each blink movement hits same target once")
@@ -316,8 +316,8 @@ func timeline() -> void:
 	var f: Dictionary = base.fixture(store.get_table("stage_timeline.csv"))
 	base.tick(f,60)
 	base.tick(f,3.5)
-	base.tick(f,116.5)
-	t.check(f.director.pending==["boss_middle","boss_final"] and f.director.active_id=="boss_early","S8-I3 actual 3:00 queues final behind living bosses")
+	base.tick(f,236.5)
+	t.check(f.director.pending==["boss_middle","boss_final"] and f.director.active_id=="boss_early","S8-I3 actual 5:00 queues final behind living bosses")
 	t.check(not f.director.completed,"S8-I3 time alone never completes run")
 	f.director.actor.apply_damage(f.director.actor.hp)
 	base.tick(f,3.5)

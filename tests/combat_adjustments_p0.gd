@@ -17,7 +17,7 @@ func run(tree: SceneTree) -> void:
 	var basic := store.get_row("boss_action.csv","baruka_basic")
 	var blink := store.get_row("boss_action.csv","baruka_blink")
 	t.check(basic.Cooldown_sec==0.63 and basic.Telegraph_sec==0.155 and basic.Dash_speed==2340 and basic.Dash_distance==160 and basic.Recovery_sec==0,"S8-I3-B exact fixed basic values")
-	t.check(blink.Strike_interval_sec==0.04 and blink.Dash_speed==13440 and blink.Cooldown_sec==10,"S8-I3-B blink changes interval rather than cooldown")
+	t.check(blink.Strike_interval_sec==0.04 and blink.Dash_speed==8064 and blink.Cooldown_sec==10,"S8-I3-B blink changes interval rather than cooldown")
 	t.check(store.get_row("projectile.csv","elf_arrow").Speed==585 and store.get_row("projectile.csv","elf_burst_arrow").Speed==585 and store.get_row("projectile.csv","proj_test_01").Speed==300,"S8-I3-B only two projectile speeds changed")
 	await flee_checks()
 	await triangle_checks()
