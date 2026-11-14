@@ -29,8 +29,8 @@ func run(tree: SceneTree) -> void:
 
 func data_checks() -> void:
 	t.check(Data.validate(store).is_empty(),"S8-I2-B actual extended boss tables validate")
-	t.check(store.get_row("enemy.csv","boss_ice_bear").Max_hp==525,"S8-I2-B bear approved HP525")
-	t.check(store.get_row("boss.csv","boss_early").Detect_range==null and store.get_row("boss.csv","boss_middle").Detect_range==416,"S8-I2-B only elf has fixed boss detection416")
+	t.check(store.get_row("enemy.csv","boss_ice_bear").Max_hp==1100,"S8-I2-B bear approved HP1100")
+	t.check(store.get_row("boss.csv","boss_middle").Detect_range==null and store.get_row("boss.csv","boss_early").Detect_range==416,"S8-I2-B only elf has fixed boss detection416")
 	for id in ["ice_elf_basic","ice_elf_burst"]:
 		t.check(store.get_row("boss_action.csv",id).Use_range==416,"S8-I2-B action use416 "+id)
 	t.check(store.get_row("enemy.csv","boss_ice_elf").Shot_range==416,"S8-I2-B enemy shot range matches416")
@@ -38,9 +38,9 @@ func data_checks() -> void:
 		var row := store.get_row("projectile.csv",id)
 		t.check(row.Speed==585 and row.Max_distance==500,"S8-I2-B arrow585 distance500 "+id)
 	for value in [null,0,-1,INF]:
-		store.tables["boss.csv"].boss_middle.Detect_range = value
+		store.tables["boss.csv"].boss_early.Detect_range = value
 		t.check(not Data.validate(store).is_empty(),"S8-I2-B invalid detect rejected "+str(value))
-	store.tables["boss.csv"].boss_middle.Detect_range = 416.0
+	store.tables["boss.csv"].boss_early.Detect_range = 416.0
 	for id in ["ice_bear_dash","ice_bear_slam"]:
 		var row := store.get_row("boss_action.csv",id)
 		var old: Variant = row.Push_sec
@@ -52,7 +52,7 @@ func bear_push() -> void:
 	for id in ["ice_bear_dash","ice_bear_slam","ice_bear_basic"]:
 		var f: Dictionary = base.active_fixture()
 		var b: Variant = f.boss
-		t.check(b.max_hp==525,"S8-I2-B real spawned bear HP525 "+id)
+		t.check(b.max_hp==1100,"S8-I2-B real spawned bear HP1100 "+id)
 		b.global_position = Vector2.ZERO
 		f.player.global_position = Vector2(50 if id=="ice_bear_dash" else 100,0)
 		var row := store.get_row("boss_action.csv",id)
@@ -188,7 +188,7 @@ func presentation() -> void:
 	t.check(arrow.spent and fx.emitted==count+2,"S8-I2-B real arrow hit emits blue icon")
 	# Use the same production director already wired by main.
 	var d: Node2D = manager.boss_director
-	d.timeline = [{"Id":"b-hit","Time_mmss":0,"Boss_id":"boss_early"}]
+	d.timeline = [{"Id":"b-hit","Time_mmss":0,"Boss_id":"boss_middle"}]
 	d.advance(0,0)
 	manager._elapsed_seconds = 3.5
 	d.advance(3.5,0)
@@ -200,7 +200,7 @@ func presentation() -> void:
 	t.check(fx.emitted==count+3,"S8-I2-B real bear slam emits player hit icon")
 	var push_rows: Array = []
 	for row in store.get_table("boss_action.csv").values():
-		if row.Boss_id=="boss_middle": push_rows.append(row)
+		if row.Boss_id=="boss_early": push_rows.append(row)
 	var middle: Node2D = manager.create_boss("boss_ice_elf",push_rows,d.player_target)
 	manager.activate_boss(middle)
 	middle.global_position = player.global_position-Vector2(100,0)

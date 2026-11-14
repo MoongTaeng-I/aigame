@@ -74,7 +74,7 @@ func tick(f: Dictionary, delta: float) -> void:
 	f.manager._physics_process(delta)
 
 func active_fixture() -> Dictionary:
-	var f := fixture({"event":{"Id":"event","Time_mmss":0,"Boss_id":"boss_early"}})
+	var f := fixture({"event":{"Id":"event","Time_mmss":0,"Boss_id":"boss_middle"}})
 	tick(f,0)
 	tick(f,2)
 	tick(f,1.5)
@@ -92,7 +92,7 @@ func timeline_and_resume() -> void:
 	var normal: EnemyActor = t._spawn(f,Vector2(300,0))
 	tick(f,0)
 	t.check(f.director.phase=="warn" and f.manager._stop_normal_spawning,"S8 time zero starts warning and stops new normals")
-	t.check(f.director.toast_text.contains("아이스 베어 우두머리") and not f.director.toast_text.contains("{name}"),"S8 toast substitution from enemy name")
+	t.check(f.director.toast_text.contains("아이스 엘프 정예병") and not f.director.toast_text.contains("{name}"),"S8 toast substitution from enemy name")
 	tick(f,1)
 	t.check(f.director.pending.size()==1 and f.director.fired.size()==2,"S8 next due boss queued once during warning")
 	tick(f,1)

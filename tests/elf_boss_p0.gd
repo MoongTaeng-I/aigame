@@ -23,7 +23,7 @@ func run(tree: SceneTree) -> void:
 	print("S8-IMPL-02 NEW RESULT: %d checks, %d failures" % [t.checks-before,t.failures-failed])
 
 func fixture() -> Dictionary:
-	var f: Dictionary = helper.fixture({"middle":{"Id":"middle","Time_mmss":0,"Boss_id":"boss_middle"}})
+	var f: Dictionary = helper.fixture({"middle":{"Id":"middle","Time_mmss":0,"Boss_id":"boss_early"}})
 	# The ordinary production configure supplies arrow records as in main.
 	var enemies: Dictionary = store.get_table("enemy.csv").duplicate(true)
 	enemies.test = t._enemy()
@@ -48,7 +48,7 @@ func disable_skills(f: Dictionary) -> void:
 func validate_data() -> void:
 	var data = preload("res://scripts/boss_data.gd")
 	t.check(data.validate(store).is_empty(),"S8-I2 middle and early profiles validate together")
-	t.check(store.get_row("enemy.csv","boss_ice_elf").Max_hp>store.get_row("enemy.csv","boss_ice_bear").Max_hp,"S8-I2 draft elf HP above early boss")
+	t.check(store.get_row("enemy.csv","boss_ice_elf").Max_hp<store.get_row("enemy.csv","boss_ice_bear").Max_hp,"S8-I3-D elf HP below bear HP")
 	var basic := store.get_row("boss_action.csv","ice_elf_basic")
 	t.check(basic.Shot_interval_sec<store.get_row("enemy.csv","enemy_test_ranged").Shot_interval_sec,"S8-I2 basic faster interval than normal ranged")
 	for id in ["elf_arrow","elf_burst_arrow"]:

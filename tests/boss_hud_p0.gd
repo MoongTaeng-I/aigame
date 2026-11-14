@@ -31,7 +31,7 @@ func run(tree: SceneTree) -> void:
 	t.check(d.toast.horizontal_alignment==HORIZONTAL_ALIGNMENT_CENTER and d.toast.vertical_alignment==VERTICAL_ALIGNMENT_CENTER,"S8-B centered toast text")
 	t.check(not contains_bar(d.toast_view),"S8-B toast contains no old bar/ProgressBar node")
 	t.check(absf(d.toast_view.panel.get_global_rect().get_center().x-d.toast_view.get_viewport_rect().size.x/2)<1,"S8-B toast panel centered in viewport")
-	d.timeline = [{"Id":"hud_event","Time_mmss":0,"Boss_id":"boss_early"}]
+	d.timeline = [{"Id":"hud_event","Time_mmss":0,"Boss_id":"boss_middle"}]
 	manager._physics_process(0)
 	t.check(d.toast_view.visible and d.toast.text.contains("아이스 베어 우두머리") and not d.toast.text.contains("{name}"),"S8-B warning shows panel and substitutes CSV boss name")
 	t.check(is_zero_approx(d.toast_view.entries[0].panel.modulate.a),"S8-B fade in begins transparent")
