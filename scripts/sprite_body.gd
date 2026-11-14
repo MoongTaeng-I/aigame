@@ -5,6 +5,7 @@ const SHADOW_SIZE := Vector2(32.0,12.0)
 const SHADOW_COLOR := Color(0.0,0.0,0.0,0.35)
 
 var texture: Texture2D
+var idle_texture: Texture2D
 var layout := "dir3"
 var columns := 1
 var rows := 1
@@ -24,6 +25,8 @@ var fallback_color := Color("#b18cff")
 var fallback_outline := Color("#eee6ff")
 var _animation_elapsed := 0.0
 var _animation_row := -1
+var _pose_moving := false
+var _using_idle := false
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
 	fallback_radius = radius
@@ -51,6 +54,17 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 		return
 	texture = loaded
 	using_fallback = false
+	if record.has("Idle_sprite_path"):
+		var idle_path := String(record.get("Idle_sprite_path","")).strip_edges()
+		if idle_path.is_empty() or not ResourceLoader.exists(idle_path,"Texture2D"):
+			print("ART-03 경고: Idle_sprite_path가 비었거나 파일이 없어 이동 시트 첫 칸을 사용합니다: "+idle_path)
+		else:
+			var loaded_idle := ResourceLoader.load(idle_path,"Texture2D")
+			if loaded_idle is Texture2D:
+				idle_texture = loaded_idle
+				_using_idle = true
+			else:
+				print("ART-03 경고: Idle_sprite_path를 이미지로 읽을 수 없어 이동 시트 첫 칸을 사용합니다: "+idle_path)
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	queue_redraw()
 
@@ -94,9 +108,18 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 		else:
 			frame_row = 0 if direction.y>0.0 else 1
 			flip_h = false
-	if moving:
+	var state_changed := moving!=_pose_moving
+	_pose_moving = moving
+	_using_idle = not moving and idle_texture!=null
+	if state_changed:
+		_animation_elapsed = 0.0
+		frame_column = 0
+	elif moving:
 		_animation_elapsed += maxf(0.0,delta)
 		frame_column = floori(_animation_elapsed*animation_fps)%maxi(1,columns)
+	elif idle_texture!=null:
+		_animation_elapsed += maxf(0.0,delta)
+		frame_column = floori(_animation_elapsed*idle_fps)%maxi(1,columns)
 	else:
 		_animation_elapsed = 0.0
 		frame_column = 0
@@ -125,10 +148,16 @@ func set_attack_pose(direction: Vector2, column: int) -> void:
 	queue_redraw()
 
 func source_rect() -> Rect2:
-	if texture==null:
+	var shown := current_texture()
+	if shown==null:
 		return Rect2()
-	var frame_size := Vector2(texture.get_width()/float(columns),texture.get_height()/float(rows))
+	var frame_size := Vector2(shown.get_width()/float(columns),shown.get_height()/float(rows))
 	return Rect2(Vector2(frame_column,frame_row)*frame_size,frame_size)
+
+func current_texture() -> Texture2D:
+	if _using_idle and idle_texture!=null:
+		return idle_texture
+	return texture
 
 func display_rect() -> Rect2:
 	var source := source_rect()
@@ -157,6 +186,6 @@ func _draw() -> void:
 	if flip_h:
 		draw_set_transform(Vector2.ZERO,0.0,Vector2(-1.0,1.0))
 		destination.position.x = -destination.end.x
-	draw_texture_rect_region(texture,destination,source_rect(),Color.WHITE,false,true)
+	draw_texture_rect_region(current_texture(),destination,source_rect(),Color.WHITE,false,true)
 	if flip_h:
 		draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)

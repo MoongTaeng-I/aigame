@@ -12,16 +12,17 @@ func run(tree: SceneTree) -> void:
 	if f.store.get_table("shadow.csv").is_empty():
 		await helper.close(f)
 		return
-	var player_texture := ResourceLoader.load("res://assets/art/player/player_v1_sheet.png","Texture2D") as Texture2D
+	var player_texture := ResourceLoader.load("res://assets/art/player/player_move_sheet.png","Texture2D") as Texture2D
+	var player_idle_texture := ResourceLoader.load("res://assets/art/player/player_idle_sheet.png","Texture2D") as Texture2D
 	var igris_texture := ResourceLoader.load("res://assets/art/shadow/igris_sheet.png","Texture2D") as Texture2D
-	t.check(player_texture!=null and player_texture.get_width()==1328 and player_texture.get_height()==1167,"ART-02 replacement player sheet is1328x1167")
+	t.check(player_texture!=null and player_idle_texture!=null and player_texture.get_width()==1488 and player_texture.get_height()==1140 and player_idle_texture.get_width()==1488 and player_idle_texture.get_height()==1140,"ART-03 player move and idle sheets are1488x1140")
 	t.check(igris_texture!=null and igris_texture.get_width()==1920 and igris_texture.get_height()==1260,"ART-02 Igris sheet is1920x1260")
-	t.check(player_texture.get_image().has_mipmaps() and igris_texture.get_image().has_mipmaps(),"ART-02 both sheets import mipmaps")
+	t.check(player_texture.get_image().has_mipmaps() and player_idle_texture.get_image().has_mipmaps() and igris_texture.get_image().has_mipmaps(),"ART-03 player sheets and Igris sheet import mipmaps")
 	var player_row: Dictionary = f.store.get_row("player.csv","player_01")
 	var player_view := preload("res://scripts/sprite_body.gd").new()
 	f.host.add_child(player_view)
 	player_view.configure(player_row,16,Color("#b18cff"),Color("#eee6ff"))
-	t.check(player_view.layout=="dir3" and absf(player_view.display_rect().size.y-88.0)<=1.0,"ART-02 player keeps dir3 and display height88")
+	t.check(player_view.layout=="dir3" and absf(player_view.display_rect().size.y-87.0)<=1.0,"ART-03 player keeps dir3 with display height87")
 	var igris = f.summons.summon("igrit")
 	t.check(igris!=null and igris.sprite_body!=null and igris.sprite_body.layout=="state3","ART-02 production Igris uses state3 sprite body")
 	igris.tick(1.0/6.0)
