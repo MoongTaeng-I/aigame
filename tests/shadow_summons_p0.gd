@@ -68,6 +68,7 @@ func near(a: Vector2, b: Vector2) -> bool:
 func data_and_cards() -> void:
 	var f := fixture()
 	t.check(Data.validate(f.store).is_empty(),"S7-01 shadow tables validate")
+	t.check(Summons.MAX_TYPES==2 and f.summons.capacity==2,"MVP-01 production shadow recruitment limit is two types")
 	var row: Dictionary = f.store.get_row("shadow.csv","igrit")
 	t.check(row.Search_radius==280 and row.Chase_leash_distance==560 and row.Follow_distance==200 and row.Move_speed==320 and row.Teleport_distance==900 and row.Afterimage_sec==1,"S7-01 CSV specified movement and afterimage start values")
 	t.check(row.Body_radius==f.store.get_row("player.csv","player_01").Body_radius and row.Push_weight==f.store.get_row("player.csv","player_01").Push_weight,"S7-01 radius and weight copied from player source")
@@ -101,8 +102,9 @@ func data_and_cards() -> void:
 		attempts += 1
 		if f.summons.actors.size()<2:
 			f.player.add_experience(f.player.get_xp_to_next()-f.player.experience)
-	t.check(f.summons.actors.size()==2 and f.summons.capacity==3 and not choices.candidates().has("choice_igrit") and not choices.candidates().has("choice_charger_test") and f.summons.summon()==null and f.summons.summon("charger_test")==null,"S7-02 both owned types leave candidates and reject duplicates; three distinct-type slots remain the rule")
+	t.check(f.summons.actors.size()==2 and f.summons.capacity==2 and not choices.candidates().has("choice_igrit") and not choices.candidates().has("choice_charger_test") and f.summons.summon()==null and f.summons.summon("charger_test")==null,"MVP-01 two owned types fill capacity; third recruitment draw excludes shadow cards")
 	f.player.add_experience(f.player.get_xp_to_next()-f.player.experience)
+	t.check(choices.cards.size()==3 and not choices.cards.has("choice_igrit") and not choices.cards.has("choice_charger_test"),"MVP-01 third recruitment draw keeps three cards but excludes shadow candidates at capacity")
 	t.check(not choices.can_reroll() and choices.candidates().size()<=3,"S7-02 after both one-time summons <=3 general candidates disables reroll rule 13")
 	await close(f)
 
@@ -460,7 +462,7 @@ func share_validation() -> void:
 func summon_test_type(f: Dictionary, index: int) -> Node2D:
 	if index==0: return f.summons.summon("igrit")
 	if index==1: return f.summons.summon("charger_test")
-	# Test-only third type for the three-slot/region rule; never game data.
+	# Test-only third type for the two-slot rejection rule; never game data.
 	var record: Dictionary = f.store.get_row("shadow.csv","igrit").duplicate(true)
 	record.Id = "p0_third_type"
 	f.summons.records[record.Id] = record
@@ -471,25 +473,24 @@ func distributed_targets() -> void:
 		var f := fixture()
 		f.player.position = Vector2(300,300)
 		var shadows: Array = []
-		for i in range(3): shadows.append(summon_test_type(f,i))
+		for i in range(2): shadows.append(summon_test_type(f,i))
 		var enemies: Array = []
-		for x in ([600,640,680] if screen_only else [460,500,540]):
+		for x in ([600,640] if screen_only else [460,500]):
 			enemies.append(t._spawn(f,Vector2(x,300)))
 		f.summons._physics_process(0.0)
-		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1] and shadows[2].target==enemies[2],"S7-FIX2-A three distinct targets in summon order, screen=%s" % str(screen_only))
-		t.check(shadows[0].last_node==("screen" if screen_only else "attack") and shadows[2].last_node==shadows[0].last_node,"S7-FIX2-A distribution applies to both BT candidate stages")
+		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1],"MVP-01 two shadows claim distinct targets in summon order, screen=%s" % str(screen_only))
+		t.check(shadows[0].last_node==("screen" if screen_only else "attack") and shadows[1].last_node==shadows[0].last_node,"S7-FIX2-A distribution applies to both BT candidate stages")
 		var closer: EnemyActor = t._spawn(f,Vector2(350,300))
 		f.summons._physics_process(0.0)
-		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1] and shadows[2].target==enemies[2] and not f.summons.claimed_targets(shadows[0]).has(closer),"S7-FIX2-A locked claims survive a new closer candidate")
+		t.check(shadows[0].target==enemies[0] and shadows[1].target==enemies[1] and not f.summons.claimed_targets(shadows[0]).has(closer),"S7-FIX2-A locked claims survive a new closer candidate")
 		await close(f)
 		f = fixture()
 		f.player.position = Vector2(300,300)
 		shadows.clear()
-		for i in range(3): shadows.append(summon_test_type(f,i))
+		for i in range(2): shadows.append(summon_test_type(f,i))
 		var one: EnemyActor = t._spawn(f,Vector2(600 if screen_only else 460,300))
-		var two: EnemyActor = t._spawn(f,Vector2(640 if screen_only else 500,300))
 		f.summons._physics_process(0.0)
-		t.check(shadows[0].target==one and shadows[1].target==two and shadows[2].target==one,"S7-FIX2-A only insufficient candidates allow nearest-target sharing, screen=%s" % str(screen_only))
+		t.check(shadows[0].target==one and shadows[1].target==one,"S7-FIX2-A only insufficient candidates allow nearest-target sharing, screen=%s" % str(screen_only))
 		await close(f)
 	# Once claimed search candidates are exhausted, node 1 retries locally;
 	# an unclaimed screen-only enemy does not override BT priority.

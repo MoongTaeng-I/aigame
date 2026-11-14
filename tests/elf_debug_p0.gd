@@ -46,7 +46,7 @@ func fixture(scenario: String = "") -> Dictionary:
 	if scenario.begins_with("crowd"):
 		# Historical stage fixture: normal 4/5-per-second accumulation BEFORE warning.
 		f.director.timeline = []
-		var start := 120.0 if scenario=="crowd4" else 180.0
+		var start := 180.0 if scenario=="crowd4" else 330.0
 		for second in range(20):
 			f.manager._elapsed_seconds = start+second
 			f.manager._advance_spawn_rows(1.0)

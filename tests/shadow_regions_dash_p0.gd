@@ -28,7 +28,7 @@ func run(tree: SceneTree) -> void:
 	print("S7-IMPL-02 NEW RESULT: %d checks, %d failures; inherited %d" % [t.checks-before,t.failures-failures,before])
 
 func regions() -> void:
-	for count in [1,2,3]:
+	for count in [1,2]:
 		var f: Dictionary = helper.fixture()
 		f.player.position = Vector2(300,300)
 		for i in range(count): helper.summon_test_type(f,i)
@@ -118,9 +118,9 @@ func single_and_repartition() -> void:
 	f.summons.summon("charger_test")
 	f.summons._physics_process(0.0)
 	t.check(s.target==near and s.target_spawn_order==order and f.summons.region_index(near.position,2)==1,"S7-I2-LOCK N1 to N2 repartition keeps existing target in the other region")
-	helper.summon_test_type(f,2)
+	var rejected_third = helper.summon_test_type(f,2)
 	f.summons._physics_process(0.0)
-	t.check(s.target==near and s.target_spawn_order==order,"S7-I2-LOCK N2 to N3 keeps prior target and spawn generation")
+	t.check(rejected_third==null and f.summons.actors.size()==2 and s.target==near and s.target_spawn_order==order,"MVP-01 N2 limit rejects third type and keeps prior target")
 	await helper.close(f)
 
 func return_slots() -> void:
@@ -350,13 +350,13 @@ func instrumentation_equivalence() -> void:
 
 func type_capacity() -> void:
 	var f: Dictionary = helper.fixture()
-	for i in range(3):
+	for i in range(2):
 		var s: Node2D = helper.summon_test_type(f,i)
 		t.check(s!=null and f.summons.summon(s.config.Id)==null,"S7-I2-TYPE one instance per unique type i="+str(i))
 	var extra: Dictionary = f.store.get_row("shadow.csv","igrit").duplicate(true)
-	extra.Id = "p0_fourth_type"
+	extra.Id = "p0_third_type"
 	f.summons.records[extra.Id] = extra
-	t.check(f.summons.actors.size()==3 and not f.summons.can_summon(extra.Id) and f.summons.summon(extra.Id)==null,"S7-I2-TYPE three distinct slots reject even a different fourth test type")
+	t.check(f.summons.actors.size()==2 and not f.summons.can_summon(extra.Id) and f.summons.summon(extra.Id)==null,"MVP-01 two distinct slots reject a different third test type")
 	await helper.close(f)
 
 func validate_shapes() -> void:

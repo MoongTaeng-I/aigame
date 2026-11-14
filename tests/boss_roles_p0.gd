@@ -51,21 +51,21 @@ func timeline(queued: bool) -> void:
 	at(f,180)
 	if queued:
 		t.check(d.pending==["boss_middle"] and d.actor==first,"S8-I3-D living elf queues bear")
-		at(f,300)
+		at(f,330)
 		t.check(d.pending==["boss_middle","boss_final"] and not d.completed,"S8-I3-D living first queues final after bear")
 		first.apply_damage(first.hp)
 	t.check(d.active_id=="boss_middle" and d.toast_text.contains("'아이스 베어 우두머리'가") and f.manager._stop_normal_spawning,"S8-I3-D bear warning subject and spawning stop")
-	var bear_at := 303.5 if queued else 183.5
+	var bear_at := 333.5 if queued else 183.5
 	at(f,bear_at)
 	var second: Variant = d.actor
 	t.check(second.enemy_id=="boss_ice_bear" and second.hp==1100 and second.elf==null and second.baruka==null,"S8-I3-D actual second bear1100 with melee Kind profile")
 	second.apply_damage(second.hp)
 	if not queued:
-		at(f,299.999)
+		at(f,329.999)
 		t.check(d.active_id.is_empty(),"S8-I3-D final not early")
-		at(f,300)
+		at(f,330)
 	t.check(d.active_id=="boss_final" and not d.completed,"S8-I3-D final is Baruka, time never completes run")
-	at(f,(bear_at if queued else 300)+3.5)
+	at(f,(bear_at if queued else 330)+3.5)
 	var final: Variant = d.actor
 	t.check(final.enemy_id=="boss_baruka" and final.baruka!=null and final.hp==1750,"S8-I3-D final profile and unchanged HP1750")
 	t.check(d.fired.size()==3 and d.pending.is_empty(),"S8-I3-D all three actual timeline rows fire once")

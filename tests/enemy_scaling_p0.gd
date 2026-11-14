@@ -57,9 +57,9 @@ func validation() -> void:
 
 func stages_and_ranged() -> void:
 	var f := fixture()
-	for pair in [[0,"scaling_00"],[59.999,"scaling_00"],[60,"scaling_01"],[119.999,"scaling_01"],[120,"scaling_02"],[179.999,"scaling_02"],[180,"scaling_03"],[900,"scaling_03"],[9999,"scaling_03"]]:
+	for pair in [[0,"scaling_00"],[59.999,"scaling_00"],[60,"scaling_01"],[179.999,"scaling_01"],[180,"scaling_02"],[329.999,"scaling_02"],[330,"scaling_03"],[900,"scaling_03"],[9999,"scaling_03"]]:
 		t.check(f.manager.scaling_at(pair[0]).Id==pair[1],"S8-I4 latest inclusive stage "+str(pair[0]))
-	for row in [[0,30,120,5,100],[60,45,132,6,110],[120,66,144,7,120],[180,90,156,8,130]]:
+	for row in [[0,30,120,5,100],[60,45,132,6,110],[180,66,144,7,120],[330,90,156,8,130]]:
 		f.manager._elapsed_seconds = row[0]
 		var enemy := spawn(f)
 		t.check(enemy.max_hp==row[1] and enemy.hp==row[1] and is_equal_approx(enemy.move_speed,row[2]) and enemy.contact_damage==row[3],"S8-I4 actual melee HP/speed/damage "+str(row[0]))
@@ -88,7 +88,7 @@ func lifetime_and_pool() -> void:
 	var f := fixture()
 	var first := spawn(f)
 	first.apply_damage(3)
-	f.manager._elapsed_seconds = 180
+	f.manager._elapsed_seconds = 330
 	f.manager._offscreen_relocate_seconds = 0
 	first.global_position = Vector2(2000,1000)
 	var previous := first.global_position
@@ -109,7 +109,7 @@ func lifetime_and_pool() -> void:
 	xp.configure(f.player,f.manager,store.get_row("xp_rule.csv","xp_rule_01"))
 	f.host.add_child(xp)
 	xp.set_physics_process(false)
-	f.manager._elapsed_seconds = 180
+	f.manager._elapsed_seconds = 330
 	var doomed := spawn(f)
 	var determined: int = doomed.xp_value
 	f.manager._elapsed_seconds = 0
@@ -121,7 +121,7 @@ func lifetime_and_pool() -> void:
 
 func experience_rounding() -> void:
 	var f := fixture()
-	for pair in [[60,1.1],[120,1.2],[180,1.3]]:
+	for pair in [[60,1.1],[180,1.2],[330,1.3]]:
 		f.manager._elapsed_seconds = pair[0]
 		f.manager._random.seed = 20261114
 		var total := 0
@@ -142,7 +142,7 @@ func experience_rounding() -> void:
 	await cleanup(f)
 
 func spawn_counts() -> void:
-	for pair in [[0,2],[60,3],[120,4],[180,5]]:
+	for pair in [[0,2],[60,3],[180,4],[330,5]]:
 		var f := fixture(true)
 		for second in range(1,6):
 			f.manager._elapsed_seconds = pair[0]+second
@@ -152,7 +152,7 @@ func spawn_counts() -> void:
 		t.check(melee.size()==pair[1]*5 and ranged.size()==1,"S8-I4 actual rows per-second melee count and unchanged ranged "+str(pair[0]))
 		await cleanup(f)
 	var f := fixture(true)
-	for pair in [[59.999,2],[60,3],[120,4],[180,5]]:
+	for pair in [[59.999,2],[60,3],[180,4],[330,5]]:
 		var before: int = f.manager.get_alive_count()
 		f.manager._elapsed_seconds = pair[0]
 		f.manager._advance_spawn_rows(1)
@@ -196,11 +196,11 @@ func bosses_and_shadows() -> void:
 	t.check(f.manager.get_alive_count()==before+3 and f.manager.get_living_enemies().back().max_hp==45 and old.max_hp==30,"S8-I4 resume emits current stage3 scaled enemies after full interval")
 	await cleanup(f)
 	f = roles.fixture()
-	roles.at(f,300)
-	for pair in [[303.5,"boss_ice_elf",525,110],[307.0,"boss_ice_bear",1100,90],[310.5,"boss_baruka",1750,156]]:
+	roles.at(f,330)
+	for pair in [[333.5,"boss_ice_elf",525,110],[337.0,"boss_ice_bear",1100,90],[340.5,"boss_baruka",1750,156]]:
 		roles.at(f,pair[0])
 		boss = f.director.actor
-		t.check(boss.enemy_id==pair[1] and boss.max_hp==pair[2] and is_equal_approx(boss.move_speed,pair[3]) and boss.xp_value==store.get_row("enemy.csv",pair[1]).Xp_value,"S8-I4 boss stats and XP unscaled after5min "+pair[1])
+		t.check(boss.enemy_id==pair[1] and boss.max_hp==pair[2] and is_equal_approx(boss.move_speed,pair[3]) and boss.xp_value==store.get_row("enemy.csv",pair[1]).Xp_value,"MVP-01 boss stats and XP unscaled after5:30 "+pair[1])
 		boss.apply_damage(boss.hp)
 	t.paused = false
 	var shadows: Node2D = f.host.get_child(0).get_node("ShadowManager")

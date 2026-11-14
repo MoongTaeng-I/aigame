@@ -114,7 +114,7 @@ func run(tree: SceneTree) -> void:
 	old = descendants(flow.session)
 	boss.apply_damage(boss.hp)
 	t.check(flow.state=="result" and flow.result.cleared and flow.result.kills==1 and t.paused,"S9 actual final boss death creates clear result including boss kill")
-	t.check(n.director.toast_view.completion_label==null and flow.ui.result_text.text.contains("05:03"),"S9 clear uses result UI and MM:SS instead of old completion label")
+	t.check(n.director.toast_view.completion_label==null and flow.ui.result_text.text.contains("05:33"),"MVP-01 5:30 final clear uses result UI and MM:SS instead of old completion label")
 	var toast: Control = n.director.toast_view
 	var death_entry: Dictionary = toast.entries[0]
 	t.check(death_entry.text=="[보스 몬스터를 처치했습니다]" and toast.get_parent().layer>flow.ui.get_parent().layer,"S9 boss kill toast remains above result")
@@ -129,7 +129,7 @@ func run(tree: SceneTree) -> void:
 	buttons[0].pressed.emit()
 	await t.process_frame
 	all_freed(old,"clear confirm")
-	t.check(flow.state=="menu" and flow.ui.best_label.text.contains("05:03"),"S9 confirm returns to menu with new maximum")
+	t.check(flow.state=="menu" and flow.ui.best_label.text.contains("05:33"),"MVP-01 confirm returns to menu with new 5:30-flow maximum")
 	flow.start_region()
 	fresh(flow.session.round_nodes)
 	flow.show_menu()
@@ -168,11 +168,11 @@ func all_freed(nodes: Array, label: String) -> void:
 	t.check(remaining==0,"S9 old round nodes zero including effects/toasts: "+label)
 
 func spawn_final(n: Dictionary) -> Node2D:
-	n.director.timeline = [{"Id":"final_probe","Time_mmss":500,"Boss_id":"boss_final"}]
-	n.manager._elapsed_seconds = 300
-	n.director.advance(300,0)
-	n.manager._elapsed_seconds = 303.5
-	n.director.advance(303.5,0)
+	n.director.timeline = [{"Id":"final_probe","Time_mmss":530,"Boss_id":"boss_final"}]
+	n.manager._elapsed_seconds = 330
+	n.director.advance(330,0)
+	n.manager._elapsed_seconds = 333.5
+	n.director.advance(333.5,0)
 	return n.director.actor
 
 func data_errors() -> void:

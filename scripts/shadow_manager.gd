@@ -6,7 +6,7 @@ const Actor = preload("res://scripts/shadow_actor.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const ENABLE_DEBUG_TELEPORT := true
 const DEBUG_TELEPORT_KEY := KEY_T
-const MAX_TYPES := 3
+const MAX_TYPES := 2
 const REGION_BOUNDARY_EPS := 0.0000001
 var player: Node2D
 var enemies: EnemyManager
