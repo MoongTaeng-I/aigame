@@ -79,7 +79,7 @@ func flee_checks() -> void:
 	helper.step(f,0)
 	f.player.stealth_remaining = 1
 	helper.step(f,0)
-	t.check(not e.fleeing and e.last_branch=="wander","S8-I3-B player stealth interrupts flee")
+	t.check(not e.fleeing and e.last_branch=="stealth_wait","S8-I3-B player stealth interrupts flee")
 	f.player.stealth_remaining = 0
 	f.boss.global_position = Vector2.ZERO
 	f.player.global_position = Vector2(100,0)

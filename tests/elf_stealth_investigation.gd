@@ -13,7 +13,7 @@ func run(tree: SceneTree) -> void:
 	roles.store = t._store()
 	roles.store.load_all()
 	# A separate file per P0 execution; no earlier investigation log is overwritten.
-	var stem := "res://.local/s8-impl-03-d-elf-"+str(Time.get_ticks_usec())
+	var stem := "res://.local/s8-impl-03-e-elf-"+str(Time.get_ticks_usec())
 	log_file = FileAccess.open(stem+"-transitions.jsonl",FileAccess.WRITE)
 	for mode in ["stationary","stationary_edge","away","away_open_control"]:
 		await lifecycle(mode)
@@ -66,6 +66,8 @@ func fixture(open_arena: bool = false) -> Dictionary:
 	f.hidden_starts = 0
 	f.hidden_ends = 0
 	f.hidden_extensions = 0
+	f.stealth_move_max = 0.0
+	f.gap_shrink_frames = 0
 	return f
 
 func snapshot(f: Dictionary) -> Dictionary:
@@ -77,7 +79,7 @@ func snapshot(f: Dictionary) -> Dictionary:
 
 func reason(state: Dictionary, decision_distance: float) -> String:
 	match state.branch:
-		"wander": return "player stealth branch interrupts flee/burst and wanders"
+		"stealth_wait": return "player stealth branch interrupts flee/burst and waits in place"
 		"follow": return "outside Detect_range; no new attack; approach" if decision_distance>416 else "approach to Use_range"
 		"stealth": return "self stealth ready (also allowed outside Detect_range)"
 		"push": return "inside Use_range and push ready; higher priority"
@@ -102,6 +104,7 @@ func step(f: Dictionary, scenario: String, phase: String, moving: bool) -> void:
 	f.player._physics_process(DT)
 	for action in ["move_right","move_left","move_down","move_up"]: Input.action_release(action)
 	f.skills._physics_process(DT)
+	var boss_before: Vector2 = f.boss.global_position
 	var decision_distance: float = f.player.global_position.distance_to(f.boss.global_position)
 	f.manager._physics_process(DT)
 	f.frames+=1
@@ -111,6 +114,7 @@ func step(f: Dictionary, scenario: String, phase: String, moving: bool) -> void:
 	if not old_hidden and f.boss.elf.hidden: f.hidden_starts+=1
 	if old_hidden and not f.boss.elf.hidden: f.hidden_ends+=1
 	if old_hidden and f.boss.elf.hidden and f.boss.elf.hidden_until>old_hidden_until+0.000001: f.hidden_extensions+=1
+	if f.player.is_stealthed(): f.stealth_move_max = maxf(f.stealth_move_max,boss_before.distance_to(f.boss.global_position))
 	var state := snapshot(f)
 	if not state.player_stealth and decision_distance>416:
 		f.outside_visible_frames+=1
@@ -118,6 +122,7 @@ func step(f: Dictionary, scenario: String, phase: String, moving: bool) -> void:
 	if moving and f.player.global_position.distance_to(old_position)>4.0 and state.branch=="follow":
 		f.in_bounds_moving_frames+=1
 		if state.distance>old_distance: f.gap_growth_frames+=1
+		if state.distance<old_distance: f.gap_shrink_frames+=1
 	if state.branch!=f.last_logged:
 		state.scenario = scenario
 		state.phase = phase
@@ -139,8 +144,9 @@ func cast(f: Dictionary) -> void:
 
 func finish(f: Dictionary, scenario: String) -> void:
 	t.check(f.clock_errors==0 and f.target_errors==0 and f.timer_error<0.000001,"S8-I3-D probe BT clock/target/timer invariant "+scenario)
+	t.check(f.stealth_move_max<0.000001,"S8-I3-E same D scenario stays still throughout player stealth "+scenario)
 	t.check(f.hidden_extensions==0,"S8-I3-D self stealth timer never refreshed by player stealth "+scenario)
-	var result := {"scenario":scenario,"frames":f.frames,"clock_errors":f.clock_errors,"target_errors":f.target_errors,"max_player_timer_error":f.timer_error,"elf_hidden_starts":f.hidden_starts,"elf_hidden_ends":f.hidden_ends,"elf_hidden_extensions":f.hidden_extensions,"casts":f.casts,"outside_visible_frames":f.outside_visible_frames,"outside_visible_follow_frames":f.outside_visible_follow_frames,"in_bounds_moving_follow_frames":f.in_bounds_moving_frames,"gap_growth_frames":f.gap_growth_frames,"checkpoints":f.checkpoints}
+	var result := {"scenario":scenario,"frames":f.frames,"max_stealth_displacement":f.stealth_move_max,"gap_shrink_frames":f.gap_shrink_frames,"clock_errors":f.clock_errors,"target_errors":f.target_errors,"max_player_timer_error":f.timer_error,"elf_hidden_starts":f.hidden_starts,"elf_hidden_ends":f.hidden_ends,"elf_hidden_extensions":f.hidden_extensions,"casts":f.casts,"outside_visible_frames":f.outside_visible_frames,"outside_visible_follow_frames":f.outside_visible_follow_frames,"in_bounds_moving_follow_frames":f.in_bounds_moving_frames,"gap_growth_frames":f.gap_growth_frames,"checkpoints":f.checkpoints}
 	summaries.append(result)
 	print("S8-I3-D PROBE SUMMARY ",scenario," frames=",f.frames," clock_errors=",f.clock_errors," target_errors=",f.target_errors," timer_error=",f.timer_error)
 	await roles.cleanup(f)
@@ -187,10 +193,10 @@ func during_state(state: String) -> void:
 	cast(f)
 	step(f,state,"stealth_start",false)
 	checkpoint(f,"stealth_start")
-	t.check(e.last_branch=="wander" and not e.fleeing and not e.burst,"S8-I3-D stealth interrupts flee/burst through actual BT "+state)
+	t.check(e.last_branch=="stealth_wait" and not e.fleeing and not e.burst,"S8-I3-D stealth interrupts flee/burst through actual BT "+state)
 	for i in range(121): step(f,state,"stealth_expired",false)
 	checkpoint(f,"stealth_expired")
 	for i in range(360): step(f,state,"post_visible",false)
 	checkpoint(f,"post_visible")
-	t.check(not f.player.is_stealthed() and not e.hidden and e.last_branch!="wander","S8-I3-D no retained stealth or wander lock "+state)
+	t.check(not f.player.is_stealthed() and not e.hidden and e.last_branch!="stealth_wait","S8-I3-D no retained stealth or wander lock "+state)
 	await finish(f,state)

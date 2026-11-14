@@ -5,6 +5,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("boss.csv",{"Id":"String","Enemy_id":"String","Is_final":"Bool","Note":"String","Detect_range":{"type":"Optional","inner":"Float"}})
 	store.schemas["boss.csv"]["Move_speed_ref_enemy"] = {"type":"Optional","inner":"String"}
 	store.schemas["boss.csv"]["Move_speed_mult"] = {"type":"Optional","inner":"Float"}
+	store.schemas["boss.csv"]["Outside_detect_speed"] = {"type":"Optional","inner":"Float"}
 	store.register_schema("stage_timeline.csv",{"Id":"String","Time_mmss":"Int","Boss_id":"String","Note":"String"})
 	var action := {"Id":"String","Boss_id":"String","Kind":{"type":"Enum","values":{"basic":0,"dash":1,"slam":2,"ranged_basic":3,"push":4,"burst":5,"stealth":6,"tri_dash":7,"blink_strike":8,"chase":9,"ice_zone":10}},"Use_range":"Float","Damage":"Int","Telegraph_sec":"Float","Recovery_sec":"Float","Cooldown_sec":"Float","Note":"String"}
 	for field in ["Tri_width","Tri_length","Area_radius","Strike_interval_sec","Strike_min_distance","Zone_radius","Zone_life_sec","Freeze_sec","Flee_trigger_range","Flee_speed","Flee_distance"]:
@@ -46,7 +47,9 @@ static func validate(store: CsvDataStore) -> String:
 				if boss.get(field)!=null: return error(store,"boss.csv",id,field,"기존 프로필에서는 사용하지 않습니다.")
 		if counts[3]>0:
 			if not positive(boss.Detect_range): return error(store,"boss.csv",id,"Detect_range","원거리 보스 인식 범위는 유한한 양수입니다.")
+			if not positive(boss.get("Outside_detect_speed")): return error(store,"boss.csv",id,"Outside_detect_speed","엘프 범위 밖 추적 속도는 유한한 양수입니다.")
 		elif boss.Detect_range!=null: return error(store,"boss.csv",id,"Detect_range","초반 보스는 인식 범위를 사용하지 않습니다.")
+		if counts[3]==0 and boss.get("Outside_detect_speed")!=null: return error(store,"boss.csv",id,"Outside_detect_speed","엘프 외 프로필은 범위 밖 추적 속도를 비워야 합니다.")
 	for id in store.get_table("stage_timeline.csv"):
 		var row := store.get_row("stage_timeline.csv",id)
 		if mmss_seconds(int(row.Time_mmss))<0: return error(store,"stage_timeline.csv",id,"Time_mmss","음수 또는 초 부분이 59를 넘습니다.")

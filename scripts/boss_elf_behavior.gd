@@ -9,6 +9,7 @@ const PREP_BOW_SCALE := 1.6
 var boss: Node2D
 var rows: Dictionary = {}
 var detect_range: float
+var outside_detect_speed: float
 var hidden := false
 var hidden_until: float = 0
 var burst := false
@@ -28,7 +29,9 @@ var flee_reselections := 0
 func configure(actor: Node2D) -> void:
 	boss = actor
 	for row in boss.actions: rows[int(row.Kind)] = row
-	detect_range = float(boss.manager.boss_director.bosses[rows[3].Boss_id].Detect_range)
+	var config: Dictionary = boss.manager.boss_director.bosses[rows[3].Boss_id]
+	detect_range = float(config.Detect_range)
+	outside_detect_speed = float(config.Outside_detect_speed)
 
 func now() -> float:
 	return boss.manager._elapsed_seconds
@@ -51,11 +54,7 @@ func tick(delta: float) -> void:
 	if target.is_stealthed():
 		fleeing = false
 		interrupt_burst()
-		last_branch = "wander"
-		if not boss.has_wander_target or boss.global_position.distance_to(boss.wander_target)<=0.000001:
-			boss.wander_target = boss.clamp_position_to_map(boss.global_position+Vector2.RIGHT.rotated(boss.rng.randf()*TAU)*sqrt(boss.rng.randf())*boss.manager.wander_radius,boss.map_bounds)
-			boss.has_wander_target = true
-		boss.move_boss(boss.wander_target,delta,true)
+		last_branch = "stealth_wait"
 		boss.queue_redraw()
 		return
 	boss.has_wander_target = false
@@ -75,7 +74,7 @@ func tick(delta: float) -> void:
 				start_stealth()
 			else:
 				last_branch = "follow"
-				boss.move_boss(target.global_position,delta)
+				boss.global_position = boss.clamp_position_to_map(boss.global_position+boss.global_position.direction_to(target.global_position)*outside_detect_speed*delta,boss.map_bounds)
 		elif ready(4) and distance<=float(rows[4].Use_range):
 			last_branch = "push"
 			target.start_boss_push(boss.global_position,float(rows[4].Push_distance),float(rows[4].Push_sec),boss.map_bounds)

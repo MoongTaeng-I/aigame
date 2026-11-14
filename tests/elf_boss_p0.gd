@@ -164,7 +164,7 @@ func concealment_and_damage() -> void:
 	var arrow: Node2D = f.manager._projectiles.back()
 	f.player.stealth_remaining = 2
 	step(f,0)
-	t.check(not e.burst and e.last_branch=="wander" and is_instance_valid(arrow),"S8-I2 player stealth immediately stops burst and leaves arrows")
+	t.check(not e.burst and e.last_branch=="stealth_wait" and is_instance_valid(arrow),"S8-I2 player stealth immediately stops burst and leaves arrows")
 	f.player.stealth_remaining = 0
 	e.recovery_until = 0
 	b.ready_at.ice_elf_burst = 0
