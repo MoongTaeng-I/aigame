@@ -9,6 +9,7 @@ const ShadowData = preload("res://scripts/shadow_data.gd")
 const HitFxData = preload("res://scripts/hit_fx_data.gd")
 
 static func register_schemas(store: CsvDataStore) -> void:
+	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String"})
 	store.register_schema("player.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",
 		"Body_radius": "Float", "Push_weight": "Float", "Note": "String", "Max_hp": "Int",
@@ -46,6 +47,19 @@ static func register_schemas(store: CsvDataStore) -> void:
 	preload("res://scripts/boss_data.gd").register_schemas(store)
 
 static func validate(store: CsvDataStore) -> String:
+	# Partial synthetic combat fixtures need not include unrelated tables.
+	# Production load_all requires the registered CSV, even when it has no rows.
+	if store.tables.has("enemy_scaling.csv"):
+		var starts: Dictionary = {}
+		for row in store.get_table("enemy_scaling.csv").values():
+			var at := float(row.Time_start)
+			if not is_finite(at) or at<0 or starts.has(at):
+				return _field_error(store,"enemy_scaling.csv",row.Id,"Time_start","시각은 유한한 비음수이며 중복될 수 없습니다.")
+			starts[at] = true
+			for column in ["Hp_mult","Speed_mult","Damage_mult","Xp_mult"]:
+				if not is_finite(float(row[column])) or float(row[column])<=0:
+					return _field_error(store,"enemy_scaling.csv",row.Id,column,"배율은 유한한 양수여야 합니다.")
+		if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
 	var projectiles: Dictionary = store.get_table("projectile.csv")
 	for projectile_id in projectiles:
 		var row: Dictionary = projectiles[projectile_id]

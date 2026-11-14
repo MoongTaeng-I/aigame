@@ -65,6 +65,7 @@ func _run() -> void:
 	await preload("res://tests/boss_roles_p0.gd").new().run(self)
 	await preload("res://tests/elf_stealth_investigation.gd").new().run(self)
 	await preload("res://tests/elf_pursuit_p0.gd").new().run(self)
+	await preload("res://tests/enemy_scaling_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))

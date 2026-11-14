@@ -34,8 +34,9 @@ var _random := RandomNumberGenerator.new()
 var wander_radius: float = 0.0
 var _count_label: Label
 var boss_director: Node2D
+var _scaling_rows: Array = []
 
-func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0, iterations: int = 1) -> void:
+func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0, iterations: int = 1, scaling_records: Dictionary = {}) -> void:
 	_player = player
 	_map_rect = map_rect
 	_enemy_records = enemy_records
@@ -46,8 +47,33 @@ func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictiona
 	separation_gap = gap
 	push_iterations = iterations
 	_offscreen_relocate_seconds = offscreen_relocate_seconds
+	configure_scaling(scaling_records)
 	for spawn_id in _spawn_records:
 		_spawn_timers[String(spawn_id)] = 0.0
+
+func configure_scaling(records: Dictionary) -> void:
+	_scaling_rows = records.values().duplicate(true)
+	_scaling_rows.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return float(a.Time_start)<float(b.Time_start))
+
+func scaling_at(seconds: float) -> Dictionary:
+	var selected: Dictionary = {}
+	for row in _scaling_rows:
+		if float(row.Time_start)>seconds: break
+		selected = row
+	return selected
+
+func scaled_enemy_record(base: Dictionary) -> Dictionary:
+	var scale := scaling_at(_elapsed_seconds)
+	if scale.is_empty(): return base
+	var record := base.duplicate()
+	record.Max_hp = floori(float(base.Max_hp)*float(scale.Hp_mult)+0.5)
+	record.Move_speed = float(base.Move_speed)*float(scale.Speed_mult)
+	record.Contact_damage = floori(float(base.Contact_damage)*float(scale.Damage_mult)+0.5)
+	var expected := float(base.get("Xp_value",0))*float(scale.Xp_mult)
+	var lower := floori(expected)
+	var fraction := expected-lower
+	record.Xp_value = lower+int(fraction>0 and _random.randf()<fraction)
+	return record
 
 func set_normal_spawning_stopped(stopped: bool) -> void:
 	if _stop_normal_spawning and not stopped:
@@ -150,7 +176,8 @@ func _spawn_from_row(row: Dictionary) -> void:
 			if not enemy.died.is_connected(_on_enemy_died):
 				enemy.died.connect(_on_enemy_died)
 			enemy.damaged.connect(_on_enemy_damaged)
-		enemy.configure(enemy_record)
+		# Configure every spawn from the immutable base, including pooled actors.
+		enemy.configure(scaled_enemy_record(enemy_record))
 		_contact_ready_at.erase(enemy.get_instance_id())
 		_spawn_order_counter += 1
 		enemy.activate_at(spawn_position, _spawn_order_counter)

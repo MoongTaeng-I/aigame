@@ -77,7 +77,8 @@ func _ready() -> void:
 		data_store.get_table("projectile.csv"),
 		data_store.get_row("basic_attack.csv", "attack_01"),
 		float(spawn_rule["Separation_gap"]),
-		int(spawn_rule["Push_iterations"])
+		int(spawn_rule["Push_iterations"]),
+		data_store.get_table("enemy_scaling.csv")
 	)
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
