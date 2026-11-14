@@ -106,8 +106,12 @@ func tick(delta: float) -> void:
 	boss.queue_redraw()
 
 func advance_flee(delta: float) -> void:
+	var remaining := float(rows[3].Flee_distance)-flee_travelled
+	if remaining<=0.01:
+		fleeing = false
+		return
 	var previous: Vector2 = boss.global_position
-	var distance := minf(float(rows[3].Flee_distance)-flee_travelled,float(rows[3].Flee_speed)*delta)
+	var distance := minf(remaining,float(rows[3].Flee_speed)*delta)
 	# Stop at the first wall along the committed ray, without diagonal sliding.
 	var bounds: Rect2 = boss.map_bounds.grow(-boss.body_radius)
 	var allowed := distance
@@ -118,7 +122,7 @@ func advance_flee(delta: float) -> void:
 	boss.global_position = previous+flee_direction*maxf(0,allowed)
 	var moved := previous.distance_to(boss.global_position)
 	flee_travelled+=moved
-	if flee_travelled+0.000001>=float(rows[3].Flee_distance):
+	if float(rows[3].Flee_distance)-flee_travelled<=0.01:
 		fleeing = false
 	elif allowed<distance-0.000001:
 		if flee_reselections>=1:
@@ -127,6 +131,8 @@ func advance_flee(delta: float) -> void:
 			flee_reselections+=1
 			flee_direction = choose_flee_direction(boss.target_provider.call().global_position)
 			fleeing = flee_direction!=Vector2.ZERO
+	elif moved<0.001:
+		fleeing = false
 
 func choose_flee_direction(player_position: Vector2) -> Vector2:
 	var start: Vector2 = boss.global_position
