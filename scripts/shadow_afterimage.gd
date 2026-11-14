@@ -1,10 +1,12 @@
 extends Node2D
 
 const Visual = preload("res://scripts/shadow_visual.gd")
+const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
 var pose: Dictionary
 var lifetime: float
 var elapsed: float = 0.0
 var opacity := 0.45
+var sprite_body: Node2D
 const PRESENTATION_CACHE := &"combat_presentation"
 
 static func cache_presentation(rows: Dictionary) -> void:
@@ -30,6 +32,10 @@ func configure(snapshot: Dictionary, seconds: float, alpha: float = 0.45) -> voi
 	lifetime = seconds
 	opacity = alpha
 	modulate.a = opacity
+	if pose.get("kind","")=="player" and pose.has("sprite_pose"):
+		sprite_body = SpriteBodyScript.new()
+		add_child(sprite_body)
+		sprite_body.configure_snapshot(pose.sprite_pose)
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
@@ -41,7 +47,8 @@ func _physics_process(delta: float) -> void:
 func _draw() -> void:
 	if pose!=null:
 		if pose.get("kind","")=="player":
-			draw_circle(Vector2.ZERO,float(pose.radius),Color("#b18cff"))
-			draw_arc(Vector2.ZERO,float(pose.radius),0,TAU,48,Color("#eee6ff"),2)
+			if sprite_body==null:
+				draw_circle(Vector2.ZERO,float(pose.radius),Color("#b18cff"))
+				draw_arc(Vector2.ZERO,float(pose.radius),0,TAU,48,Color("#eee6ff"),2)
 		elif pose.get("kind","")=="charger_test": Visual.draw_charger_pose(self,float(pose.radius),pose.facing)
 		else: Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))

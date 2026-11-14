@@ -82,6 +82,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 	player.managed_results = managed_flow
 	player.move_speed = float(player_record["Move_speed"])
 	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
+	player.configure_visual(player_record)
 	player.configure_combat(int(player_record["Max_hp"]), data_store.get_row("basic_attack.csv", "attack_01"))
 	player.configure_progression(data_store.get_table("level.csv"),float(player_record["Pickup_radius"]),int(xp_rule["Skill_point_every_levels"]))
 	map.add_child(player)

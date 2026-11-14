@@ -37,6 +37,7 @@ func _run() -> void:
 	await foundation.run(self)
 	checks += foundation.checks
 	failures += foundation.failures
+	await preload("res://tests/player_sprite_p0.gd").new().run(self)
 	print("S1-S4 BASELINE: %d checks, %d failures, %d spec mismatches" % [checks,failures,foundation.mismatches.size()])
 	_test_skill_csv()
 	await _test_skill_keys()
@@ -547,7 +548,7 @@ func _xp_csv_error(enemy_xp: String="1", levels: String="level_1,1,5,test\nlevel
 	var store := _store()
 	var sources := {
 		"enemy.csv":"Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value\ntest,test,0,melee,8,1,test,100,5,1,0.4,,,,"+enemy_xp+"\n",
-		"player.csv":"Id,Name_ko,Move_speed,Body_radius,Push_weight,Note,Max_hp,Pickup_radius\ntest,test,250,8,3,test,100,"+pickup+"\n",
+		"player.csv":"Id,Name_ko,Move_speed,Body_radius,Push_weight,Sprite_path,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Note,Max_hp,Pickup_radius\ntest,test,250,8,3,,4,3,88,379,8,8,test,100,"+pickup+"\n",
 		"level.csv":"Id,Level,Xp_to_next,Note\n"+levels,
 		"xp_rule.csv":"Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Skill_point_every_levels,Note\n"+rule_id+","+pull_start+","+acceleration+","+radius+","+cap+","+point_every+",test\n",
 	}

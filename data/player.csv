@@ -1,2 +1,2 @@
-﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Note,Max_hp,Pickup_radius
-player_01,플레이어,250,16,3,A단계 검증용 시작값,100,100
+﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Sprite_path,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Note,Max_hp,Pickup_radius
+player_01,플레이어,250,16,3,res://assets/art/player/player_v1_sheet.png,4,3,88,379,8,8,A단계 검증용 시작값,100,100

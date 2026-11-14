@@ -3,6 +3,7 @@ extends CharacterBody2D
 const PLAYER_COLOR := Color("#b18cff")
 const Geometry = preload("res://scripts/combat_geometry.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
+const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
 var presentation: Dictionary = Afterimage.presentation()
 var visuals_enabled := true
 var trail_elapsed := 0.0
@@ -26,6 +27,7 @@ var dash_pass_through: bool = false
 var stealth_remaining: float = 0.0
 var fear_cast_remaining: float = 0.0
 var freeze_remaining: float = 0.0
+var sprite_body: Node2D
 
 func is_frozen() -> bool:
     return freeze_remaining > 0.000000001
@@ -62,6 +64,15 @@ func configure_body(radius: float, weight: float) -> void:
     var collision_shape := get_node("CollisionShape2D") as CollisionShape2D
     var circle := collision_shape.shape as CircleShape2D
     circle.radius = body_radius
+    queue_redraw()
+
+func configure_visual(record: Dictionary) -> void:
+    if sprite_body!=null:
+        sprite_body.free()
+    sprite_body = SpriteBodyScript.new()
+    sprite_body.name = "SpriteBody"
+    add_child(sprite_body)
+    sprite_body.configure(record,body_radius,PLAYER_COLOR,Color("#eee6ff"))
     queue_redraw()
 
 func _ready() -> void:
@@ -259,11 +270,17 @@ func _physics_process(delta: float) -> void:
     # Resolve each axis independently so a blocked component does not cancel motion along the wall.
     move_and_collide(Vector2(direction.x * travel, 0.0))
     move_and_collide(Vector2(0.0, direction.y * travel))
+    if sprite_body!=null:
+        var locked := is_frozen() or is_fear_casting()
+        var moved := global_position.distance_squared_to(before)>0.000001
+        sprite_body.advance_pose(Vector2.ZERO if locked else direction,moved and not locked,delta)
     if dash_pass_through and visuals_enabled:
         var at := trail_elapsed
         while at<=dash_step+0.000000001:
             var copy := Afterimage.new()
-            copy.configure({"kind":"player","radius":body_radius},float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
+            var snapshot := {"kind":"player","radius":body_radius}
+            if sprite_body!=null: snapshot["sprite_pose"] = sprite_body.pose_snapshot()
+            copy.configure(snapshot,float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
             get_parent().add_child(copy)
             copy.global_position = before.lerp(global_position,clampf(at/maxf(dash_step,0.000000001),0,1))
             at+=float(presentation.Trail_interval_sec)
@@ -299,5 +316,6 @@ func _advance_boss_push(delta: float) -> void:
     else: boss_push_elapsed = end_time
 
 func _draw() -> void:
-    draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
-    draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)
+    if sprite_body==null:
+        draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
+        draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)

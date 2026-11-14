@@ -13,7 +13,10 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String"})
 	store.register_schema("player.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",
-		"Body_radius": "Float", "Push_weight": "Float", "Note": "String", "Max_hp": "Int",
+		"Body_radius": "Float", "Push_weight": "Float", "Sprite_path":"String",
+		"Sprite_cols":"Int", "Sprite_rows":"Int", "Sprite_cell_height":"Float",
+		"Sprite_baseline":"Float", "Sprite_foot_y":"Float", "Anim_fps":"Float",
+		"Note": "String", "Max_hp": "Int",
 	})
 	store.register_schema("enemy.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",
@@ -61,6 +64,13 @@ static func validate(store: CsvDataStore) -> String:
 				if not is_finite(float(row[column])) or float(row[column])<=0:
 					return _field_error(store,"enemy_scaling.csv",row.Id,column,"배율은 유한한 양수여야 합니다.")
 		if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
+	for row in store.get_table("player.csv").values():
+		if int(row.Sprite_cols)<1: return _field_error(store,"player.csv",row.Id,"Sprite_cols","1 이상이어야 합니다.")
+		if int(row.Sprite_rows)<1: return _field_error(store,"player.csv",row.Id,"Sprite_rows","1 이상이어야 합니다.")
+		for column in ["Sprite_cell_height","Anim_fps"]:
+			if not is_finite(float(row[column])) or float(row[column])<=0: return _field_error(store,"player.csv",row.Id,column,"유한한 양수여야 합니다.")
+		if not is_finite(float(row.Sprite_baseline)) or float(row.Sprite_baseline)<0: return _field_error(store,"player.csv",row.Id,"Sprite_baseline","유한한 비음수여야 합니다.")
+		if not is_finite(float(row.Sprite_foot_y)): return _field_error(store,"player.csv",row.Id,"Sprite_foot_y","유한한 값이어야 합니다.")
 	var projectiles: Dictionary = store.get_table("projectile.csv")
 	for projectile_id in projectiles:
 		var row: Dictionary = projectiles[projectile_id]
