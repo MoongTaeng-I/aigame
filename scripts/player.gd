@@ -16,6 +16,7 @@ var experience: int = 0
 var enhancement_points: int = 0
 var pickup_radius: float = 0.0
 var _level_requirements: Array[int] = []
+var _skill_point_every_levels: int = 1
 var move_speed: float = 0.0
 var last_move_direction := Vector2.RIGHT
 var dash_direction := Vector2.RIGHT
@@ -75,9 +76,10 @@ func configure_combat(health: int, attack_data: Dictionary) -> void:
     _base_attack_interval = float(attack_data.get("Interval_sec",0.0))
     _update_hp_label()
 
-func configure_progression(level_records: Dictionary, radius: float) -> void:
+func configure_progression(level_records: Dictionary, radius: float, skill_point_every_levels: int) -> void:
     pickup_radius = radius
     _base_pickup_radius = radius
+    _skill_point_every_levels = skill_point_every_levels
     level = 1
     experience = 0
     enhancement_points = 0
@@ -99,7 +101,8 @@ func add_experience(amount: int) -> void:
     while experience >= get_xp_to_next():
         experience -= get_xp_to_next()
         level += 1
-        enhancement_points += 1
+        if level%_skill_point_every_levels==0:
+            enhancement_points += 1
         leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:

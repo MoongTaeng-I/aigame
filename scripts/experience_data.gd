@@ -8,7 +8,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	enemy_schema["Xp_value"] = "Int"
 	store.register_schema("enemy.csv", enemy_schema)
 	store.register_schema("level.csv", {"Id":"String", "Level":"Int", "Xp_to_next":"Int", "Note":"String"})
-	store.register_schema("xp_rule.csv", {"Id":"String", "Pull_start_speed":"Float", "Pull_accel":"Float", "Orb_radius":"Float", "Max_ground_orbs":"Int", "Note":"String"})
+	store.register_schema("xp_rule.csv", {"Id":"String", "Pull_start_speed":"Float", "Pull_accel":"Float", "Orb_radius":"Float", "Max_ground_orbs":"Int", "Skill_point_every_levels":"Int", "Note":"String"})
 
 static func validate(store: CsvDataStore) -> String:
 	for row_id in store.get_table("enemy.csv"):
@@ -35,6 +35,8 @@ static func validate(store: CsvDataStore) -> String:
 			return _error(store,"xp_rule.csv","xp_rule_01",column,"0보다 커야 합니다.")
 	if int(rule["Max_ground_orbs"]) < 1:
 		return _error(store,"xp_rule.csv","xp_rule_01","Max_ground_orbs","1 이상이어야 합니다.")
+	if int(rule["Skill_point_every_levels"]) < 1:
+		return _error(store,"xp_rule.csv","xp_rule_01","Skill_point_every_levels","1 이상이어야 합니다.")
 	return ""
 
 static func _error(store: CsvDataStore, file_name: String, row_id: String, column: String, detail: String) -> String:

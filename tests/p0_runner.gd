@@ -414,14 +414,15 @@ func _level_records(requirements: Array) -> Dictionary:
 	return records
 
 func _xp_rule(cap: int = 300) -> Dictionary:
-	return {"Id":"xp_rule_01","Pull_start_speed":150.0,"Pull_accel":600.0,"Orb_radius":6.0,"Max_ground_orbs":cap}
+	return {"Id":"xp_rule_01","Pull_start_speed":150.0,"Pull_accel":600.0,"Orb_radius":6.0,"Max_ground_orbs":cap,"Skill_point_every_levels":2}
 
 func _xp_fixture(cap: int = 300, xp_value: int = 1) -> Dictionary:
 	var f := _fixture()
-	f.player.configure_progression(_level_records([5,8,11]),100.0)
+	var rule := _xp_rule(cap)
+	f.player.configure_progression(_level_records([5,8,11]),100.0,int(rule.Skill_point_every_levels))
 	f.manager._enemy_records["test"]["Xp_value"] = xp_value
 	var xp_manager := ExperienceManager.new()
-	xp_manager.configure(f.player,f.manager,_xp_rule(cap))
+	xp_manager.configure(f.player,f.manager,rule)
 	f.host.add_child(xp_manager)
 	xp_manager.set_physics_process(false)
 	f["xp"] = xp_manager
@@ -506,14 +507,22 @@ func _test_xp_progression() -> void:
 	f.player.add_experience(1)
 	check(f.player.level==2 and f.player.experience==0 and f.player.enhancement_points==1 and events==[2], "S4-08 fifth XP gives level 2 point 1 and one signal")
 	check(not paused, "S4-08 level up does not pause the game")
-	f.player.configure_progression(_level_records([5,8,11]),100.0)
+	f.player.configure_progression(_level_records([5,8,11]),100.0,2)
 	events.clear()
 	f.player.add_experience(26)
-	check(f.player.level==4 and f.player.experience==2 and f.player.enhancement_points==3 and events==[2,3,4], "S4-09 26 XP gives level 4 remainder 2 points 3 ordered signals 2/3/4")
-	f.player.configure_progression(_level_records([5,8]),100.0)
+	check(f.player.level==4 and f.player.experience==2 and f.player.enhancement_points==2 and events==[2,3,4], "BAL-01 1-to-4 multi-level gives points at levels2 and4 and all three signals")
+	f.player.configure_progression(_level_records([5,8,11]),100.0,2)
+	events.clear()
+	f.player.add_experience(5)
+	check(f.player.level==2 and f.player.enhancement_points==1 and events==[2], "BAL-01 level2 awards one point")
+	f.player.add_experience(8)
+	check(f.player.level==3 and f.player.enhancement_points==1 and events==[2,3], "BAL-01 level3 awards zero points but emits its choice signal")
+	f.player.add_experience(11)
+	check(f.player.level==4 and f.player.enhancement_points==2 and events==[2,3,4], "BAL-01 level4 awards the next one point")
+	f.player.configure_progression(_level_records([5,8]),100.0,2)
 	events.clear()
 	f.player.add_experience(29)
-	check(f.player.level==5 and f.player.experience==0 and f.player.enhancement_points==4 and events==[2,3,4,5] and f.player.get_xp_to_next()==8, "S4-10 final requirement repeats without maximum level")
+	check(f.player.level==5 and f.player.experience==0 and f.player.enhancement_points==2 and events==[2,3,4,5] and f.player.get_xp_to_next()==8, "BAL-01 1-to-5 multi-level gives two even-level points and four choices")
 	f.host.queue_free()
 	await process_frame
 
@@ -534,13 +543,13 @@ func _test_xp_cap() -> void:
 	f.host.queue_free()
 	await process_frame
 
-func _xp_csv_error(enemy_xp: String="1", levels: String="level_1,1,5,test\nlevel_2,2,8,test\n", pickup: String="100", cap: String="3", rule_id: String="xp_rule_01", pull_start: String="150", acceleration: String="600", radius: String="6") -> String:
+func _xp_csv_error(enemy_xp: String="1", levels: String="level_1,1,5,test\nlevel_2,2,8,test\n", pickup: String="100", cap: String="3", rule_id: String="xp_rule_01", pull_start: String="150", acceleration: String="600", radius: String="6", point_every: String="2") -> String:
 	var store := _store()
 	var sources := {
 		"enemy.csv":"Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value\ntest,test,0,melee,8,1,test,100,5,1,0.4,,,,"+enemy_xp+"\n",
 		"player.csv":"Id,Name_ko,Move_speed,Body_radius,Push_weight,Note,Max_hp,Pickup_radius\ntest,test,250,8,3,test,100,"+pickup+"\n",
 		"level.csv":"Id,Level,Xp_to_next,Note\n"+levels,
-		"xp_rule.csv":"Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Note\n"+rule_id+","+pull_start+","+acceleration+","+radius+","+cap+",test\n",
+		"xp_rule.csv":"Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Skill_point_every_levels,Note\n"+rule_id+","+pull_start+","+acceleration+","+radius+","+cap+","+point_every+",test\n",
 	}
 	for name in sources:
 		var error := store.load_text(name,sources[name])
@@ -566,11 +575,12 @@ func _test_xp_csv() -> void:
 		check(_xp_csv_error("1","level_1,1,5,test\n","100","3","xp_rule_01",invalid).contains("Pull_start_speed"), "S4-13 invalid start speed rejected: "+invalid)
 		check(_xp_csv_error("1","level_1,1,5,test\n","100","3","xp_rule_01","150",invalid).contains("Pull_accel"), "S4-13 invalid acceleration rejected: "+invalid)
 		check(_xp_csv_error("1","level_1,1,5,test\n","100","3","xp_rule_01","150","600",invalid).contains("Orb_radius"), "S4-13 invalid orb radius rejected: "+invalid)
+		check(_xp_csv_error("1","level_1,1,5,test\n","100","3","xp_rule_01","150","600","6",invalid).contains("Skill_point_every_levels"), "BAL-01 invalid skill point interval rejected: "+invalid)
 	var store := _store()
 	var error := store.load_all()
 	check(error.is_empty(), "S4-14 all actual CSV including new tables load: "+error)
 	if error.is_empty():
-		check(ExperienceData.validate(store).is_empty(), "S4-14 actual experience data validates")
+		check(ExperienceData.validate(store).is_empty() and store.get_row("xp_rule.csv","xp_rule_01").Skill_point_every_levels==2, "BAL-01 actual experience data validates with point interval2")
 
 func _s5_records(unlocked: bool = true) -> Dictionary:
 	var records := {}

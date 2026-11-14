@@ -84,12 +84,12 @@ func queue_and_pause() -> void:
 	f.skills.set_physics_process(true)
 	var before := snapshot(f,enemy)
 	f.player.add_experience(26)
-	check(f.player.level==4 and f.player.enhancement_points==3 and f.q.pending==3 and f.q.active and t.paused,"S6-01 three real level signals queue three choices and pause")
+	check(f.player.level==4 and f.player.enhancement_points==2 and f.q.pending==3 and f.q.active and t.paused,"BAL-01 three real level signals queue three choices but only even levels grant points")
 	for frame in range(5): await t.physics_frame
 	check(snapshot(f,enemy)==before,"S6-02 paused tree freezes enemies projectiles basic attack skill ticks and cooldown")
 	var previous_level: int = f.skills.skills.skill_rapid_slash.level
 	t._s5_click(f)
-	check(f.player.enhancement_points==3 and f.skills.skills.skill_rapid_slash.level==previous_level,"S6-03 skill icon click blocked during selection")
+	check(f.player.enhancement_points==2 and f.skills.skills.skill_rapid_slash.level==previous_level,"S6-03 skill icon click blocked during selection")
 	var key := InputEventAction.new()
 	key.action = "skill_stealth"
 	key.pressed = true
@@ -232,7 +232,7 @@ func death_and_main() -> void:
 	var player = main.get_node("Map/Player")
 	var choices = main.get_node("Map/ChoiceManager")
 	player.add_experience(player.get_xp_to_next())
-	check(t.paused and choices.active and choices.pending==1 and player.level==2,"S6-15 actual main scene connects S4 level-up to paused choice UI")
+	check(t.paused and choices.active and choices.pending==1 and player.level==2 and player.enhancement_points==1,"BAL-01 actual main connects level2 choice and one even-level point")
 	main.queue_free()
 	t.paused = false
 	await t.process_frame

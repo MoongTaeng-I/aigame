@@ -1,2 +1,2 @@
-﻿Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Note
-xp_rule_01,150,600,6,300,A-stage starting values
+﻿Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Skill_point_every_levels,Note
+xp_rule_01,150,600,6,300,2,A-stage starting values

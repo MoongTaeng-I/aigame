@@ -73,6 +73,7 @@ func validate_store(data_store: CsvDataStore) -> String:
 func _create_game(data_store: CsvDataStore) -> void:
 	var player_record: Dictionary = data_store.get_row("player.csv","player_01")
 	var spawn_rule: Dictionary = data_store.get_row("spawn_rule.csv","rule_01")
+	var xp_rule: Dictionary = data_store.get_row("xp_rule.csv","xp_rule_01")
 	var enemy_records: Dictionary = data_store.get_table("enemy.csv")
 	var spawn_records: Dictionary = data_store.get_table("spawn.csv")
 	var map = MapScene.instantiate()
@@ -82,7 +83,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 	player.move_speed = float(player_record["Move_speed"])
 	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
 	player.configure_combat(int(player_record["Max_hp"]), data_store.get_row("basic_attack.csv", "attack_01"))
-	player.configure_progression(data_store.get_table("level.csv"),float(player_record["Pickup_radius"]))
+	player.configure_progression(data_store.get_table("level.csv"),float(player_record["Pickup_radius"]),int(xp_rule["Skill_point_every_levels"]))
 	map.add_child(player)
 	player.position = Vector2.ZERO
 	var enemy_manager = EnemyManagerScript.new()
@@ -107,7 +108,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 	map.add_child(hit_fx)
 	var experience_manager := ExperienceManager.new()
 	experience_manager.name = "ExperienceManager"
-	experience_manager.configure(player,enemy_manager,data_store.get_row("xp_rule.csv","xp_rule_01"))
+	experience_manager.configure(player,enemy_manager,xp_rule)
 	map.add_child(experience_manager)
 	var skill_manager := SkillManager.new()
 	skill_manager.name = "SkillManager"

@@ -20,9 +20,10 @@ func run(tree: SceneTree) -> void:
 	print("S8-IMPL-04 NEW RESULT: %d checks, %d failures" % [t.checks-before,t.failures-failures])
 
 func fixture(spawning: bool = false) -> Dictionary:
-	var f: Dictionary = t._fixture(200)
+	var cap := int(store.get_row("spawn_rule.csv","rule_01").Max_alive)
+	var f: Dictionary = t._fixture(cap)
 	f.player.configure_combat(100000,{})
-	f.manager.configure(f.player,Rect2(-4000,-4000,8000,8000),store.get_table("enemy.csv"),store.get_table("spawn.csv") if spawning else {},200,100000,store.get_table("projectile.csv"),{},0,1,store.get_table("enemy_scaling.csv"))
+	f.manager.configure(f.player,Rect2(-4000,-4000,8000,8000),store.get_table("enemy.csv"),store.get_table("spawn.csv") if spawning else {},cap,100000,store.get_table("projectile.csv"),{},0,1,store.get_table("enemy_scaling.csv"))
 	return f
 
 func cleanup(f: Dictionary) -> void:
@@ -127,8 +128,8 @@ func experience_rounding() -> void:
 		var total := 0
 		var count := 0
 		var allowed := true
-		for batch in range(50):
-			f.manager._spawn_from_row({"Spawn_count":200,"Enemy_id":"enemy_01"})
+		while count<10000:
+			f.manager._spawn_from_row({"Spawn_count":mini(120,10000-count),"Enemy_id":"enemy_01"})
 			for enemy in f.manager.get_living_enemies():
 				allowed = allowed and enemy.xp_value in [1,2]
 				total+=enemy.xp_value
@@ -166,9 +167,9 @@ func spawn_counts() -> void:
 	f.manager._advance_spawn_rows(1)
 	t.check(f.manager.get_alive_count()==before,"S8-I4 past final endpoint inactive")
 	f.manager._spawn_from_row({"Spawn_count":500,"Enemy_id":"enemy_01"})
-	t.check(f.manager.get_alive_count()==200,"S8-I4 actual200 cap maintained")
+	t.check(f.manager.get_alive_count()==120,"BAL-01 actual120 cap maintained")
 	f.manager._spawn_from_row({"Spawn_count":1,"Enemy_id":"enemy_01"})
-	t.check(f.manager.get_alive_count()==200,"S8-I4 cap rejects further spawn")
+	t.check(f.manager.get_alive_count()==120,"BAL-01 cap rejects further spawn above120")
 	await cleanup(f)
 
 func bosses_and_shadows() -> void:
