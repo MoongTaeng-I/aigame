@@ -2,11 +2,11 @@
 ice_bear_basic,boss_early,basic,140,12,0.4,0.4,1.5,,150,100,,,,A단계 검증용 시작값,,,,,,,,,,,,,,,,,,
 ice_bear_dash,boss_early,dash,400,25,0.8,0.6,6,1,,,1000,400,,A단계 검증용 시작값,,,,180,0.4,,,,,,,,,,,,,
 ice_bear_slam,boss_early,slam,240,30,0.8,0.8,8,1,,,,,320,A단계 검증용 시작값,,,,220,0.4,,,,,,,,,,,,,
-ice_elf_basic,boss_middle,ranged_basic,416,12,0,0,0.8,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,elf_arrow,0.8,,,,,,,,,,,,,,250,260,200
+ice_elf_basic,boss_middle,ranged_basic,416,12,0,0,0.8,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,elf_arrow,0.8,,,,,,,,,,,,,,250,260,100
 ice_elf_push,boss_middle,push,120,0,0,0,8,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,,,,440,0.4,,,,,,,,,,,,,
 ice_elf_burst,boss_middle,burst,416,8,0.3,0.6,9,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,elf_burst_arrow,0.15,2.4,,,,,,,,,,,,,,,
 ice_elf_stealth,boss_middle,stealth,450,0,0,0,12,,,,,,,S8-IMPL-02 플레이 조정 전제 초안,,,5,,,,,,,,,,,,,,,
-baruka_basic,boss_final,tri_dash,220,15,0.31,0,1.26,,,,1170,160,,S8-IMPL-03 사용자 확정·미지정 제안값,,,,,,160,140,,,,,,,,,,,
-baruka_blink,boss_final,blink_strike,400,15,0.8,0,10,1,,,2100,,,S8-IMPL-03 사용자 확정·미지정 제안값,,,,,,,,400,5,0.2,120,,,,,,,
+baruka_basic,boss_final,tri_dash,220,15,0.31,0,0.63,,,,2340,160,,S8-IMPL-03 사용자 확정·미지정 제안값,,,,,,160,140,,,,,,,,,,,
+baruka_blink,boss_final,blink_strike,400,15,0.8,0,10,1,,,16800,,,S8-IMPL-03 사용자 확정·미지정 제안값,,,,,,,,894.4,20,0.04,120,,,,,,,
 baruka_chase,boss_final,chase,300,12,0.25,0,12,1,,,1100,300,,S8-IMPL-03 사용자 확정·미지정 제안값,,,3,,,,,,,0.4,,,,,,,,
 baruka_ice,boss_final,ice_zone,350,0,0.8,0,14,1,,,,,,S8-IMPL-03 사용자 확정·미지정 제안값,,,,,,,,350,,,,5,60,4,1.5,,,

@@ -23,6 +23,7 @@ var last_branch := ""
 var fleeing := false
 var flee_direction := Vector2.ZERO
 var flee_travelled := 0.0
+var flee_reselections := 0
 
 func configure(actor: Node2D) -> void:
 	boss = actor
@@ -96,10 +97,10 @@ func tick(delta: float) -> void:
 				fire(rows[3],target)
 				boss.ready_at[rows[3].Id] = now()+float(rows[3].Shot_interval_sec)
 				if distance<=float(rows[3].Flee_trigger_range):
-					fleeing = true
-					flee_direction = target.global_position.direction_to(boss.global_position)
-					if flee_direction==Vector2.ZERO: flee_direction = Vector2.RIGHT
 					flee_travelled = 0.0
+					flee_reselections = 0
+					flee_direction = choose_flee_direction(target.global_position)
+					fleeing = flee_direction!=Vector2.ZERO
 		else:
 			last_branch = "follow"
 			boss.move_boss(target.global_position,delta)
@@ -108,12 +109,60 @@ func tick(delta: float) -> void:
 func advance_flee(delta: float) -> void:
 	var previous: Vector2 = boss.global_position
 	var distance := minf(float(rows[3].Flee_distance)-flee_travelled,float(rows[3].Flee_speed)*delta)
-	# Map clamp resolves axes independently, retaining the component along a wall.
-	boss.global_position = boss.clamp_position_to_map(previous+flee_direction*distance,boss.map_bounds)
+	# Stop at the first wall along the committed ray, without diagonal sliding.
+	var bounds: Rect2 = boss.map_bounds.grow(-boss.body_radius)
+	var allowed := distance
+	if flee_direction.x>0: allowed = minf(allowed,(bounds.end.x-previous.x)/flee_direction.x)
+	elif flee_direction.x<0: allowed = minf(allowed,(bounds.position.x-previous.x)/flee_direction.x)
+	if flee_direction.y>0: allowed = minf(allowed,(bounds.end.y-previous.y)/flee_direction.y)
+	elif flee_direction.y<0: allowed = minf(allowed,(bounds.position.y-previous.y)/flee_direction.y)
+	boss.global_position = previous+flee_direction*maxf(0,allowed)
 	var moved := previous.distance_to(boss.global_position)
 	flee_travelled+=moved
-	var next: Vector2 = boss.clamp_position_to_map(boss.global_position+flee_direction,boss.map_bounds)
-	if flee_travelled+0.000001>=float(rows[3].Flee_distance) or next.is_equal_approx(boss.global_position) or (delta>0 and moved<=0.000001): fleeing = false
+	if flee_travelled+0.000001>=float(rows[3].Flee_distance):
+		fleeing = false
+	elif allowed<distance-0.000001:
+		if flee_reselections>=1:
+			fleeing = false
+		else:
+			flee_reselections+=1
+			flee_direction = choose_flee_direction(boss.target_provider.call().global_position)
+			fleeing = flee_direction!=Vector2.ZERO
+
+func choose_flee_direction(player_position: Vector2) -> Vector2:
+	var start: Vector2 = boss.global_position
+	var bounds: Rect2 = boss.map_bounds.grow(-boss.body_radius)
+	var distance := float(rows[3].Flee_distance)
+	var away := player_position.direction_to(start)
+	if away==Vector2.ZERO: away = Vector2.RIGHT
+	var end := start+away*distance
+	var parallel := away
+	if end.x<bounds.position.x or end.x>bounds.end.x: parallel.x = 0
+	if end.y<bounds.position.y or end.y>bounds.end.y: parallel.y = 0
+	var candidates: Array[Vector2] = []
+	if parallel==away: candidates.append(away)
+	if parallel!=Vector2.ZERO:
+		candidates.append(parallel.normalized())
+	else:
+		# When no parallel component remains, prefer the most open wall direction.
+		var directions: Array[Vector2] = []
+		if away.x!=0: directions.assign([Vector2.UP,Vector2.DOWN])
+		else: directions.assign([Vector2.LEFT,Vector2.RIGHT])
+		if away.x!=0 and away.y!=0: directions = [Vector2.UP,Vector2.DOWN,Vector2.LEFT,Vector2.RIGHT]
+		directions.sort_custom(func(a: Vector2,b: Vector2) -> bool: return wall_room(start,a,bounds)>wall_room(start,b,bounds))
+		candidates.append_array(directions)
+	for direction in candidates:
+		end = start+direction*distance
+		var bounded: Vector2 = boss.clamp_position_to_map(end,boss.map_bounds)
+		if bounded.is_equal_approx(end) and end.distance_squared_to(player_position)>start.distance_squared_to(player_position)+0.000001:
+			return direction
+	return Vector2.ZERO
+
+func wall_room(start: Vector2, direction: Vector2, bounds: Rect2) -> float:
+	if direction==Vector2.UP: return start.y-bounds.position.y
+	if direction==Vector2.DOWN: return bounds.end.y-start.y
+	if direction==Vector2.LEFT: return start.x-bounds.position.x
+	return bounds.end.x-start.x
 
 func fire(row: Dictionary, target: Node2D) -> void:
 	var arrow := Projectile.new()

@@ -1,6 +1,6 @@
 extends Control
 
-const PANEL_SIZE := Vector2(800,88)
+const PANEL_SIZE := Vector2(533,88)
 const TOP_MARGIN := 22.0
 const CORNER_RADIUS := 14
 const BORDER_WIDTH := 2
@@ -44,6 +44,7 @@ func _ready() -> void:
 	panel.offset_right = PANEL_SIZE.x/2
 	panel.offset_top = TOP_MARGIN
 	panel.offset_bottom = TOP_MARGIN+PANEL_SIZE.y
+	panel.custom_minimum_size = PANEL_SIZE
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = BACKGROUND
@@ -79,6 +80,10 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	copy.show()
 	var content := copy.get_child(0) as Label
 	content.text = text
+	# Let the actual Label shape and measure its wrapped text, including fallback fonts.
+	content.size.x = PANEL_SIZE.x-CONTENT_MARGIN*2
+	var height := maxf(PANEL_SIZE.y,content.get_minimum_size().y+CONTENT_MARGIN*2)
+	copy.custom_minimum_size = Vector2(PANEL_SIZE.x,height)
 	var entry := {"panel":copy,"text":text,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
 	entries.push_front(entry)
 	if is_warning:
@@ -106,13 +111,14 @@ func _refresh() -> void:
 		if float(entries[index].remaining)<=0:
 			entries[index].panel.queue_free()
 			entries.remove_at(index)
-	var row := 0
+	var top := TOP_MARGIN
 	for entry in entries:
 		var view: PanelContainer = entry.panel
 		if not entry.retiring:
-			view.offset_top = TOP_MARGIN+row*(PANEL_SIZE.y+float(presentation.Toast_gap_px))
-			view.offset_bottom = view.offset_top+PANEL_SIZE.y
-			row+=1
+			var height := maxf(view.custom_minimum_size.y,view.get_combined_minimum_size().y)
+			view.offset_top = top
+			view.offset_bottom = top+height
+			top = view.offset_bottom+float(presentation.Toast_gap_px)
 		view.modulate.a = minf(clampf(float(entry.age)/FADE_IN_SEC,0,1),clampf(float(entry.remaining)/FADE_OUT_SEC,0,1))
 	visible = not entries.is_empty() or is_instance_valid(completion_label)
 

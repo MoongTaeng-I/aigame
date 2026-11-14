@@ -19,7 +19,7 @@ if not task or attempt < 1:
 executable = Path((root / ".local/godot_path.txt").read_text(encoding="utf-8-sig").strip())
 if not executable.is_file():
     raise SystemExit("Configured Godot executable does not exist")
-stem = f"{task}-p0" if kind == "p0" else f"{task}-run{attempt}"
+stem = f"{task}-{kind}-attempt{attempt}"
 log = root / ".local/godot_logs" / f"{stem}.log"
 log.parent.mkdir(parents=True, exist_ok=True)
 command = [str(executable), "--headless", "--path", str(root)]
@@ -28,13 +28,9 @@ command += ["--log-file", str(log)]
 with (root / ".local" / f"{stem}.out").open("wb") as out:
     with (root / ".local" / f"{stem}.err").open("wb") as err:
         result = subprocess.run(command, cwd=root, stdout=out, stderr=err, timeout=120)
-metadata = {"kind": kind, "attempt": attempt, "exit_code": result.returncode, "command": command}
+crashed = result.returncode < 0 or (result.returncode & 0xFFFFFFFF) >= 0x80000000
+metadata = {"kind": kind, "attempt": attempt, "exit_code": result.returncode, "exit_code_hex": f"0x{result.returncode & 0xFFFFFFFF:08X}", "result": "크래시" if crashed else ("정상 종료" if result.returncode == 0 else "실패"), "command": command}
 (root / ".local" / f"{stem}.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
-if kind == "p0":
-    for suffix in ["out", "err", "json"]:
-        (root / ".local" / f"{task}-p0-attempt{attempt}.{suffix}").write_bytes(
-            (root / ".local" / f"{stem}.{suffix}").read_bytes()
-        )
 print(f"{stem}: exit_code={result.returncode}; attempt={attempt}")
 print((root / ".local" / f"{stem}.out").read_text(encoding="utf-8", errors="strict"))
 print((root / ".local" / f"{stem}.err").read_text(encoding="utf-8", errors="strict"))

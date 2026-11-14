@@ -176,29 +176,29 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var facing: Vector2 = global_position.direction_to(target.global_position)
     if facing==Vector2.ZERO: facing = last_move_direction
     var base := global_position+facing*body_radius
+    var width := _attack_cast_range*float(_attack_data.get("Tri_width_ratio",0.381))
+    if visuals_enabled:
+        var effect := Polygon2D.new()
+        effect.top_level = true
+        effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
+        effect.color = Color(1.0,0.945,0.659,0.35)
+        get_parent().add_child(effect)
+        var timer := Timer.new()
+        timer.one_shot = true
+        timer.wait_time = float(_attack_data["Hit_effect_sec"])
+        effect.add_child(timer)
+        timer.timeout.connect(effect.queue_free)
+        timer.start()
     var struck: Array = []
     # Snapshot the target set before damage signals/knockback can alter it.
     for enemy in enemies:
-        if is_instance_valid(enemy) and enemy.is_active and not enemy.is_logically_dead and not struck.has(enemy) and Geometry.in_triangle(enemy.global_position,base,facing,_attack_cast_range,_attack_cast_range*160.0/140.0):
+        if is_instance_valid(enemy) and enemy.is_active and not enemy.is_logically_dead and not struck.has(enemy) and Geometry.in_triangle(enemy.global_position,base,facing,_attack_cast_range,width):
             struck.append(enemy)
     for enemy in struck: _apply_basic_hit(enemy)
 
 func _apply_basic_hit(enemy: Variant) -> void:
     enemy.apply_damage(int(_attack_data["Damage"]))
     enemy.start_knockback(global_position, float(_attack_data["Knockback_distance"]), float(_attack_data["Knockback_sec"]))
-    var effect := Line2D.new()
-    effect.top_level = true
-    effect.width = 4.0
-    effect.default_color = Color("#fff1a8")
-    effect.add_point(global_position)
-    effect.add_point(enemy.global_position)
-    get_parent().add_child(effect)
-    var timer := Timer.new()
-    timer.one_shot = true
-    timer.wait_time = float(_attack_data["Hit_effect_sec"])
-    effect.add_child(timer)
-    timer.timeout.connect(effect.queue_free)
-    timer.start()
 
 func _create_hud() -> void:
     _hud_layer = CanvasLayer.new()

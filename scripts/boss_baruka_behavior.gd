@@ -15,7 +15,7 @@ var preview_zones: Array[Vector2] = []
 var trails: Array[Node2D] = []
 var strike_index := 0
 var chase_until := 0.0
-var next_trail_at := 0.0
+var trail_index := 0
 var last_branch := ""
 
 func configure(actor: Node2D) -> void:
@@ -144,7 +144,7 @@ func begin_move(at: float) -> bool:
 	boss.phase = "dash"
 	boss.dash_started = at
 	boss.collision_layer = 0
-	next_trail_at = at
+	trail_index = 0
 	strike_index+=1
 	return true
 
@@ -180,14 +180,16 @@ func advance() -> void:
 			var distance: float = minf(boss.dash_length,maxf(0,now()-boss.dash_started)*float(boss.current.Dash_speed))
 			boss.global_position = boss.origin+boss.facing*distance
 			if kind==8: leave_trails(minf(now(),end_time))
-			if kind in [8,9] and not boss.dash_hit and Geometry.in_corridor(target().global_position,previous,boss.global_position,boss.facing,boss.body_radius):
+			if kind in [7,8,9] and not boss.dash_hit and Geometry.in_corridor(target().global_position,previous,boss.global_position,boss.facing,boss.body_radius+target().body_radius):
 				boss.dash_hit = true
 				target().apply_damage(int(boss.current.Damage))
 			if now()+0.000000001<end_time: return
 			boss.global_position = boss.dash_end
 			boss.collision_layer = 2
 			if kind==7:
-				if triangle_contains(target().global_position): target().apply_damage(int(boss.current.Damage))
+				if not boss.dash_hit and triangle_contains(target().global_position):
+					boss.dash_hit = true
+					target().apply_damage(int(boss.current.Damage))
 				finish(end_time)
 				return
 			if kind==8 and strike_index>=int(boss.current.Strike_count):
@@ -210,14 +212,16 @@ func triangle_contains(point: Vector2) -> bool:
 func leave_trails(until: float) -> void:
 	for i in range(trails.size()-1,-1,-1):
 		if not is_instance_valid(trails[i]): trails.remove_at(i)
-	while next_trail_at<=until+0.000000001:
+	var count := int(presentation.Blink_trail_count)
+	var travelled := minf(boss.dash_length,maxf(0,until-boss.dash_started)*float(boss.current.Dash_speed))
+	while trail_index<count and boss.dash_length*(trail_index+1)/count<=travelled+0.000001:
 		var copy := Afterimage.new()
 		copy.configure({"radius":boss.body_radius,"facing":boss.facing,"motion":-1,"phase":0.0},float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
 		boss.add_child(copy)
 		copy.top_level = true
-		copy.global_position = boss.origin+boss.facing*minf(boss.dash_length,maxf(0,next_trail_at-boss.dash_started)*float(boss.current.Dash_speed))
+		copy.global_position = boss.origin+boss.facing*boss.dash_length*(trail_index+1)/count
 		trails.append(copy)
-		next_trail_at+=float(presentation.Trail_interval_sec)
+		trail_index+=1
 
 func update_zones() -> void:
 	var player := target()

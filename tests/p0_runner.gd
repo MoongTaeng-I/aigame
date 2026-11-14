@@ -61,6 +61,7 @@ func _run() -> void:
 	await preload("res://tests/boss_adjustments_p0.gd").new().run(self)
 	await preload("res://tests/baruka_boss_p0.gd").new().run(self)
 	await preload("res://tests/combat_adjustments_p0.gd").new().run(self)
+	await preload("res://tests/combat_precision_p0.gd").new().run(self)
 	print("MISMATCH SUMMARY: %d spec mismatches" % foundation.mismatches.size())
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
@@ -76,7 +77,7 @@ func check(condition: bool, label: String) -> void:
 		push_error("FAIL " + label)
 
 func _attack() -> Dictionary:
-	return {"Hits_per_attack":2,"Range":90.0,"Damage":10,"Hit_gap_sec":0.15,"Hit_effect_sec":0.20,"Interval_sec":0.60,"Knockback_distance":60.0,"Knockback_sec":0.20}
+	return {"Tri_width_ratio":0.381,"Hits_per_attack":2,"Range":90.0,"Damage":10,"Hit_gap_sec":0.15,"Hit_effect_sec":0.20,"Interval_sec":0.60,"Knockback_distance":60.0,"Knockback_sec":0.20}
 
 func _enemy() -> Dictionary:
 	return {"Id":"test","Move_speed":0.0,"Attack_range_type":0,"Body_radius":8.0,"Push_weight":1.0,"Max_hp":100,"Contact_damage":5,"Contact_rehit_sec":1.0,"Death_fade_sec":0.4,"Shot_interval_sec":null,"Shot_range":null,"Projectile_id":null}
@@ -192,7 +193,7 @@ func _test_targeting() -> void:
 func _effects(host: Node) -> int:
 	var count := 0
 	for child in host.get_children():
-		if child is Line2D:
+		if child is Polygon2D:
 			count += 1
 	return count
 
@@ -201,13 +202,13 @@ func _test_timing() -> void:
 	var first := _spawn(f, Vector2(20,0), 100)
 	var second := _spawn(f, Vector2(40,0), 110)
 	f.player.update_basic_attack(0.0, f.manager._active_enemies)
-	check(first.hp == 90 and second.hp == 100 and _effects(f.host) == 2, "P0-04 first triangle damages both inside targets at attack start")
+	check(first.hp == 90 and second.hp == 100 and _effects(f.host) == 1, "P0-04 first triangle damages both inside targets at attack start")
 	f.player.update_basic_attack(0.149, f.manager._active_enemies)
 	check(first.hp == 90 and second.hp == 100, "P0-04 no second damage before 0.15")
 	second.hp = 80
 	f.player.update_basic_attack(0.15, f.manager._active_enemies)
 	check(first.hp == 80 and second.hp == 70, "P0-04 second damage at 0.15 reselects direction and hits both")
-	check(_effects(f.host) == 4, "P0-04 second effects overlap first without waiting")
+	check(_effects(f.host) == 2, "P0-04 second effects overlap first without waiting")
 	f.player.update_basic_attack(0.949999, f.manager._active_enemies)
 	check(second.hp == 70, "P0-04 next attack cannot start before 0.95")
 	f.player.update_basic_attack(0.95, f.manager._active_enemies)

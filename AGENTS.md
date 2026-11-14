@@ -132,3 +132,4 @@ ERROR: Failed to read the root certificate store.
 - 엑셀로 CSV를 저장하면 숫자 표기가 바뀜(3.0 → 3) → CSV 숫자는 엑셀이 저장하는 표기로 쓴다(game_design.md 데이터 관리 원칙). 남은 차이는 작업 시작 처리 규칙으로 처리한다.
 - 새 스크립트의 .uid는 Godot 편집기를 열 때 생기고, 헤드리스 실행에서는 생기지 않음 → 작업 시작 처리 규칙 3)으로 커밋한다.
 - 에디터 실행 뒤 project.godot의 빈 줄이 바뀌어 작업이 시작 조건에서 멈춤 → 시작 처리 5)로 처리한다.
+- 새 CSV를 만들면 keep .import도 함께 만든다.

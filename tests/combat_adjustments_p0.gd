@@ -16,8 +16,8 @@ func run(tree: SceneTree) -> void:
 	t.check(store.load_all().is_empty(),"S8-I3-B real data load")
 	var basic := store.get_row("boss_action.csv","baruka_basic")
 	var blink := store.get_row("boss_action.csv","baruka_blink")
-	t.check(basic.Cooldown_sec==1.26 and basic.Telegraph_sec==0.31 and basic.Dash_speed==1170 and basic.Dash_distance==160 and basic.Recovery_sec==0,"S8-I3-B exact fixed basic values")
-	t.check(blink.Strike_interval_sec==0.2 and blink.Dash_speed==2100 and blink.Cooldown_sec==10,"S8-I3-B blink changes interval rather than cooldown")
+	t.check(basic.Cooldown_sec==0.63 and basic.Telegraph_sec==0.31 and basic.Dash_speed==2340 and basic.Dash_distance==160 and basic.Recovery_sec==0,"S8-I3-B exact fixed basic values")
+	t.check(blink.Strike_interval_sec==0.04 and blink.Dash_speed==16800 and blink.Cooldown_sec==10,"S8-I3-B blink changes interval rather than cooldown")
 	t.check(store.get_row("projectile.csv","elf_arrow").Speed==585 and store.get_row("projectile.csv","elf_burst_arrow").Speed==585 and store.get_row("projectile.csv","proj_test_01").Speed==300,"S8-I3-B only two projectile speeds changed")
 	await flee_checks()
 	await triangle_checks()
@@ -43,18 +43,19 @@ func flee_checks() -> void:
 	var cooldown: float = f.boss.ready_at.ice_elf_basic
 	f.player.global_position = Vector2(0,50)
 	for kind in [4,5,6]: f.boss.ready_at[e.rows[kind].Id] = 0
-	for i in range(4):
+	for i in range(3):
 		helper.step(f,0.1)
 		t.check(e.last_branch=="flee" and not e.burst and not e.hidden and e.flee_direction==Vector2.LEFT,"S8-I3-B committed flee does not switch or reaim")
 	helper.step(f,1)
-	t.check(not e.fleeing and f.boss.global_position.is_equal_approx(Vector2(-200,0)) and is_equal_approx(e.flee_travelled,200) and f.boss.ready_at.ice_elf_basic==cooldown,"S8-I3-B stops at200 preserves shot deadline")
+	t.check(not e.fleeing and f.boss.global_position.is_equal_approx(Vector2(-100,0)) and is_equal_approx(e.flee_travelled,100) and f.boss.ready_at.ice_elf_basic==cooldown,"S8-I3-B stops at100 preserves shot deadline")
 	f.boss.global_position = Vector2(-1970,0)
 	f.player.global_position = Vector2(-1900,0)
 	helper.disable_skills(f)
 	f.boss.ready_at.ice_elf_basic = 0
 	helper.step(f,0)
 	helper.step(f,0.1)
-	t.check(not e.fleeing,"S8-I3-B blocked wall ends flee immediately")
+	t.check(e.fleeing and e.flee_direction.x==0,"S8-I3-C wall normal selects an open parallel direction")
+	e.fleeing = false
 	f.boss.global_position = Vector2(-1972,0)
 	f.player.global_position = Vector2(-1900,-100)
 	f.boss.ready_at.ice_elf_basic = 0
@@ -65,7 +66,7 @@ func flee_checks() -> void:
 	for i in range(30):
 		if not e.fleeing: break
 		helper.step(f,0.1)
-	t.check(not e.fleeing and is_equal_approx(e.flee_travelled,200),"S8-I3-B wall sliding ends after actual distance200")
+	t.check(not e.fleeing and is_equal_approx(e.flee_travelled,100),"S8-I3-B wall sliding ends after actual distance100")
 	f.boss.global_position = Vector2.ZERO
 	f.player.global_position = Vector2(100,0)
 	f.boss.ready_at.ice_elf_basic = 0
@@ -105,7 +106,7 @@ func triangle_checks() -> void:
 	f.player.update_basic_attack(1.0,[target])
 	t.check(f.player._remaining_hits==0,"S8-I3-B no target skips attack")
 	var base := Vector2(18,0)
-	var width := 90.0*160.0/140.0
+	var width := 90.0*0.381
 	for point in [base,base+Vector2(90,0),base+Vector2(45,width/4)]:
 		t.check(Geometry.in_triangle(point,base,Vector2.RIGHT,90,width),"S8-I3-B triangle inclusive edge "+str(point))
 	for point in [base-Vector2(0.01,0),base+Vector2(90.01,0),base+Vector2(45,width/4+0.01)]:

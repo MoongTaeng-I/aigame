@@ -94,9 +94,9 @@ func triangle_and_pass_through() -> void:
 	f.manager._resolve_contact_pushes()
 	t.check(normal.global_position==position,"S8-I3 high-speed body excluded from both push paths")
 	f.player.global_position = Vector2(250,0)
-	step(f,160.0/1170.0)
+	step(f,160.0/2340.0)
 	t.check(f.player.hp==hp-15 and b.current.is_empty() and b.global_position.is_equal_approx(Vector2(160,0)),"S8-I3 arrival triangle deals15 once")
-	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.31+160.0/1170.0+1.26),"S8-I3 basic cooldown from arrival")
+	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.31+160.0/2340.0+0.63),"S8-I3 basic cooldown from arrival")
 	b.global_position = Vector2(1900,0)
 	f.player.global_position = Vector2(2500,0)
 	start(f,"baruka_basic")
@@ -117,10 +117,10 @@ func blink_randomness() -> void:
 		t.check(v.area_center==Vector2.ZERO,"S8-I3 blink circle centered only on boss")
 		step(f,10)
 		paths.append(v.destinations.duplicate())
-		t.check(paths.back().size()==5 and b.current.is_empty(),"S8-I3 blink completes five moves even across large frame")
+		t.check(paths.back().size()==20 and b.current.is_empty(),"S8-I3 blink completes twenty moves even across large frame")
 		var previous := Vector2.ZERO
 		for point in paths.back():
-			t.check(point.length()<=400.00001 and point.distance_to(previous)>=119.99999,"S8-I3 blink destination inside fixed circle and minimum120")
+			t.check(point.length()<=894.40001 and point.distance_to(previous)>=119.99999,"S8-I3 blink destination inside fixed circle and minimum120")
 			previous = point
 		t.check(not v.trails.is_empty(),"S8-I3 blink uses visual trails")
 		for copy in v.trails:
@@ -135,7 +135,7 @@ func blink_randomness() -> void:
 	var midpoint: Vector2 = (b.origin+b.dash_end)*0.5
 	f.player.global_position = midpoint
 	var hp: int = f.player.hp
-	step(f,b.dash_length/2100.0*0.6)
+	step(f,b.dash_length/16800.0*0.6)
 	t.check(f.player.hp==hp-15,"S8-I3 blink path hit remains enabled")
 	step(f,0)
 	t.check(f.player.hp==hp-15,"S8-I3 each blink movement hits same target once")

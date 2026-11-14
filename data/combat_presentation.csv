@@ -11,3 +11,4 @@ Slash_core_color,#ffffff
 Toast_sec,2
 Toast_gap_px,8
 Toast_max,4
+Blink_trail_count,8
