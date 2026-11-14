@@ -13,7 +13,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String"})
 	store.register_schema("player.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",
-		"Body_radius": "Float", "Push_weight": "Float", "Sprite_path":"String",
+		"Body_radius": "Float", "Push_weight": "Float", "Sprite_path":"String", "Sprite_layout":"String",
 		"Sprite_cols":"Int", "Sprite_rows":"Int", "Sprite_cell_height":"Float",
 		"Sprite_baseline":"Float", "Sprite_foot_y":"Float", "Anim_fps":"Float",
 		"Note": "String", "Max_hp": "Int",
@@ -65,6 +65,7 @@ static func validate(store: CsvDataStore) -> String:
 					return _field_error(store,"enemy_scaling.csv",row.Id,column,"배율은 유한한 양수여야 합니다.")
 		if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
 	for row in store.get_table("player.csv").values():
+		if String(row.Sprite_layout)!="dir3": return _field_error(store,"player.csv",row.Id,"Sprite_layout","플레이어는 dir3이어야 합니다.")
 		if int(row.Sprite_cols)<1: return _field_error(store,"player.csv",row.Id,"Sprite_cols","1 이상이어야 합니다.")
 		if int(row.Sprite_rows)<1: return _field_error(store,"player.csv",row.Id,"Sprite_rows","1 이상이어야 합니다.")
 		for column in ["Sprite_cell_height","Anim_fps"]:

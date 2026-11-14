@@ -5,12 +5,15 @@ const SHADOW_SIZE := Vector2(32.0,12.0)
 const SHADOW_COLOR := Color(0.0,0.0,0.0,0.35)
 
 var texture: Texture2D
+var layout := "dir3"
 var columns := 1
 var rows := 1
 var cell_height := 0.0
 var baseline := 0.0
 var foot_y := 0.0
 var animation_fps := 1.0
+var idle_fps := 1.0
+var attack_after_frame_sec := 0.1
 var frame_row := 0
 var frame_column := 0
 var flip_h := false
@@ -20,17 +23,21 @@ var fallback_radius := 18.0
 var fallback_color := Color("#b18cff")
 var fallback_outline := Color("#eee6ff")
 var _animation_elapsed := 0.0
+var _animation_row := -1
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
 	fallback_radius = radius
 	fallback_color = color
 	fallback_outline = outline
+	layout = String(record.get("Sprite_layout","dir3"))
 	columns = int(record.get("Sprite_cols",1))
 	rows = int(record.get("Sprite_rows",1))
 	cell_height = float(record.get("Sprite_cell_height",0.0))
 	baseline = float(record.get("Sprite_baseline",0.0))
 	foot_y = float(record.get("Sprite_foot_y",0.0))
 	animation_fps = float(record.get("Anim_fps",1.0))
+	idle_fps = float(record.get("Idle_fps",animation_fps) if record.get("Idle_fps")!=null else animation_fps)
+	attack_after_frame_sec = float(record.get("Attack_after_frame_sec",0.1) if record.get("Attack_after_frame_sec")!=null else 0.1)
 	var path := String(record.get("Sprite_path","")).strip_edges()
 	if path.is_empty():
 		_use_fallback("Sprite_path가 비어 있어 원형 표시를 사용합니다.")
@@ -39,7 +46,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 		_use_fallback("Sprite_path 파일이 없어 원형 표시를 사용합니다: "+path)
 		return
 	var loaded := ResourceLoader.load(path,"Texture2D")
-	if not loaded is Texture2D or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0:
+	if not (loaded is Texture2D) or not (layout in ["dir3","state3"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
 		_use_fallback("스프라이트 설정을 읽을 수 없어 원형 표시를 사용합니다: "+path)
 		return
 	texture = loaded
@@ -49,12 +56,15 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 
 func configure_snapshot(snapshot: Dictionary) -> void:
 	texture = snapshot.get("texture") as Texture2D
+	layout = String(snapshot.get("layout","dir3"))
 	columns = int(snapshot.get("columns",1))
 	rows = int(snapshot.get("rows",1))
 	cell_height = float(snapshot.get("cell_height",0.0))
 	baseline = float(snapshot.get("baseline",0.0))
 	foot_y = float(snapshot.get("foot_y",0.0))
 	animation_fps = float(snapshot.get("animation_fps",1.0))
+	idle_fps = float(snapshot.get("idle_fps",animation_fps))
+	attack_after_frame_sec = float(snapshot.get("attack_after_frame_sec",0.1))
 	frame_row = int(snapshot.get("frame_row",0))
 	frame_column = int(snapshot.get("frame_column",0))
 	flip_h = bool(snapshot.get("flip_h",false))
@@ -68,8 +78,9 @@ func configure_snapshot(snapshot: Dictionary) -> void:
 
 func pose_snapshot() -> Dictionary:
 	return {
-		"texture":texture,"columns":columns,"rows":rows,"cell_height":cell_height,
+		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
+		"idle_fps":idle_fps,"attack_after_frame_sec":attack_after_frame_sec,
 		"frame_row":frame_row,"frame_column":frame_column,"flip_h":flip_h,
 		"using_fallback":using_fallback,"fallback_radius":fallback_radius,
 		"fallback_color":fallback_color,"fallback_outline":fallback_outline,"show_shadow":false,
@@ -89,6 +100,28 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	else:
 		_animation_elapsed = 0.0
 		frame_column = 0
+	queue_redraw()
+
+func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
+	if direction.x<0.0: flip_h = true
+	elif direction.x>0.0: flip_h = false
+	var next_row := 1 if moving else 0
+	if _animation_row!=next_row:
+		_animation_row = next_row
+		_animation_elapsed = 0.0
+	frame_row = next_row
+	_animation_elapsed += maxf(0.0,delta)
+	var fps := animation_fps if moving else idle_fps
+	frame_column = floori(_animation_elapsed*fps)%maxi(1,columns)
+	queue_redraw()
+
+func set_attack_pose(direction: Vector2, column: int) -> void:
+	if direction.x<0.0: flip_h = true
+	elif direction.x>0.0: flip_h = false
+	_animation_row = 2
+	_animation_elapsed = 0.0
+	frame_row = 2
+	frame_column = clampi(column,0,maxi(0,columns-1))
 	queue_redraw()
 
 func source_rect() -> Rect2:

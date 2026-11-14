@@ -4,7 +4,7 @@ enum Shape { FAN, DASH_THROUGH }
 const SHAPES := {"fan":Shape.FAN,"dash_through":Shape.DASH_THROUGH}
 
 static func register_schemas(store: CsvDataStore) -> void:
-	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float"})
+	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float","Sprite_path":{"type":"Optional","inner":"Path"},"Sprite_layout":{"type":"Optional","inner":"String"},"Sprite_cols":{"type":"Optional","inner":"Int"},"Sprite_rows":{"type":"Optional","inner":"Int"},"Sprite_cell_height":{"type":"Optional","inner":"Float"},"Sprite_baseline":{"type":"Optional","inner":"Float"},"Sprite_foot_y":{"type":"Optional","inner":"Float"},"Anim_fps":{"type":"Optional","inner":"Float"},"Idle_fps":{"type":"Optional","inner":"Float"},"Attack_after_frame_sec":{"type":"Optional","inner":"Float"}})
 	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"},"Aim_turn_deg_per_sec":{"type":"Optional","inner":"Float"},"Aim_deadband_deg":{"type":"Optional","inner":"Float"}})
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":{"type":"Optional","inner":"Float"}})
 	store.schemas["shadow.csv"]["Name_ko"] = "String"
@@ -17,6 +17,22 @@ static func validate(store: CsvDataStore) -> String:
 		return error(store,"shadow.csv","igrit","Id","이그리트 행이 필요합니다.")
 	for id in store.get_table("shadow.csv"):
 		var row := store.get_row("shadow.csv",id)
+		var sprite_columns := ["Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_foot_y","Anim_fps","Idle_fps","Attack_after_frame_sec"]
+		if row.Sprite_path==null:
+			for column in sprite_columns:
+				if row[column]!=null: return error(store,"shadow.csv",id,column,"Sprite_path가 비면 이미지 열도 비워야 합니다.")
+		else:
+			var sprite_path := String(row.Sprite_path)
+			if not ResourceLoader.exists(sprite_path,"Texture2D") or not (ResourceLoader.load(sprite_path,"Texture2D") is Texture2D):
+				return error(store,"shadow.csv",id,"Sprite_path","사용 가능한 이미지 경로가 아닙니다.")
+			for column in sprite_columns:
+				if row[column]==null: return error(store,"shadow.csv",id,column,"이미지 경로가 있으면 필수입니다.")
+			if String(row.Sprite_layout)!="state3": return error(store,"shadow.csv",id,"Sprite_layout","그림자 시트는 state3이어야 합니다.")
+			if int(row.Sprite_cols)<1 or int(row.Sprite_rows)<1: return error(store,"shadow.csv",id,"Sprite_cols","칸 수는 1 이상이어야 합니다.")
+			for column in ["Sprite_cell_height","Anim_fps","Idle_fps","Attack_after_frame_sec"]:
+				if not is_finite(float(row[column])) or float(row[column])<=0: return error(store,"shadow.csv",id,column,"유한한 양수여야 합니다.")
+			if not is_finite(float(row.Sprite_baseline)) or float(row.Sprite_baseline)<0: return error(store,"shadow.csv",id,"Sprite_baseline","유한한 비음수여야 합니다.")
+			if not is_finite(float(row.Sprite_foot_y)): return error(store,"shadow.csv",id,"Sprite_foot_y","유한한 값이어야 합니다.")
 		if row.get("Icon")!=null:
 			var path := String(row.Icon)
 			if not ResourceLoader.exists(path) or not (load(path) is Texture2D):

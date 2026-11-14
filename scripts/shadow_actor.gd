@@ -2,6 +2,7 @@ extends Node2D
 
 const Visual = preload("res://scripts/shadow_visual.gd")
 const Data = preload("res://scripts/shadow_data.gd")
+const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
 # User-approved table-policy exception; proposed start value, not final balance.
 const SHADOW_SPACING := 16.0
 var manager: Node2D
@@ -36,6 +37,8 @@ var dash_travelled: float = 0.0
 var dash_end_reason: String = "distance"
 var dash_hits: Dictionary = {}
 var dash_through_active: bool = false
+var sprite_body: Node2D
+var sprite_hit_at := -INF
 
 func configure(owner_manager: Node2D, record: Dictionary, attack_record: Dictionary, motion_records: Array) -> void:
 	manager = owner_manager
@@ -45,6 +48,11 @@ func configure(owner_manager: Node2D, record: Dictionary, attack_record: Diction
 	body_radius = float(config.Body_radius)
 	push_weight = float(config.Push_weight)
 	enemy_push_share = float(config.Enemy_push_share)
+	if config.get("Sprite_path")!=null and not String(config.Sprite_path).is_empty():
+		sprite_body = SpriteBodyScript.new()
+		sprite_body.name = "SpriteBody"
+		add_child(sprite_body)
+		sprite_body.configure(config,body_radius,Color("#151025"),Color("#9771dc"))
 	random.randomize()
 
 func apply_damage(_amount: int) -> bool:
@@ -97,6 +105,7 @@ func choose_in_stage(living: Array, radius: float, screen_only: bool, excluded: 
 	return result
 
 func tick(delta: float) -> void:
+	var visual_origin := global_position
 	clock += delta
 	var player: Node2D = manager.player
 	if global_position.distance_to(player.global_position)>=float(config.Teleport_distance):
@@ -116,6 +125,7 @@ func tick(delta: float) -> void:
 			if target==null: choose_target(living)
 			act_on_target(player,delta)
 	global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
+	update_sprite_visual(global_position-visual_origin,delta)
 	queue_redraw()
 
 func act_on_target(player: Node2D, delta: float) -> void:
@@ -203,6 +213,7 @@ func start_attack() -> void:
 			return
 	cast_active = true
 	hit_done = false
+	sprite_hit_at = -INF
 	cast_started_at = clock
 	fan_aim_updated_at = clock
 	facing = global_position.direction_to(target.global_position)
@@ -252,6 +263,7 @@ func advance_fan_attack(living: Array) -> void:
 				facing = Vector2.RIGHT.rotated(rotate_toward(facing.angle(),direction.angle(),maximum_turn))
 	if not hit_done and age+0.000000001>=float(motion.Hit_time_sec):
 		hit_done = true
+		sprite_hit_at = clock
 		var geometry := attack_geometry()
 		for enemy: EnemyActor in living:
 			if in_sector(enemy,geometry): enemy.apply_damage(int(attack.Damage))
@@ -337,6 +349,7 @@ func cancel_attack() -> void:
 	dash_through_active = false
 	cast_active = false
 	hit_done = false
+	sprite_hit_at = -INF
 	ready_at = clock
 
 func teleport() -> void:
@@ -356,7 +369,29 @@ func snapshot() -> Dictionary:
 		return {"radius":body_radius,"facing":facing,"motion":-1,"phase":recovery_phase,"kind":"charger_test"}
 	var phase := 0.0
 	if cast_active: phase = clampf((clock-cast_started_at)/float(motions[motion_index].Motion_sec),0,1)
-	return {"radius":body_radius,"facing":facing,"motion":motion_index if cast_active else -1,"phase":phase}
+	var result := {"radius":body_radius,"facing":facing,"motion":motion_index if cast_active else -1,"phase":phase}
+	if sprite_body!=null: result.sprite_pose = sprite_body.pose_snapshot()
+	return result
+
+func update_sprite_visual(movement: Vector2, delta: float) -> void:
+	if sprite_body==null: return
+	if sprite_hit_at>-INF:
+		var age := clock-sprite_hit_at
+		var after := float(config.Attack_after_frame_sec)
+		if age<=0.000000001:
+			sprite_body.set_attack_pose(facing,1)
+			return
+		if age<=after+0.000000001:
+			sprite_body.set_attack_pose(facing,2)
+			return
+		if age<=after*2.0+0.000000001:
+			sprite_body.set_attack_pose(facing,3)
+			return
+		sprite_hit_at = -INF
+	if cast_active and not hit_done and not is_dash_through():
+		sprite_body.set_attack_pose(facing,0)
+		return
+	sprite_body.advance_state_pose(movement,movement.length_squared()>0.000001,delta)
 
 func _draw() -> void:
 	if is_dash_through():
@@ -366,5 +401,6 @@ func _draw() -> void:
 		return
 	var sector := attack_visual_state()
 	if not sector.is_empty(): Visual.draw_sector(self,sector)
-	var pose := snapshot()
-	Visual.draw_pose(self,body_radius,facing,int(pose.motion),float(pose.phase))
+	if sprite_body==null:
+		var pose := snapshot()
+		Visual.draw_pose(self,body_radius,facing,int(pose.motion),float(pose.phase))

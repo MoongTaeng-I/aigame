@@ -32,7 +32,7 @@ func configure(snapshot: Dictionary, seconds: float, alpha: float = 0.45) -> voi
 	lifetime = seconds
 	opacity = alpha
 	modulate.a = opacity
-	if pose.get("kind","")=="player" and pose.has("sprite_pose"):
+	if pose.has("sprite_pose"):
 		sprite_body = SpriteBodyScript.new()
 		add_child(sprite_body)
 		sprite_body.configure_snapshot(pose.sprite_pose)
@@ -46,9 +46,9 @@ func _physics_process(delta: float) -> void:
 
 func _draw() -> void:
 	if pose!=null:
+		if sprite_body!=null: return
 		if pose.get("kind","")=="player":
-			if sprite_body==null:
-				draw_circle(Vector2.ZERO,float(pose.radius),Color("#b18cff"))
-				draw_arc(Vector2.ZERO,float(pose.radius),0,TAU,48,Color("#eee6ff"),2)
+			draw_circle(Vector2.ZERO,float(pose.radius),Color("#b18cff"))
+			draw_arc(Vector2.ZERO,float(pose.radius),0,TAU,48,Color("#eee6ff"),2)
 		elif pose.get("kind","")=="charger_test": Visual.draw_charger_pose(self,float(pose.radius),pose.facing)
 		else: Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))
