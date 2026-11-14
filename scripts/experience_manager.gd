@@ -13,6 +13,7 @@ func configure(player: Node2D, enemy_manager: EnemyManager, rule: Dictionary) ->
 	enemy_manager.enemy_died.connect(_on_enemy_died)
 
 func _on_enemy_died(enemy: EnemyActor) -> void:
+	if _player.run_finished: return
 	drop_experience(enemy.global_position,enemy.xp_value)
 
 func drop_experience(world_position: Vector2, amount: int) -> Node2D:

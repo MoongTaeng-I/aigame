@@ -1,4 +1,7 @@
 extends Node2D
+signal run_completed
+var managed_results := false
+var result_locked := false
 
 const Data = preload("res://scripts/boss_data.gd")
 var manager: EnemyManager
@@ -80,7 +83,7 @@ func begin_warning(now: float) -> void:
 	queue_redraw()
 
 func _boss_died(_dead: EnemyActor) -> void:
-	if active_id.is_empty(): return
+	if result_locked or active_id.is_empty(): return
 	if is_instance_valid(toast_view): toast_view.push_message("[보스 몬스터를 처치했습니다]")
 	var final := bool(bosses[active_id].Is_final)
 	active_id = ""
@@ -89,8 +92,9 @@ func _boss_died(_dead: EnemyActor) -> void:
 	if final:
 		completed = true
 		toast_text = "완료"
-		if is_instance_valid(toast_view): toast_view.show_completion(toast_text)
+		if is_instance_valid(toast_view) and not managed_results: toast_view.show_completion(toast_text)
 		get_tree().paused = true
+		run_completed.emit()
 	elif not pending.is_empty(): begin_warning(manager._elapsed_seconds)
 	else: manager.set_normal_spawning_stopped(false)
 	queue_redraw()

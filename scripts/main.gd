@@ -17,14 +17,30 @@ const HitFx = preload("res://scripts/hit_fx.gd")
 const MapScene = preload("res://scenes/map.tscn")
 const PlayerScene = preload("res://scenes/player.tscn")
 
+signal round_ended(result: Dictionary)
+var supplied_data: CsvDataStore
+var managed_flow := false
+var round_finished := false
+var kills := 0
+var round_nodes: Dictionary = {}
+
 func _ready() -> void:
 	_configure_window()
-	var data_store = CsvDataStore.new()
-	CombatDataScript.register_schemas(data_store)
-	var load_error: String = data_store.load_all()
-	if not load_error.is_empty():
-		_show_data_error(load_error)
+	var data_store: CsvDataStore = supplied_data
+	if data_store==null:
+		data_store = CsvDataStore.new()
+		CombatDataScript.register_schemas(data_store)
+		var load_error := data_store.load_all()
+		if not load_error.is_empty():
+			_show_data_error(load_error)
+			return
+	var error := validate_store(data_store)
+	if not error.is_empty():
+		_show_data_error(error)
 		return
+	_create_game(data_store)
+
+func validate_store(data_store: CsvDataStore) -> String:
 	var combat_error := CombatDataScript.validate(data_store)
 	if combat_error.is_empty():
 		combat_error = ExperienceData.validate(data_store)
@@ -37,29 +53,32 @@ func _ready() -> void:
 	if combat_error.is_empty():
 		combat_error = HitFxData.validate(data_store)
 	if not combat_error.is_empty():
-		_show_data_error(combat_error)
-		return
+		return combat_error
 	var boss_error := preload("res://scripts/boss_data.gd").validate(data_store)
 	if not boss_error.is_empty():
-		_show_data_error(boss_error)
-		return
+		return boss_error
 	var player_record: Dictionary = data_store.get_row("player.csv", "player_01")
 	if player_record.is_empty():
-		_show_data_error("res://data/player.csv, 행 1, 열 Id: 플레이어 ID player_01이 없습니다.")
-		return
+		return "res://data/player.csv, 행 1, 열 Id: 플레이어 ID player_01이 없습니다."
 	var spawn_rule: Dictionary = data_store.get_row("spawn_rule.csv", "rule_01")
 	if spawn_rule.is_empty():
-		_show_data_error("res://data/spawn_rule.csv, 행 1, 열 Id: 규칙 ID rule_01이 없습니다.")
-		return
+		return "res://data/spawn_rule.csv, 행 1, 열 Id: 규칙 ID rule_01이 없습니다."
 	var enemy_records: Dictionary = data_store.get_table("enemy.csv")
 	var spawn_records: Dictionary = data_store.get_table("spawn.csv")
 	var data_error := _validate_gameplay_data(data_store, player_record, enemy_records, spawn_records, spawn_rule)
 	if not data_error.is_empty():
-		_show_data_error(data_error)
-		return
+		return data_error
+	return preload("res://scripts/flow_data.gd").validate(data_store)
+
+func _create_game(data_store: CsvDataStore) -> void:
+	var player_record: Dictionary = data_store.get_row("player.csv","player_01")
+	var spawn_rule: Dictionary = data_store.get_row("spawn_rule.csv","rule_01")
+	var enemy_records: Dictionary = data_store.get_table("enemy.csv")
+	var spawn_records: Dictionary = data_store.get_table("spawn.csv")
 	var map = MapScene.instantiate()
 	add_child(map)
 	var player = PlayerScene.instantiate()
+	player.managed_results = managed_flow
 	player.move_speed = float(player_record["Move_speed"])
 	player.configure_body(float(player_record["Body_radius"]), float(player_record["Push_weight"]))
 	player.configure_combat(int(player_record["Max_hp"]), data_store.get_row("basic_attack.csv", "attack_01"))
@@ -105,7 +124,9 @@ func _ready() -> void:
 	map.add_child(choices)
 	var boss_director := preload("res://scripts/boss_director.gd").new()
 	boss_director.configure(enemy_manager,data_store.get_table("boss.csv"),data_store.get_table("boss_action.csv"),data_store.get_table("stage_timeline.csv"),data_store.get_row("boss_rule.csv","boss_rule_01"))
+	boss_director.managed_results = managed_flow
 	map.add_child(boss_director)
+	boss_director.toast_view.pause_with_game = managed_flow
 	if preload("res://scripts/elf_debug_recorder.gd").requested():
 		var elf_debug := preload("res://scripts/elf_debug_recorder.gd").new()
 		elf_debug.name = "ElfDebugRecorder"
@@ -115,6 +136,34 @@ func _ready() -> void:
 	temporary_hud.name = "TemporaryHud"
 	temporary_hud.configure(enemy_manager,shadows,skill_manager.ui)
 	map.add_child(temporary_hud)
+
+	if managed_flow:
+		player._hp_label.position = Vector2(20,558)
+		experience_manager._label.position = Vector2(20,596)
+		player.died.connect(_end_round.bind(false))
+		boss_director.run_completed.connect(_end_round.bind(true))
+		enemy_manager.enemy_died.connect(_count_kill)
+	round_nodes = {"map":map,"player":player,"manager":enemy_manager,"skills":skill_manager,"choices":choices,"shadows":shadows,"director":boss_director}
+
+func _count_kill(_enemy: EnemyActor) -> void:
+	if not round_finished: kills+=1
+
+func _end_round(cleared: bool) -> void:
+	if round_finished: return
+	round_finished = true
+	var player: Node2D = round_nodes.player
+	var names: Array[String] = []
+	for actor in round_nodes.shadows.actors: names.append(String(actor.config.Name_ko))
+	var result := {"cleared":cleared,"seconds":round_nodes.manager._elapsed_seconds,"level":player.level,"kills":kills,"shadows":names}
+	player.run_finished = true
+	round_nodes.director.result_locked = true
+	round_nodes.choices.result_locked = true
+	round_nodes.choices.active = false
+	round_nodes.choices.pending = 0
+	round_nodes.choices.ui.hide()
+	round_nodes.director.toast_view.result_keep_running = true
+	get_tree().paused = true
+	round_ended.emit(result)
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:
@@ -159,11 +208,15 @@ func _configure_window() -> void:
 	window.size = Vector2i(1280, 720)
 
 func _show_data_error(message: String) -> void:
+	show_data_error(self,message)
+
+static func show_data_error(source: Node, message: String) -> void:
 	push_error(message)
-	get_tree().paused = true
+	source.get_tree().paused = true
 	var layer := CanvasLayer.new()
+	layer.layer = 200
 	layer.process_mode = Node.PROCESS_MODE_ALWAYS
-	add_child(layer)
+	source.add_child(layer)
 	var background := ColorRect.new()
 	background.color = Color("#111018")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

@@ -8,6 +8,9 @@ var visuals_enabled := true
 var trail_elapsed := 0.0
 signal leveled_up(new_level: int)
 signal damaged(world_position: Vector2)
+signal died
+var managed_results := false
+var run_finished := false
 var level: int = 1
 var experience: int = 0
 var enhancement_points: int = 0
@@ -90,7 +93,7 @@ func get_xp_to_next() -> int:
     return _level_requirements[mini(level,_level_requirements.size())-1]
 
 func add_experience(amount: int) -> void:
-    if amount <= 0 or is_dead or _level_requirements.is_empty():
+    if amount <= 0 or is_dead or run_finished or _level_requirements.is_empty():
         return
     experience += amount
     while experience >= get_xp_to_next():
@@ -100,28 +103,30 @@ func add_experience(amount: int) -> void:
         leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:
-    if is_dead or amount <= 0 or is_fear_casting():
+    if is_dead or run_finished or amount <= 0 or is_fear_casting():
         return
     hp = maxi(0, hp - amount)
     damaged.emit(global_position)
     _update_hp_label()
     if hp == 0:
         is_dead = true
-        _death_label = Label.new()
-        _death_label.text = "사망"
-        _death_label.position = Vector2(570.0, 320.0)
-        _death_label.add_theme_font_size_override("font_size", 48)
-        _death_label.add_theme_color_override("font_color", Color("#ff7b83"))
-        _hud_layer.add_child(_death_label)
+        if not managed_results:
+            _death_label = Label.new()
+            _death_label.text = "사망"
+            _death_label.position = Vector2(570.0, 320.0)
+            _death_label.add_theme_font_size_override("font_size", 48)
+            _death_label.add_theme_color_override("font_color", Color("#ff7b83"))
+            _hud_layer.add_child(_death_label)
         get_tree().paused = true
+        died.emit()
 
 func update_basic_attack(now: float, enemies: Array) -> void:
-    if is_dead or _attack_data.is_empty():
+    if is_dead or run_finished or _attack_data.is_empty():
         return
     if is_stealthed():
         cancel_basic_attack()
         return
-    while _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
+    while not run_finished and _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
         var target: Variant = choose_target(enemies,_attack_cast_range)
         if target != null:
             _apply_basic_triangle(target,enemies)

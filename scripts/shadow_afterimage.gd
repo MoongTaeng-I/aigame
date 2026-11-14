@@ -5,8 +5,16 @@ var pose: Dictionary
 var lifetime: float
 var elapsed: float = 0.0
 var opacity := 0.45
+const PRESENTATION_CACHE := &"combat_presentation"
+
+static func cache_presentation(rows: Dictionary) -> void:
+	var loaded: Dictionary = {}
+	for row in rows.values(): loaded[row.Id] = row.Value
+	# Only strings live in Engine metadata; no static GDScript resource is retained.
+	Engine.set_meta(PRESENTATION_CACHE,loaded)
 
 static func presentation() -> Dictionary:
+	if Engine.has_meta(PRESENTATION_CACHE): return Engine.get_meta(PRESENTATION_CACHE).duplicate()
 	# Pure presentation data; this loader never touches combat RNG or hit state.
 	var file := FileAccess.open("res://data/combat_presentation.csv",FileAccess.READ)
 	var result: Dictionary = {}
@@ -14,7 +22,8 @@ static func presentation() -> Dictionary:
 	while not file.eof_reached():
 		var cells := file.get_csv_line()
 		if cells.size()==2: result[cells[0]] = cells[1]
-	return result
+	Engine.set_meta(PRESENTATION_CACHE,result)
+	return result.duplicate()
 
 func configure(snapshot: Dictionary, seconds: float, alpha: float = 0.45) -> void:
 	pose = snapshot.duplicate(true)

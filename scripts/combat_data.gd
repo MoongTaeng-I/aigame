@@ -9,6 +9,7 @@ const ShadowData = preload("res://scripts/shadow_data.gd")
 const HitFxData = preload("res://scripts/hit_fx_data.gd")
 
 static func register_schemas(store: CsvDataStore) -> void:
+	preload("res://scripts/flow_data.gd").register_schemas(store)
 	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String"})
 	store.register_schema("player.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",

@@ -15,6 +15,7 @@ var heal_id: String = ""
 var random := RandomNumberGenerator.new()
 var ui: Control
 var owns_pause: bool = false
+var result_locked := false
 var shadow_manager: Node2D
 
 func configure(owner_player: Node2D, choices: Dictionary, rows: Dictionary, rule: Dictionary, summons: Node2D = null) -> void:
@@ -46,11 +47,12 @@ func _ready() -> void:
 	_open_if_needed()
 
 func _on_level_up(_new_level: int) -> void:
+	if result_locked: return
 	pending += 1
 	_open_if_needed()
 
 func _open_if_needed() -> void:
-	if active or pending<=0 or player.is_dead or ui==null:
+	if result_locked or active or pending<=0 or player.is_dead or ui==null:
 		return
 	owns_pause = not get_tree().paused
 	get_tree().paused = true
@@ -93,7 +95,7 @@ func draw_cards() -> Array:
 	return result
 
 func can_reroll() -> bool:
-	return active and not player.is_dead and rerolls>0 and candidates().size()>3
+	return not result_locked and active and not player.is_dead and rerolls>0 and candidates().size()>3
 
 func reroll() -> bool:
 	if not can_reroll(): return false
@@ -103,7 +105,7 @@ func reroll() -> bool:
 	return true
 
 func select(index: int) -> bool:
-	if not active or player.is_dead or index<0 or index>=cards.size(): return false
+	if result_locked or not active or player.is_dead or index<0 or index>=cards.size(): return false
 	var id: String = cards[index]
 	if id==heal_id:
 		player.heal_percent(float(level_rows[id][0].Value))

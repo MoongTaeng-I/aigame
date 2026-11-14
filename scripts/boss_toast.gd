@@ -16,6 +16,8 @@ var label: Label
 var entries: Array = []
 var warning: Dictionary = {}
 var completion_label: Label
+var pause_with_game := false
+var result_keep_running := false
 var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
 
 static func particle(word: String, consonant: String, vowel: String) -> String:
@@ -99,6 +101,7 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	_refresh()
 
 func _process(delta: float) -> void:
+	if pause_with_game and get_tree().paused and not result_keep_running: return
 	for entry in entries:
 		if not entry.warning or entry.retiring or get_tree().paused:
 			entry.age+=delta

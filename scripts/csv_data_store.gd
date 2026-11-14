@@ -9,11 +9,22 @@ func register_schema(file_name: String, column_types: Dictionary) -> void:
 	schemas[file_name] = column_types.duplicate(true)
 
 func load_all() -> String:
+	var plan := prepare_load()
+	if not String(plan.error).is_empty(): return plan.error
+	for file_name in plan.files:
+		var error_message := _load_file(file_name)
+		if not error_message.is_empty():
+			tables.clear()
+			return error_message
+	return ""
+
+# The loading screen uses the same discovery/validation and parser one file per frame.
+func prepare_load() -> Dictionary:
 	tables.clear()
 	source_lines.clear()
 	var data_dir := DirAccess.open("res://data")
 	if data_dir == null:
-		return _format_error("res://data", 1, "Id", "데이터 폴더를 열 수 없습니다.")
+		return {"files":[],"error":_format_error("res://data", 1, "Id", "데이터 폴더를 열 수 없습니다.")}
 	var file_names: Array[String] = []
 	data_dir.list_dir_begin()
 	var entry := data_dir.get_next()
@@ -25,15 +36,11 @@ func load_all() -> String:
 	file_names.sort()
 	for required_name in schemas.keys():
 		if not file_names.has(String(required_name)):
-			return _format_error("res://data/" + String(required_name), 1, "Id", "필요한 CSV 파일이 없습니다.")
+			return {"files":[],"error":_format_error("res://data/" + String(required_name), 1, "Id", "필요한 CSV 파일이 없습니다.")}
 	for file_name in file_names:
 		if not schemas.has(file_name):
-			return _format_error("res://data/" + file_name, 1, "Id", "등록된 테이블 스키마가 없습니다.")
-		var error_message := _load_file(file_name)
-		if not error_message.is_empty():
-			tables.clear()
-			return error_message
-	return ""
+			return {"files":[],"error":_format_error("res://data/" + file_name, 1, "Id", "등록된 테이블 스키마가 없습니다.")}
+	return {"files":file_names,"error":""}
 
 func get_row(file_name: String, row_id: String) -> Dictionary:
 	if not tables.has(file_name):
