@@ -5,7 +5,7 @@ func run(t: SceneTree) -> void:
 	var failed: int = t.failures
 	var store: CsvDataStore = t._store()
 	t.check(store.load_all().is_empty(),"ART-06 real data loads with new optional columns")
-	for entry in [["player.csv","player_01",68.0],["shadow.csv","igrit",125.0],["shadow.csv","belion",105.0],["shadow.csv","charger_test",89.0]]:
+	for entry in [["player.csv","player_01",101.0],["shadow.csv","igrit",125.0],["shadow.csv","belion",105.0],["shadow.csv","charger_test",89.0]]:
 		var row: Dictionary = store.get_row(entry[0],entry[1])
 		var view := preload("res://scripts/sprite_body.gd").new()
 		t.root.add_child(view)

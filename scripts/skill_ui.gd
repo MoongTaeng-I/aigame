@@ -39,7 +39,7 @@ const RANGE_FILL := Color(0.54,0.28,0.85,0.08)
 const RANGE_WIDTH := 2.0
 const SHAPE_WIDTH := 0.12
 const SHAPE_EXTENT := 0.78
-const STEALTH_ALPHA := 0.35
+const STEALTH_ALPHA := 0.45
 const FEAR_COLOR := Color("#74b7ed")
 const FEAR_FLASH_SEC := 0.2
 const BLUR_SHADER := """shader_type canvas_item;
@@ -97,7 +97,10 @@ func _layout() -> void:
 		glyphs[index].position = card_rect(index).position+ICON_OFFSET
 
 func _process(_delta: float) -> void:
-	manager.player.modulate.a = STEALTH_ALPHA if manager.player.is_stealthed() else 1.0
+	var presentation: Dictionary = manager.presentation
+	var alpha := float(presentation.get("Stealth_alpha",STEALTH_ALPHA)) if manager.player.is_stealthed() else 1.0
+	var weight := float(presentation.get("Stealth_wave_strength",0.15))*(0.5+0.5*sin(manager.clock*TAU*float(presentation.get("Stealth_wave_hz",0.6)))) if manager.player.is_stealthed() else 0.0
+	manager.player.modulate = Color(Color.WHITE.lerp(Color(String(presentation.get("Fear_color","#a34dff"))),weight),alpha)
 	_layout()
 	queue_redraw()
 	if overlay!=null:

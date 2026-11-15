@@ -38,6 +38,10 @@ var _motion_clock := 0.0
 var _visual_cast_active := false
 var _lunge_remaining := 0.0
 var _lunge_direction := Vector2.RIGHT
+var basic_step_remaining := 0.0
+var basic_step_direction := Vector2.RIGHT
+var basic_step_px := 0.0
+var basic_step_sec := 0.1
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
 	motion_values.clear()
@@ -129,7 +133,7 @@ func configure_snapshot(snapshot: Dictionary) -> void:
 
 func pose_snapshot() -> Dictionary:
 	return {
-		"motion_transform":motion_transform,
+		"motion_transform":step_transform()*motion_transform,
 		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
 		"anchor_x":anchor_x,"sprite_tint":sprite_tint,
@@ -237,6 +241,7 @@ func advance_shadow_pose(direction: Vector2, moving: bool, delta: float, attacki
 	advance_pose_motion(moving,delta,attacking,attack_direction)
 
 func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, attack_direction: Vector2 = Vector2.RIGHT) -> void:
+	basic_step_remaining = maxf(0,basic_step_remaining-maxf(delta,0))
 	_motion_clock += maxf(delta,0.0)
 	var began := attacking and not _visual_cast_active
 	if began:
@@ -308,7 +313,32 @@ func _draw() -> void:
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 func image_transform() -> Transform2D:
-	return motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
+	return step_transform()*motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
+
+func step_transform() -> Transform2D:
+	return Transform2D(0,basic_step_direction*basic_step_px*basic_step_remaining/maxf(basic_step_sec,0.000001))
+
+func trigger_basic_step(direction: Vector2, px: float, seconds: float) -> void:
+	basic_step_direction = direction.normalized()
+	basic_step_px = px
+	basic_step_sec = seconds
+	basic_step_remaining = seconds
+	queue_redraw()
+
+func advance_player_skill_pose(direction: Vector2, moving: bool, delta: float, fear: bool, dash: bool, slash: bool, dash_direction: Vector2, settings: Dictionary) -> void:
+	advance_pose(direction,moving,delta)
+	if layout!="pose" or columns<5 or not (fear or dash or slash): return
+	frame_row = 0
+	frame_column = 4 if fear else (2 if dash else 3)
+	if dash and not fear:
+		if dash_direction.x<0: flip_h = true
+		elif dash_direction.x>0: flip_h = false
+	var angle := sin(_motion_clock*TAU*float(settings.get("Slash_pose_hz",12)))*deg_to_rad(float(settings.get("Slash_pose_tilt_deg",5))) if slash and not fear and not dash else sin(_motion_clock*TAU)*deg_to_rad(float(settings.get("Skill_pose_sway_deg",1)))
+	var offset := Vector2(0,-float(settings.get("Fear_pose_float_px",4))*absf(sin(_motion_clock*PI))) if fear else Vector2.ZERO
+	motion_transform = Transform2D(angle,Vector2.ZERO)
+	var pivot := Vector2(0,foot_y)
+	motion_transform.origin = pivot+offset-motion_transform*pivot
+	queue_redraw()
 
 static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
 	var settings: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()

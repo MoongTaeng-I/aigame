@@ -212,8 +212,10 @@ func bosses_and_shadows() -> void:
 func error_screen() -> void:
 	var output: Array = []
 	var log := "res://.local/godot_logs/s8-impl-04-scaling-error-"+str(Time.get_ticks_usec())+".log"
-	var code := OS.execute(OS.get_executable_path(),PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/scaling_error_probe.gd","--log-file",ProjectSettings.globalize_path(log)]),output,true)
+	var arguments := PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/scaling_error_probe.gd","--log-file",ProjectSettings.globalize_path(log)])
+	var code := preload("res://tests/godot_probe_process.gd").execute(arguments,output,log)
 	var raw := FileAccess.open("res://.local/s8-impl-04-scaling-error.out",FileAccess.WRITE)
 	raw.store_string("\n".join(output))
 	var state: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://.local/s8-impl-04-scaling-error-state.json"))
 	t.check(code==0 and state is Dictionary and state.loaded and state.paused and state.label_matches and state.message.contains("enemy_scaling.csv"),"S8-I4 invalid scaling reaches actual paused data-error screen")
+	if (code&0xffffffff)==0xc0000005: t.quit(1)

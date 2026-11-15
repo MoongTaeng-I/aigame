@@ -36,7 +36,7 @@ func run(t: SceneTree) -> void:
 	var copy := preload("res://scripts/shadow_afterimage.gd").new()
 	copy.configure({"sprite_pose":p.sprite_body.pose_snapshot()},1)
 	n.map.add_child(copy)
-	t.check(copy.sprite_body.cell_height==95 and copy.sprite_body.display_rect()==p.sprite_body.display_rect(),"ART-09 player dash snapshot size preserved")
+	t.check(copy.sprite_body.cell_height==110 and copy.sprite_body.display_rect()==p.sprite_body.display_rect(),"ART-11 player dash snapshot size preserved")
 	n.manager._spawn_from_row({"Enemy_id":"enemy_01","Spawn_count":1})
 	var enemy: Node2D = n.manager.get_living_enemies().back()
 	var boss: Node2D = n.manager.create_boss("boss_ice_bear",[],func() -> Node2D: return p)

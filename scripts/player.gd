@@ -28,6 +28,7 @@ var stealth_remaining: float = 0.0
 var fear_cast_remaining: float = 0.0
 var freeze_remaining: float = 0.0
 var sprite_body: Node2D
+var skill_presentation: Node
 var character_view: Node2D
 
 func is_frozen() -> bool:
@@ -200,10 +201,18 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var base := global_position+facing*body_radius
     var width := _attack_cast_range*float(_attack_data.get("Tri_width_ratio",0.381))
     if visuals_enabled:
-        var effect := Polygon2D.new()
+        var effect := preload("res://scripts/basic_slash_fx.gd").new()
         effect.top_level = true
         effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
-        effect.color = Color(1.0,0.945,0.659,0.35)
+        effect.color = Color.TRANSPARENT
+        effect.base = base
+        effect.facing = facing
+        effect.length = _attack_cast_range
+        effect.width = width
+        effect.life = float(_attack_data["Hit_effect_sec"])
+        effect.settings = presentation
+        effect.debug_source = get_parent() if get_parent().has_method("set_debug_visible") else null
+        if sprite_body!=null: sprite_body.trigger_basic_step(facing,float(presentation.get("Basic_step_px",2)),float(presentation.get("Basic_step_sec",0.1)))
         get_parent().add_child(effect)
         var timer := Timer.new()
         timer.one_shot = true
@@ -276,7 +285,8 @@ func _physics_process(delta: float) -> void:
     if sprite_body!=null:
         var locked := is_frozen() or is_fear_casting()
         var moved := global_position.distance_squared_to(before)>0.000001
-        sprite_body.advance_pose(Vector2.ZERO if locked else direction,moved and not locked,delta)
+        var slash_active: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
+        sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
     if dash_pass_through and visuals_enabled:
         var at := trail_elapsed
         while at<=dash_step+0.000000001:

@@ -16,9 +16,11 @@ var skills: Dictionary = {}
 var clock: float = 0.0
 var effects: Array = []
 var ui: Control
+var screen_fx: CanvasLayer
 
 func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records: Dictionary, slash_levels: Dictionary, extra_levels: Dictionary = {}, stealth_rule: Dictionary = {}) -> void:
 	player = owner_player
+	player.skill_presentation = self
 	enemies = enemy_manager
 	if not stealth_rule.is_empty():
 		enemies.wander_radius = float(stealth_rule.Wander_radius)
@@ -49,6 +51,9 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 		skills[id] = cast
 
 func _ready() -> void:
+	screen_fx = preload("res://scripts/skill_screen_fx.gd").new()
+	screen_fx.settings = presentation
+	add_child(screen_fx)
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	ui = UI.new()
@@ -103,7 +108,9 @@ func _slash_tick(stats: Dictionary, at: float) -> void:
 			var center: Vector2 = player.global_position+direction.orthogonal()*offset
 			var half_length := sqrt(float(stats.Range)*float(stats.Range)-offset*offset)
 			lines.append([center-direction*half_length,center+direction*half_length])
-		effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(presentation.Slash_sec),"lines":lines})
+		effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(presentation.Slash_sec),"at":at,"lines":lines})
+		if stats.has("Hits") and skills.skill_rapid_slash.hits_done+1>=int(stats.Hits) and screen_fx!=null:
+			screen_fx.kick(float(presentation.get("Shake_px",3)),float(presentation.get("Slash_shake_sec",0.08)))
 	queue_redraw()
 
 func icon_state(id: String) -> Dictionary:
@@ -131,14 +138,42 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 	player.fear_cast_remaining = float(stats.Cast_sec)
 	for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):
 		enemy.apply_fear(float(stats.Duration_sec))
-	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+UI.FEAR_FLASH_SEC})
+	effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+UI.FEAR_FLASH_SEC,"fear":true})
+	if visuals_enabled:
+		var wave := preload("res://scripts/dragon_fear_fx.gd").new()
+		wave.settings = presentation
+		wave.radius = float(stats.Range)
+		wave.duration = float(stats.Cast_sec)
+		wave.z_index = 10
+		get_parent().add_child(wave)
+		wave.global_position = player.global_position
+		var head := preload("res://scripts/dragon_fear_fx.gd").new()
+		head.settings = presentation
+		head.duration = float(stats.Cast_sec)
+		head.head_only = true
+		head.head_texture = load("res://assets/art/fx/fx_dragon_head.png")
+		var host: Node2D = player.character_view if is_instance_valid(player.character_view) else player
+		host.add_child(head)
+		host.move_child(head,0)
+		head.global_position = player.global_position
+		if screen_fx!=null: screen_fx.kick(float(presentation.get("Fear_shake_px",5)),float(presentation.get("Fear_shake_sec",0.15)),float(presentation.get("Fear_flash_sec",0.15)))
 	queue_redraw()
 
 func _draw() -> void:
 	for effect in effects:
 		if not effect.has("lines"):
+			if effect.has("fear"): continue
 			UI.draw_ranges(self,[effect])
 			continue
 		for line in effect.lines:
-			draw_line(to_local(line[0]),to_local(line[1]),Color(presentation.Slash_outer_color),float(presentation.Slash_width),true)
-			draw_line(to_local(line[0]),to_local(line[1]),Color(presentation.Slash_core_color),float(presentation.Slash_core_width),true)
+			var a := to_local(line[0])
+			var b := to_local(line[1])
+			var middle := (a+b)*0.5
+			var normal := a.direction_to(b).orthogonal()
+			for style in [[float(presentation.Slash_width),Color(presentation.Slash_outer_color)],[float(presentation.Slash_core_width),Color(presentation.Slash_core_color)]]:
+				var side: Vector2 = normal*float(style[0])*0.5
+				draw_colored_polygon(PackedVector2Array([a,middle+side,b,middle-side]),style[1])
+		var age := clock-float(effect.get("at",clock))
+		var flash_sec := float(presentation.get("Slash_tick_flash_sec",0.05))
+		if age<flash_sec:
+			draw_circle(to_local(effect.center),float(presentation.get("Slash_tick_flash_px",18)),Color(1,1,1,float(presentation.get("Slash_tick_flash_alpha",0.8))*(1-age/flash_sec)))

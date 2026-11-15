@@ -187,7 +187,7 @@ func data_errors() -> void:
 	t.check(not preload("res://scripts/flow_data.gd").validate(store).is_empty(),"S9 missing locked notice rejected")
 	var output: Array = []
 	var log := "res://.local/godot_logs/s9-impl-01-error-"+str(Time.get_ticks_usec())+".log"
-	var code := OS.execute(OS.get_executable_path(),PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","tests/flow_error_probe.gd","--log-file",ProjectSettings.globalize_path(log)]),output,true)
+	var code := preload("res://tests/godot_probe_process.gd").execute(PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","tests/flow_error_probe.gd","--log-file",ProjectSettings.globalize_path(log)]),output,log)
 	var file := FileAccess.open("res://.local/s9-impl-01-error.out",FileAccess.WRITE)
 	file.store_string("\n".join(output))
 	file.close()

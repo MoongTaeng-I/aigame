@@ -289,6 +289,56 @@ flowchart TD
 
 난도는 기존 매 타의 현재 플레이어 중심·Range 안에 직선들을 표시한다. 시각 난수는 전투 RNG와 분리한다. 선 개수·두께·지속·색은 combat_presentation.csv Slash_* 값이다. 피해 횟수·시점·피해량·원형 범위·완료 시점은 그대로다. 구체적 선 수/두께는 직접 플레이 확인할 연출 값이다. 토스트 쌓기·정지 중 시간은 시스템8·10을 따른다.
 
+
+### ART-11 플레이어 스킬 포즈·표시
+
+플레이어 시트는1105×221·5열1행(칸221×221),앞·뒤·질주·난도·피어 순서다. player.csv의 Sprite_cols5,Sprite_cell_height110,Sprite_baseline202,Sprite_anchor_x101만 바꾸고 나머지는 유지한다. 용 머리는투명496×640이다. 두 이미지 모두 밉맵·선형 밉맵 표시다.
+
+포즈 우선순위는 fear_cast_remaining>0(5열) > dash_remaining>0(3열·돌진 방향 반전 고정) > 난도active(4열) > 기존 위 이동2열/그 외1열이다. 스킬 중 걷기 출렁임 대신 작은 흔들림,난도 빠른 좌우 기울기,피어 작은 상방 떠오름을 사용한다. 이동/판정/시전/쿨타임은 유지한다. 질주 잔상은 포즈·반전·그림 변형을 그대로 복제한다.
+
+기본 공격은 같은 판정 삼각형 안의 초승달 궤적(흰 중심·하늘빛)을 Hit_effect_sec 동안 감쇠하고 타격마다 그림만2px 내딛는다. 원래 삼각형 좌표·Timer 수명은 유지하며 삼각형 그림만 F3에서 표시한다. 난도는 기존 무작위 선 위치/개수를 유지하고 끝이 가늘고 가운데가 굵은 빛줄기로 바꾼다. 매 틱 중심 흰 번쩍임,마지막 틱에3px·0.08초 흔들림을 추가한다.
+
+피어는 Cast_sec 동안 머리가0.6→1.0 크기로 상승·나타남/소멸한다. 캐릭터 표시의 첫 자식으로 그려 플레이어 몸보다 뒤에 놓는다. 시작 순간 판정 중심에 고정한 보라 충격파는 동일 Range까지 퍼지고 붉은 할퀴기6개와 검은 박쥐20개를 그린다. 시작 보라 번쩍임0.15초와5px·0.15초 흔들림을 더한다. 은신은 알파0.45와 느린 보라 일렁임이다.
+
+흔들림은 후처리 화면 샘플만 이동한다. Camera2D·맵·플레이어 위치와 화면 좌표 역변환은 건드리지 않아 생성/대상 검색/판정에 영향을 주지 않는다. Shake_enabled0이면 화면 이동이 즉시0이며 보라 번쩍임은 유지한다. 모든 추가 수치는 연출 시작값이며 전투 CSV와 독립이다. 기존 Slash_width/Slash_core_width·Slash_outer_color/Slash_core_color와 선 생성 RNG 구조는 유지한다.
+
+| combat_presentation.csv Id | Value 예시 | 의미 |
+|---|---|---|
+| Shake_enabled | 1 | 0/1로 렌더링 흔들림 끔/켬 |
+| Shake_px | 3 | 난도 마지막 틱 흔들림 화면px |
+| Slash_shake_sec | 0.08 | 난도 흔들림 초 |
+| Fear_shake_px | 5 | 피어 시작 흔들림 화면px |
+| Fear_shake_sec | 0.15 | 피어 흔들림 초 |
+| Shake_hz | 38 | 흔들림 주기/초 |
+| Fear_head_px | 260 | 용 머리 최대 화면 높이px |
+| Fear_head_start_scale | 0.6 | 머리 시작 크기 비율 |
+| Fear_head_rise_px | 30 | 솟아오르는 화면px |
+| Fear_flash_sec | 0.15 | 시작 화면 보라 번쩍임 초 |
+| Fear_flash_alpha | 0.18 | 보라 번쩍임 최대알파 |
+| Fear_color | #a34dff | 충격파/화면/은신 보라색 |
+| Fear_claw_color | #e83948 | 할퀴기 색 |
+| Fear_claw_count | 6 | 방사형 할퀴기 수(시작값6,요청범위5~7) |
+| Fear_claw_sec | 0.12 | 할퀴기 초 |
+| Fear_claw_width | 3 | 할퀴기 굵기px |
+| Fear_bat_count | 20 | 박쥐 수 |
+| Fear_bat_px | 6 | 박쥐 크기px |
+| Slash_tick_flash_sec | 0.05 | 난도 타격 중심 흰 번쩍임 초 |
+| Slash_tick_flash_px | 18 | 타격 번쩍임 반경px |
+| Slash_tick_flash_alpha | 0.8 | 타격 번쩍임 알파 |
+| Basic_step_px | 2 | 기본 타격마다 그림 내딛기px |
+| Basic_step_sec | 0.1 | 내딛기 감쇠 초 |
+| Basic_core_width | 1.5 | 기본 베기 흰 중심 굵기px |
+| Basic_glow_width | 5 | 기본 베기 빛 굵기px |
+| Basic_core_color | #ffffff | 기본 베기 중심색 |
+| Basic_glow_color | #83d9ff | 기본 베기 빛색 |
+| Slash_pose_hz | 12 | 난도 포즈 기울기 주기/초 |
+| Slash_pose_tilt_deg | 5 | 난도 기울기 도 |
+| Fear_pose_float_px | 4 | 피어 포즈 떠오름px |
+| Skill_pose_sway_deg | 1 | 기타 스킬 포즈 작은 기울기 도 |
+| Stealth_alpha | 0.45 | 은신 표시 알파 |
+| Stealth_wave_hz | 0.6 | 은신 일렁임 주기/초 |
+| Stealth_wave_strength | 0.15 | 은신 보라 곱 색 비율 |
+
 ## 승인·변경 이력
 
 - 2026-11-09 사용자 승인. 상세 기획과 예외·누락 검토를 한 번에 진행했다.
@@ -307,3 +357,5 @@ flowchart TD
 - 2026-11-13 S8-IMPL-03: 바루카 지대 빙결 중 키 스킬·아이콘 강화 클릭을 차단하고 이미 발동한 효과는 유지한다.
 
 - 2026-11-13 S8-IMPL-03-B: 질주 순수 잔상·난도 청백색 교차 직선·실제 플레이어 스킬 성립 토스트를 반영했다. 피해·이동·사용 완료 시점 유지.
+
+- 2026-11-15 ART-11: 플레이어5포즈·기본 초승달/그림 내딛기·난도 빛줄기/타격 번쩍임·피어 머리/충격파/할퀴기/박쥐·은신 일렁임과 끌 수 있는 렌더링 흔들림을 추가한다. 기존 판정·피해·시점·쿨타임·이동은 유지한다. 직접 화면 확인 전이다.
