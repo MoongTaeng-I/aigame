@@ -17,6 +17,7 @@ var clock: float = 0.0
 var effects: Array = []
 var ui: Control
 var screen_fx: CanvasLayer
+var cartoon_fx: Node2D
 
 func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records: Dictionary, slash_levels: Dictionary, extra_levels: Dictionary = {}, stealth_rule: Dictionary = {}) -> void:
 	player = owner_player
@@ -51,6 +52,11 @@ func configure(owner_player: Node2D, enemy_manager: EnemyManager, skill_records:
 		skills[id] = cast
 
 func _ready() -> void:
+	z_index = 20
+	cartoon_fx = preload("res://scripts/skill_cartoon_fx.gd").new()
+	cartoon_fx.settings = presentation
+	cartoon_fx.visual_rng = visual_rng
+	add_child(cartoon_fx)
 	screen_fx = preload("res://scripts/skill_screen_fx.gd").new()
 	screen_fx.settings = presentation
 	add_child(screen_fx)
@@ -90,7 +96,9 @@ func _physics_process(delta: float) -> void:
 	clock += delta
 	for cast in skills.values():
 		cast.advance(clock)
+	if screen_fx!=null: screen_fx.set_slash_active(visuals_enabled and skills.skill_rapid_slash.active)
 	for index in range(effects.size()-1,-1,-1):
+		if effects[index].has("stars") and clock>=float(effects[index].at)+float(presentation.get("Slash_star_sec",0.12)): effects[index].stars.clear()
 		if clock>=float(effects[index].until):
 			effects.remove_at(index)
 	queue_redraw()
@@ -98,19 +106,36 @@ func _physics_process(delta: float) -> void:
 func _slash_tick(stats: Dictionary, at: float) -> void:
 	if player.is_dead or player.is_stealthed():
 		return
+	var star_candidates: Array = []
+	if visuals_enabled:
+		for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):
+			star_candidates.append({"enemy":enemy,"hp":enemy.hp,"position":enemy.global_position})
 	Area.damage_circle(player.global_position,float(stats.Range),int(stats.Damage),enemies.get_living_enemies())
 	if visuals_enabled:
 		var lines: Array = []
-		for index in range(int(presentation.Slash_count)):
-			var angle := visual_rng.randf()*TAU
-			var direction := Vector2.RIGHT.rotated(angle)
+		var widths: Array = []
+		for index in range(int(presentation.get("Slash_lines_per_tick",4))):
+			var direction := Vector2.RIGHT.rotated(visual_rng.randf()*TAU)
 			var offset := visual_rng.randf_range(-0.6,0.6)*float(stats.Range)
 			var center: Vector2 = player.global_position+direction.orthogonal()*offset
-			var half_length := sqrt(float(stats.Range)*float(stats.Range)-offset*offset)
+			var half_length := sqrt(float(stats.Range)*float(stats.Range)-offset*offset)*float(presentation.get("Slash_length_mult",1.5))
 			lines.append([center-direction*half_length,center+direction*half_length])
-		effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(presentation.Slash_sec),"at":at,"lines":lines})
-		if stats.has("Hits") and skills.skill_rapid_slash.hits_done+1>=int(stats.Hits) and screen_fx!=null:
-			screen_fx.kick(float(presentation.get("Shake_px",3)),float(presentation.get("Slash_shake_sec",0.08)))
+			widths.append(float(presentation.get("Slash_fx_width",9)))
+		var stars: Array = []
+		for candidate in star_candidates:
+			if is_instance_valid(candidate.enemy) and candidate.enemy.hp<int(candidate.hp) and stars.size()<int(presentation.get("Slash_star_max",4)):
+				stars.append(candidate.position)
+		var finishing: bool = stats.has("Hits") and skills.skill_rapid_slash.hits_done+1>=int(stats.Hits)
+		if finishing:
+			for angle in [PI/4,-PI/4]:
+				var half := Vector2.RIGHT.rotated(angle)*float(stats.Range)*float(presentation.get("Slash_length_mult",1.5))*float(presentation.get("Slash_finish_length_mult",1.8))
+				lines.append([player.global_position-half,player.global_position+half])
+				widths.append(float(presentation.get("Slash_finish_width",16)))
+			if screen_fx!=null:
+				screen_fx.kick(float(presentation.get("Shake_px",5)),float(presentation.get("Slash_shake_sec",0.08)))
+				screen_fx.flash_white(float(presentation.get("Slash_finish_flash",0.35)),float(presentation.get("Slash_finish_flash_sec",0.05)))
+		effects.append({"center":player.global_position,"radius":float(stats.Range),"until":at+float(presentation.get("Slash_life_sec",0.25)),"at":at,"lines":lines,"widths":widths,"stars":stars,"finishing":finishing})
+		if screen_fx!=null: screen_fx.set_slash_active(true)
 	queue_redraw()
 
 func icon_state(id: String) -> Dictionary:
@@ -128,6 +153,9 @@ func icon_state(id: String) -> Dictionary:
 
 func _dash_start(stats: Dictionary, _at: float) -> void:
 	player.begin_dash(float(stats.Distance),float(stats.Duration_sec))
+	if visuals_enabled:
+		if cartoon_fx!=null: cartoon_fx.start_dash(player,float(stats.Distance),player.dash_direction)
+		if screen_fx!=null: screen_fx.kick(float(presentation.get("Dash_shake_px",2)),float(presentation.get("Dash_shake_sec",0.06)))
 
 func _stealth_start(stats: Dictionary, at: float) -> void:
 	player.stealth_remaining = float(stats.Duration_sec)
@@ -144,6 +172,7 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 		wave.settings = presentation
 		wave.radius = float(stats.Range)
 		wave.duration = float(stats.Cast_sec)
+		wave.initialize(visual_rng)
 		wave.z_index = 10
 		get_parent().add_child(wave)
 		wave.global_position = player.global_position
@@ -156,24 +185,37 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 		host.add_child(head)
 		host.move_child(head,0)
 		head.global_position = player.global_position
-		if screen_fx!=null: screen_fx.kick(float(presentation.get("Fear_shake_px",5)),float(presentation.get("Fear_shake_sec",0.15)),float(presentation.get("Fear_flash_sec",0.15)))
+		if screen_fx!=null:
+			screen_fx.kick(float(presentation.get("Fear_shake_px",8)),float(presentation.get("Fear_shake_sec",0.25)),float(presentation.get("Fear_flash_sec",0.15)))
+			screen_fx.start_fear(float(stats.Cast_sec))
 	queue_redraw()
 
 func _draw() -> void:
+	var fx = preload("res://scripts/skill_cartoon_fx.gd")
+	var slash = skills.get("skill_rapid_slash")
+	if visuals_enabled and slash!=null and slash.active and not slash.snapshot.is_empty():
+		var segments := int(presentation.get("Slash_range_dashes",48))
+		for i in range(segments):
+			draw_arc(to_local(player.global_position),float(slash.snapshot.Range),TAU*i/segments,TAU*(i+0.5)/segments,4,Color(Color(String(presentation.get("Slash_range_color","#5ad4ff"))),float(presentation.get("Slash_range_alpha",0.35))),float(presentation.get("Slash_range_width",2)),true)
 	for effect in effects:
 		if not effect.has("lines"):
 			if effect.has("fear"): continue
 			UI.draw_ranges(self,[effect])
 			continue
-		for line in effect.lines:
+		var age := maxf(0,clock-float(effect.at))
+		var draw_sec := float(presentation.get("Slash_draw_sec",0.03))
+		var life := float(presentation.get("Slash_life_sec",0.25))
+		var hold := draw_sec+float(presentation.get("Slash_hold_sec",0.04))
+		var remaining := 1-clampf((age-hold)/maxf(life-hold,0.000001),0,1)
+		for i in range(effect.lines.size()):
+			var line: Array = effect.lines[i]
 			var a := to_local(line[0])
 			var b := to_local(line[1])
-			var middle := (a+b)*0.5
-			var normal := a.direction_to(b).orthogonal()
-			for style in [[float(presentation.Slash_width),Color(presentation.Slash_outer_color)],[float(presentation.Slash_core_width),Color(presentation.Slash_core_color)]]:
-				var side: Vector2 = normal*float(style[0])*0.5
-				draw_colored_polygon(PackedVector2Array([a,middle+side,b,middle-side]),style[1])
-		var age := clock-float(effect.get("at",clock))
+			b = a.lerp(b,clampf(age/maxf(draw_sec,0.000001),0,1))
+			fx.blade(self,a,b,float(effect.widths[i])*remaining,Color(Color(String(presentation.Slash_outer_color)),remaining),presentation,true,Color(String(presentation.get("Fx_outline_color","#16265a"))))
+		var star_sec := float(presentation.get("Slash_star_sec",0.12))
+		if age<star_sec:
+			for center in effect.stars: fx.star(self,to_local(center),float(presentation.get("Slash_star_px",12)),1-age/star_sec,presentation)
 		var flash_sec := float(presentation.get("Slash_tick_flash_sec",0.05))
 		if age<flash_sec:
 			draw_circle(to_local(effect.center),float(presentation.get("Slash_tick_flash_px",18)),Color(1,1,1,float(presentation.get("Slash_tick_flash_alpha",0.8))*(1-age/flash_sec)))

@@ -367,3 +367,92 @@ HUD는 위쪽 전체 폭 경험치 바·왼쪽 위 Lv N,기존 오른쪽 위 시
 - 2026-11-15 LOOK-01: 사용자 결정으로SD 설원 숲·눈보라 배경과 연출 키,부드러운 그림자·경험치 결정·정리된 HUD/F3 디버그를 적용한다. 기존 물리·전투·생성·획득 규칙은 유지한다. 직접 화면 확인 전이다.
 
 - 2026-11-15 ART-11: 플레이어5포즈·기본 초승달/그림 내딛기·난도 빛줄기/타격 번쩍임·피어 머리/충격파/할퀴기/박쥐·은신 일렁임과 끌 수 있는 렌더링 흔들림을 추가한다. 기존 판정·피해·시점·쿨타임·이동은 유지한다. 직접 화면 확인 전이다.
+
+## FX-02 카툰 스킬 연출 — combat_presentation.csv (2026-11-16)
+
+판정/피해/시점/범위/쿨타임/이동/전투 RNG는 유지한다. 시각 난수는 SkillManager.visual_rng만 사용한다. Slash_count·Slash_sec는 이전 이력용으로 남기고 현재 칼빛에는 새 키를 사용한다. Trail_* 공통값은 그림자/바루카에 유지하며 플레이어 간격/색만 Dash_*를 쓴다. Shake_enabled=0은 화면 오프셋만0으로 하며 다른 FX는 유지한다.
+
+| Id(키) | Value 예시 | 의미 |
+|---|---|---|
+| Fx_outline_color | #16265a | 공통: HTML 색 |
+| Fx_core_ratio | 0.4 | 공통: 흰 중심 폭 / 색 칼빛 폭 |
+| Slash_lines_per_tick | 4 | 난도: 매 타격 칼빛 수 |
+| Slash_life_sec | 0.25 | 난도: 칼빛 수명 초 |
+| Slash_length_mult | 1.5 | 난도: 원 안 현 길이의 표시 배수 |
+| Slash_fx_width | 9 | 난도: 칼빛 최대 폭 px |
+| Slash_outline_px | 4 | 난도: 남색 외곽 폭 px |
+| Slash_glow_mult | 2.6 | 난도: 바깥 빛 폭 / 칼빛 폭 |
+| Slash_glow_color | #5ad4ff | 난도: HTML 색 |
+| Slash_glow_alpha | 0.3 | 난도: 불투명도 |
+| Slash_draw_sec | 0.03 | 난도: 한 끝에서 등장하는 시간 초 |
+| Slash_hold_sec | 0.04 | 난도: 등장 후 유지 초; 이후 수명 끝까지 폭 감소 |
+| Slash_star_max | 4 | 난도: 실제 피해 적 중 별 표시 최대 수 |
+| Slash_star_sec | 0.12 | 난도: 시간/간격 초 |
+| Slash_star_px | 12 | 난도: 화면 px |
+| Slash_star_inner_ratio | 0.25 | 난도: 비율 |
+| Slash_dim_alpha | 0.12 | 난도: 활성 중 남색 화면 농도 |
+| Slash_dim_in_sec | 0.05 | 난도: 시간/간격 초 |
+| Slash_dim_out_sec | 0.15 | 난도: 시간/간격 초 |
+| Slash_range_dashes | 48 | 난도: 연출 조절값 |
+| Slash_range_width | 2 | 난도: 폭 px |
+| Slash_range_alpha | 0.35 | 난도: 불투명도 |
+| Slash_range_color | #5ad4ff | 난도: HTML 색 |
+| Slash_finish_width | 16 | 난도: 폭 px |
+| Slash_finish_length_mult | 1.8 | 난도: 표시 배수 |
+| Slash_finish_flash | 0.35 | 난도: 마지막 흰 화면 번쩍임 농도 |
+| Slash_finish_flash_sec | 0.05 | 난도: 시간/간격 초 |
+| Shake_px | 5 | 난도: 난도 마지막 흔들림 px; Shake_enabled와 별도 |
+| Dash_trail_interval_sec | 0.02 | 질주: 플레이어만 사용하는 잔상 간격 초 |
+| Dash_trail_color | #8a6bff | 질주: HTML 색 |
+| Dash_trail_back_alpha_ratio | 0.25 | 질주: 맨 뒤 잔상의 Trail_alpha 대비 상한 비율 |
+| Dash_speedline_count | 9 | 질주: 생성 개수 |
+| Dash_speedline_sec | 0.2 | 질주: 시간/간격 초 |
+| Dash_speedline_width | 3 | 질주: 폭 px |
+| Dash_speedline_spread_px | 32 | 질주: 화면 px |
+| Dash_line_min_ratio | 0.4 | 질주: 비율 |
+| Dash_line_max_ratio | 0.8 | 질주: 비율 |
+| Dash_stretch_x | 1.25 | 질주: 진행축 그림 배율 |
+| Dash_stretch_y | 0.9 | 질주: 진행축 수직 방향 그림 배율 |
+| Dash_land_sec | 0.08 | 질주: 착지 반대 눌림 복귀 초 |
+| Dash_start_puffs | 5 | 질주: 연출 조절값 |
+| Dash_end_puffs | 3 | 질주: 연출 조절값 |
+| Dash_puff_sec | 0.25 | 질주: 시간/간격 초 |
+| Dash_puff_spread_px | 14 | 질주: 화면 px |
+| Dash_puff_start_px | 3 | 질주: 화면 px |
+| Dash_puff_end_px | 12 | 질주: 화면 px |
+| Dash_puff_color | #dbe7ff | 질주: HTML 색 |
+| Dash_puff_core_ratio | 0.65 | 질주: 비율 |
+| Dash_shake_px | 2 | 질주: 화면 px |
+| Dash_shake_sec | 0.06 | 질주: 시간/간격 초 |
+| Fear_color | #e8283c | 피어: HTML 색 |
+| Fear_outline_color | #3c000f | 피어: HTML 색 |
+| Fear_wave_count | 3 | 피어: 생성 개수 |
+| Fear_wave_delay_sec | 0.08 | 피어: 시간/간격 초 |
+| Fear_wave_max_px | 900 | 피어: 표시 파장 최대 px; 판정 Range와 별개 |
+| Fear_wave_start_width | 22 | 피어: 폭 px |
+| Fear_wave_end_width | 4 | 피어: 폭 px |
+| Fear_wave_y_scale | 0.62 | 피어: 파장 원근 세로 배율 |
+| Fear_range_alpha | 0.18 | 피어: 불투명도 |
+| Fear_range_width | 6 | 피어: 실제 판정 Range 링 폭 px |
+| Fear_flash_alpha | 0.25 | 피어: 불투명도 |
+| Fear_flash_sec | 0.15 | 피어: 시간/간격 초 |
+| Fear_vignette_alpha | 0.6 | 피어: 불투명도 |
+| Fear_vignette_tail_sec | 0.6 | 피어: Cast_sec 뒤 비네트 꼬리 수명 초 |
+| Fear_vignette_width | 0.4 | 피어: 정규화 화면 반경 기준 가장자리 그라데이션 폭(px 아님) |
+| Fear_claw_count | 8 | 피어: 생성 개수 |
+| Fear_claw_width | 10 | 피어: 폭 px |
+| Fear_claw_color | #e8283c | 피어: HTML 색 |
+| Fear_claw_jitter | 0.1 | 피어: 방사 방향 시각 난수 편차 라디안 |
+| Fear_claw_start_ratio | 0.15 | 피어: 비율 |
+| Fear_claw_curve | 0.15 | 피어: 할퀴기 시작/끝 방향 차 라디안 |
+| Fear_bat_count | 40 | 피어: 생성 개수 |
+| Fear_bat_min_px | 8 | 피어: 화면 px |
+| Fear_bat_max_px | 14 | 피어: 화면 px |
+| Fear_bat_wing_min | 0.5 | 피어: 날갯짓 세로 배율 최솟값; 최댓값1 |
+| Fear_bat_hz | 12 | 피어: 초당 주기 |
+| Fear_bat_start_ratio | 0.8 | 피어: 박쥐 초기 반경 상한 / 실제 판정 Range |
+| Fear_bat_travel_px | 1100 | 피어: 화면 px |
+| Fear_bat_tail_sec | 0.6 | 피어: Cast_sec 뒤 박쥐 꼬리 수명 초 |
+| Fear_bat_eye_px | 1 | 피어: 화면 px |
+| Fear_shake_px | 8 | 피어: 화면 px |
+| Fear_shake_sec | 0.25 | 피어: 시간/간격 초 |

@@ -7,6 +7,8 @@ const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
 var presentation: Dictionary = Afterimage.presentation()
 var visuals_enabled := true
 var trail_elapsed := 0.0
+var dash_land_remaining := 0.0
+var dash_trails: Array = []
 signal leveled_up(new_level: int)
 signal damaged(world_position: Vector2)
 signal died
@@ -312,17 +314,23 @@ func _physics_process(delta: float) -> void:
         var slash_active: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
         sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
         apply_basic_pose()
+        if dash_pass_through and dash_remaining<=0: dash_land_remaining = float(presentation.get("Dash_land_sec",0.08))
+        elif not dash_pass_through: dash_land_remaining = maxf(0,dash_land_remaining-delta)
+        if fear_cast_remaining<=0: sprite_body.apply_dash_stretch(dash_direction,dash_pass_through,dash_land_remaining,presentation)
     if dash_pass_through and visuals_enabled:
         var at := trail_elapsed
         while at<=dash_step+0.000000001:
             var copy := Afterimage.new()
             var snapshot := {"kind":"player","radius":body_radius}
             if sprite_body!=null: snapshot["sprite_pose"] = sprite_body.pose_snapshot()
+            if snapshot.has("sprite_pose"): snapshot.sprite_pose.sprite_tint *= Color(String(presentation.get("Dash_trail_color","#8a6bff")))
             copy.configure(snapshot,float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
             get_parent().add_child(copy)
             copy.global_position = before.lerp(global_position,clampf(at/maxf(dash_step,0.000000001),0,1))
-            at+=float(presentation.Trail_interval_sec)
+            dash_trails.append(copy)
+            at+=float(presentation.get("Dash_trail_interval_sec",0.02))
         trail_elapsed = at-dash_step
+    update_dash_trail_alpha()
     _advance_boss_push(delta)
 
 var boss_push_direction := Vector2.ZERO
@@ -368,3 +376,11 @@ func apply_basic_pose() -> void:
     sprite_body.frame_column = clampi(int(presentation.get("Basic_pose_col",3)),0,sprite_body.columns-1)
     if basic_pose_direction.x!=0: sprite_body.flip_h = basic_pose_direction.x<0
     sprite_body.queue_redraw()
+
+func update_dash_trail_alpha() -> void:
+    for i in range(dash_trails.size()-1,-1,-1):
+        if not is_instance_valid(dash_trails[i]) or dash_trails[i].is_queued_for_deletion(): dash_trails.remove_at(i)
+    for i in range(dash_trails.size()):
+        var trail: Node2D = dash_trails[i]
+        trail.opacity = float(presentation.Trail_alpha)*lerpf(float(presentation.get("Dash_trail_back_alpha_ratio",0.25)),1,float(i)/maxi(1,dash_trails.size()-1))
+        trail.modulate.a = trail.opacity*maxf(0,1-trail.elapsed/trail.lifetime)

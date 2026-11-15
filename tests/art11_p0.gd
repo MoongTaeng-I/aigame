@@ -64,7 +64,7 @@ func run(t: SceneTree) -> void:
 	screen.settings.Shake_enabled = "1"
 	n.skills._fear_start({"Range":123.0,"Duration_sec":1.0,"Cast_sec":0.5},n.skills.clock)
 	var waves: Array = n.map.get_children().filter(func(node: Node) -> bool: return node.get_script()==preload("res://scripts/dragon_fear_fx.gd"))
-	t.check(waves.size()==1 and waves[0].radius==123 and waves[0].wave_radius(0.25)==61.5 and waves[0].wave_radius(0.5)==123,"ART-11 shockwave max radius is immutable cast Range")
+	t.check(waves.size()==1 and waves[0].radius==123 and waves[0].wave_radius(0.25)==450 and waves[0].wave_radius(0.5)==900,"FX-02 visual wave900 keeps actual cast Range123")
 	var heads: Array = n.player.character_view.get_children().filter(func(node: Node) -> bool: return node.get_script()==preload("res://scripts/dragon_fear_fx.gd"))
 	t.check(heads.size()==1 and heads[0].head_only and heads[0].get_index()<n.player.sprite_body.get_index(),"ART-11 dragon draws before player body")
 	n.player.stealth_remaining = 1

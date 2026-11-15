@@ -380,6 +380,18 @@ func image_transform() -> Transform2D:
 func step_transform() -> Transform2D:
 	return Transform2D(0,basic_step_direction*basic_step_px*basic_step_remaining/maxf(basic_step_sec,0.000001))
 
+func apply_dash_stretch(direction: Vector2, dashing: bool, landing: float, settings: Dictionary) -> void:
+	if not dashing and landing<=0: return
+	var stretch := Vector2(float(settings.get("Dash_stretch_x",1.25)),float(settings.get("Dash_stretch_y",0.9)))
+	if not dashing:
+		stretch = Vector2.ONE.lerp(Vector2(1/stretch.x,1/stretch.y),clampf(landing/maxf(float(settings.get("Dash_land_sec",0.08)),0.000001),0,1))
+	var rotation_axis := Transform2D(direction.angle(),Vector2.ZERO)
+	var deformation := rotation_axis*Transform2D(0,stretch,0,Vector2.ZERO)*rotation_axis.affine_inverse()
+	var pivot := Vector2(0,foot_y)
+	deformation.origin = pivot-deformation*pivot
+	motion_transform = deformation*motion_transform
+	queue_redraw()
+
 func trigger_basic_step(direction: Vector2, px: float, seconds: float) -> void:
 	basic_step_direction = direction.normalized()
 	basic_step_px = px
