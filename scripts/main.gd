@@ -137,6 +137,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 	var temporary_hud := preload("res://scripts/temporary_hud.gd").new()
 	temporary_hud.name = "TemporaryHud"
 	temporary_hud.configure(enemy_manager,shadows,skill_manager.ui)
+	temporary_hud.configure_look(map,player,[enemy_manager._count_label,player._hp_label,experience_manager._label])
 	map.add_child(temporary_hud)
 
 	if managed_flow:

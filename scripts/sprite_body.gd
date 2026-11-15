@@ -311,6 +311,12 @@ func image_transform() -> Transform2D:
 	return motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
 
 static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
+	var settings: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
+	var color := Color(String(settings.get("Shadow_color","#46506e")))
+	var alpha := float(settings.get("Shadow_alpha",0.45))
+	var layers := maxi(1,int(settings.get("Shadow_layers",8)))
+	color.a = 1.0-pow(1.0-alpha,1.0/layers)
 	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,size.y/size.x))
-	canvas.draw_circle(Vector2.ZERO,size.x*0.5,SHADOW_COLOR)
+	for i in range(layers):
+		canvas.draw_circle(Vector2.ZERO,size.x*0.5*(1.0-float(settings.get("Shadow_softness",0.35))*float(i)/maxi(1,layers-1)),color)
 	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)

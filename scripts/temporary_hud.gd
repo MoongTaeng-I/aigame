@@ -23,6 +23,20 @@ var root_control: Control
 var timer_label: Label
 var roster: HBoxContainer
 var entries: Array = []
+var xp_bar: ProgressBar
+var level_label: Label
+var debug_labels: Array = []
+var world_map: Node2D
+var player: Node2D
+var debug_visible := false
+
+func configure_look(map: Node2D, actor: Node2D, labels: Array) -> void:
+	world_map = map
+	player = actor
+	debug_labels = labels
+	for label in debug_labels: label.hide()
+	# Keep the optional enemy counter clear of Lv and the two-line XP debug label.
+	if not debug_labels.is_empty(): debug_labels[0].position.y = 140
 
 func configure(owner_manager: EnemyManager, shadow_manager: Node2D, skills: Control) -> void:
 	manager = owner_manager
@@ -35,6 +49,31 @@ func _ready() -> void:
 	add_child(root_control)
 	root_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if player!=null:
+		xp_bar = ProgressBar.new()
+		xp_bar.name = "TopExperienceBar"
+		xp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		xp_bar.show_percentage = false
+		root_control.add_child(xp_bar)
+		xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+		xp_bar.offset_bottom = 8
+		var background := StyleBoxFlat.new()
+		background.bg_color = Color("#182238")
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = Color(String(load("res://scripts/shadow_afterimage.gd").presentation().get("Xp_color","#a68cff")))
+		xp_bar.add_theme_stylebox_override("background",background)
+		xp_bar.add_theme_stylebox_override("fill",fill)
+		level_label = Label.new()
+		level_label.name = "PlayerLevel"
+		level_label.position = Vector2(20,16)
+		level_label.add_theme_color_override("font_color",Color("#182238"))
+		level_label.add_theme_font_size_override("font_size",22)
+		root_control.add_child(level_label)
+		var hp_bar := preload("res://scripts/player_hp_bar.gd").new()
+		hp_bar.name = "FootHpBar"
+		hp_bar.player = player
+		hp_bar.settings = load("res://scripts/shadow_afterimage.gd").presentation()
+		player.add_child(hp_bar)
 	timer_label = Label.new()
 	timer_label.name = "ElapsedTime"
 	root_control.add_child(timer_label)
@@ -66,6 +105,10 @@ func _process(_delta: float) -> void:
 
 func refresh() -> void:
 	if not is_instance_valid(manager) or not is_instance_valid(skill_ui): return
+	if player!=null:
+		xp_bar.max_value = maxi(1,player.get_xp_to_next())
+		xp_bar.value = player.experience
+		level_label.text = "Lv %d" % player.level
 	skill_ui.pivot_offset = skill_ui.size
 	skill_ui.scale = Vector2.ONE*COMBAT_UI_SCALE
 	timer_label.text = format_elapsed(manager._elapsed_seconds)
@@ -84,8 +127,9 @@ func rebuild_roster() -> void:
 		card.custom_minimum_size = ROSTER_CARD
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var style := StyleBoxFlat.new()
-		style.bg_color = BACKGROUND
-		style.border_color = BORDER
+		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
+		style.bg_color = Color(String(palette.get("Hud_background","#101d35dd")))
+		style.border_color = Color(String(palette.get("Hud_border","#ffffff")))
 		style.set_border_width_all(1)
 		card.add_theme_stylebox_override("panel",style)
 		roster.add_child(card)
@@ -114,3 +158,13 @@ func rebuild_roster() -> void:
 		card.add_child(label)
 		entries.append({"Id":record.Id,"name":label.text,"icon_path":path,"fallback":path.is_empty(),"icon":icon})
 	refresh()
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and (event.physical_keycode==KEY_F3 or event.keycode==KEY_F3):
+		toggle_debug()
+		get_viewport().set_input_as_handled()
+
+func toggle_debug() -> void:
+	debug_visible = not debug_visible
+	for label in debug_labels: label.visible = debug_visible
+	if world_map!=null: world_map.set_debug_visible(debug_visible)

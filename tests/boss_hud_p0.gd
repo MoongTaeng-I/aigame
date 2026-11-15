@@ -24,7 +24,7 @@ func run(tree: SceneTree) -> void:
 	await t.process_frame
 	hud.refresh()
 	t.check(hud.timer_label.anchor_left==1 and hud.timer_label.anchor_right==1 and hud.timer_label.horizontal_alignment==HORIZONTAL_ALIGNMENT_RIGHT,"S8-B timer anchored at top right")
-	t.check(manager._count_label.position==Vector2(20,16),"S8-B existing top-left enemy counter retained")
+	t.check(manager._count_label.position==Vector2(20,140),"S8-B existing top-left enemy counter retained")
 	t.check(d.toast_view.panel is PanelContainer and d.toast_view.panel.anchor_left==0.5 and d.toast_view.panel.anchor_right==0.5,"S8-B toast is top-center anchored panel")
 	var panel_style: StyleBoxFlat = d.toast_view.panel.get_theme_stylebox("panel")
 	t.check(panel_style.corner_radius_top_left>0 and panel_style.border_width_left>0 and panel_style.bg_color.a<1,"S8-B toast rounded dark translucent panel with border")

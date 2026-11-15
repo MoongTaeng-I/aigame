@@ -118,8 +118,9 @@ func _draw() -> void:
 	for index in range(manager.SkillData.IDS.size()):
 		var state: Dictionary = manager.icon_state(manager.SkillData.IDS[index])
 		var box := card_rect(index)
-		draw_rect(box,BG)
-		draw_rect(box,BORDER,false,BORDER_WIDTH)
+		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
+		draw_rect(box,Color(String(palette.get("Hud_background","#101d35dd"))))
+		draw_rect(box,Color(String(palette.get("Hud_border","#ffffff"))),false,BORDER_WIDTH)
 		draw_string(font,box.position+NAME_OFFSET,state.name,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,FONT_SIZE,INK)
 		draw_string(font,box.position+KEY_OFFSET,state.key,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,SMALL_FONT_SIZE,INK)
 

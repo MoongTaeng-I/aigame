@@ -49,8 +49,8 @@ func _ready() -> void:
 	panel.custom_minimum_size = PANEL_SIZE
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = BACKGROUND
-	style.border_color = BORDER
+	style.bg_color = Color(String(presentation.get("Hud_background","#101d35dd")))
+	style.border_color = Color(String(presentation.get("Hud_border","#ffffff")))
 	style.set_border_width_all(BORDER_WIDTH)
 	style.set_corner_radius_all(CORNER_RADIUS)
 	style.content_margin_left = CONTENT_MARGIN
