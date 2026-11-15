@@ -13,6 +13,8 @@ const CHARGER_MARK := Color("#b6fff4")
 const BELION_BODY := Color("#251334")
 const BELION_OUTLINE := Color("#bd66ff")
 const BELION_GLOW := Color(0.68,0.28,1.0,0.75)
+const BELION_CHAIN_WIDTH := 8.0
+const BELION_CHAIN_EDGE := Color(0.82,0.55,1.0,0.95)
 
 static func draw_circle_attack(canvas: Node2D, state: Dictionary) -> void:
 	var center := canvas.to_local(Vector2(state.center))
@@ -38,6 +40,18 @@ static func draw_belion_windup(canvas: CanvasItem, facing: Vector2, radius: floa
 	canvas.draw_arc(hand,radius*0.6,0,TAU,20,BELION_GLOW,2.0,true)
 
 static func draw_belion_chain(canvas: CanvasItem, state: Dictionary, segments: int) -> void:
+	if state.has("hand"):
+		var geometry := belion_chain_geometry(state,segments)
+		for diamond: PackedVector2Array in geometry.diamonds:
+			var local := PackedVector2Array()
+			for point in diamond: local.append(canvas.to_local(point))
+			var border := local.duplicate()
+			border.append(border[0])
+			canvas.draw_polyline(border,Color(0.68,0.28,1.0,0.22),6.0,true)
+			canvas.draw_colored_polygon(local,Color(0.32,0.1,0.5,0.95))
+			canvas.draw_polyline(border,BELION_CHAIN_EDGE,1.5,true)
+		return
+	# Image-free procedural Belion keeps its previous chain presentation.
 	segments = maxi(1,segments)
 	var direction: Vector2 = Vector2(state.direction).normalized()
 	var tangent := Vector2(-direction.y,direction.x)
@@ -50,6 +64,35 @@ static func draw_belion_chain(canvas: CanvasItem, state: Dictionary, segments: i
 		canvas.draw_line(previous,point,Color(0.42,0.16,0.65,0.8),4.0,true)
 		canvas.draw_circle(point,3.5,Color(0.78,0.42,1.0,0.95))
 		previous = point
+
+static func draw_belion_hand_windup(canvas: Node2D, hand: Vector2, radius: float) -> void:
+	var local := canvas.to_local(hand)
+	canvas.draw_circle(local,radius*0.6,Color(0.68,0.28,1.0,0.16))
+	canvas.draw_arc(local,radius*0.6,0,TAU,20,BELION_GLOW,2.0,true)
+
+static func belion_chain_geometry(state: Dictionary, segments: int) -> Dictionary:
+	segments = maxi(1,segments)
+	var hand: Vector2 = state.hand
+	var center: Vector2 = state.center
+	var tip := center+Vector2(state.direction)*float(state.range)
+	var foot: Vector2 = state.foot
+	var ground_hand := Vector2(hand.x,foot.y)
+	var height := hand.y-foot.y
+	var points := PackedVector2Array()
+	var diamonds: Array[PackedVector2Array] = []
+	for index in range(segments+1):
+		var fraction := float(index)/segments
+		# Ground projection follows the blade; elevation eases down to zero.
+		var point := ground_hand.lerp(tip,fraction)+Vector2(0,height*pow(1.0-fraction,2.0))
+		if index==0: point = hand
+		elif index==segments: point = tip
+		points.append(point)
+		if index>0:
+			var previous := points[index-1]
+			var middle := (previous+point)*0.5
+			var normal := previous.direction_to(point).orthogonal()*BELION_CHAIN_WIDTH*0.5
+			diamonds.append(PackedVector2Array([previous,middle+normal,point,middle-normal]))
+	return {"hand":hand,"tip":tip,"points":points,"diamonds":diamonds}
 
 # Shared gameplay geometry is supplied by the actor; only tessellation and
 # color interpolation belong here. World points also support moved canvases.

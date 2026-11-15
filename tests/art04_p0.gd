@@ -82,11 +82,11 @@ func run(t: SceneTree) -> void:
 	t.check(belion.sprite_body.frame_column==1,"ART-04 Belion first sweep half frame2")
 	belion.clock += 0.15
 	belion.update_sprite_visual(Vector2.ZERO,0)
-	t.check(belion.sprite_body.frame_column==2,"ART-04 Belion second sweep half frame3")
+	t.check(belion.sprite_body.frame_column==1,"S7-F4 Belion whole sweep holds frame2")
 	belion.cast_active = false
 	belion.sprite_hit_at = belion.clock
 	belion.update_sprite_visual(Vector2.ZERO,0)
-	t.check(belion.sprite_body.frame_column==3,"ART-04 Belion post sweep frame4")
+	t.check(belion.sprite_body.frame_column==2,"S7-F4 Belion immediate post sweep frame3")
 	# Validate dimensions without weakening any combat-data checks.
 	for file in ["player.csv","shadow.csv"]:
 		var id := "player_01" if file=="player.csv" else "belion"

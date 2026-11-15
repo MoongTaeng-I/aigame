@@ -326,7 +326,18 @@ func sweep_progress() -> float:
 
 func sweep_visual_state() -> Dictionary:
 	if not is_sweep() or not cast_active: return {}
-	return {"windup":clock-cast_started_at<float(attack.Windup_sec),"center":global_position,"direction":Vector2.RIGHT.rotated(sweep_current_angle),"range":float(attack.Range),"progress":sweep_progress(),"sign":sweep_sign}
+	var state := {"windup":clock-cast_started_at<float(attack.Windup_sec),"center":global_position,"direction":Vector2.RIGHT.rotated(sweep_current_angle),"range":float(attack.Range),"progress":sweep_progress(),"sign":sweep_sign}
+	if has_chain_hand():
+		state.hand = chain_hand_position()
+		state.foot = global_position+Vector2(0,float(config.Sprite_foot_y))
+	return state
+
+func has_chain_hand() -> bool:
+	return sprite_body!=null and not sprite_body.using_fallback and config.get("Chain_hand_x")!=null and config.get("Chain_hand_y")!=null
+
+func chain_hand_position() -> Vector2:
+	var foot := global_position+Vector2(0,float(config.Sprite_foot_y))
+	return foot+Vector2(float(config.Chain_hand_x)*(-1.0 if sprite_body.flip_h else 1.0),float(config.Chain_hand_y))
 
 func advance_fan_attack(living: Array) -> void:
 	var motion: Dictionary = motions[motion_index]
@@ -467,12 +478,17 @@ func update_sprite_visual(movement: Vector2, delta: float) -> void:
 		if cast_active:
 			var age := clock-cast_started_at
 			if age<float(attack.Windup_sec): sprite_body.set_attack_pose(facing,0)
-			elif sweep_progress()<0.5: sprite_body.set_attack_pose(facing,1)
-			else: sprite_body.set_attack_pose(facing,2)
+			else: sprite_body.set_attack_pose(facing,1)
 			return
-		if sprite_hit_at>-INF and clock-sprite_hit_at<=float(config.Attack_after_frame_sec)+0.000000001:
-			sprite_body.set_attack_pose(facing,3)
-			return
+		if sprite_hit_at>-INF:
+			var after := float(config.Attack_after_frame_sec)
+			var age := clock-sprite_hit_at
+			if age<after-0.000000001:
+				sprite_body.set_attack_pose(facing,2)
+				return
+			if age<after*2.0-0.000000001:
+				sprite_body.set_attack_pose(facing,3)
+				return
 		sprite_hit_at = -INF
 		sprite_body.advance_state_pose(movement,movement.length_squared()>0.000001,delta)
 		return
@@ -502,7 +518,9 @@ func _draw() -> void:
 	if is_sweep():
 		var sweep := sweep_visual_state()
 		if not sweep.is_empty():
-			if bool(sweep.windup): Visual.draw_belion_windup(self,facing,body_radius)
+			if bool(sweep.windup):
+				if sweep.has("hand"): Visual.draw_belion_hand_windup(self,sweep.hand,body_radius)
+				else: Visual.draw_belion_windup(self,facing,body_radius)
 			else: Visual.draw_belion_chain(self,sweep,int(float(presentation.Belion_chain_segments)))
 		draw_belion_effects()
 		return
