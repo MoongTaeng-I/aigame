@@ -56,6 +56,10 @@ static func register_schemas(store: CsvDataStore) -> void:
 	preload("res://scripts/boss_data.gd").register_schemas(store)
 
 static func validate(store: CsvDataStore) -> String:
+	if store.tables.has("combat_presentation.csv"):
+		var band := store.get_row("combat_presentation.csv","Flip_deadband")
+		if band.is_empty() or not String(band.Value).is_valid_float() or not is_finite(float(band.Value)) or float(band.Value)<0 or float(band.Value)>1:
+			return _field_error(store,"combat_presentation.csv","Flip_deadband","Value","Flip_deadband는0~1의 유한한 값이어야 합니다.")
 	# Partial synthetic combat fixtures need not include unrelated tables.
 	# Production load_all requires the registered CSV, even when it has no rows.
 	if store.tables.has("enemy_scaling.csv"):

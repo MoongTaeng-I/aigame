@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bn7i471gfwtpn"
-path="res://.godot/imported/bear_sheet.png-d635fe4d8cfd78206a8d5712ba75dc97.ctex"
+uid="uid://donw1pdqwcjtc"
+path="res://.godot/imported/bear_walk6_sheet.png-e5cff5bb1b92469521e371597b7c08fc.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/art/enemy/bear_sheet.png"
-dest_files=["res://.godot/imported/bear_sheet.png-d635fe4d8cfd78206a8d5712ba75dc97.ctex"]
+source_file="res://assets/art/enemy/bear_walk6_sheet.png"
+dest_files=["res://.godot/imported/bear_walk6_sheet.png-e5cff5bb1b92469521e371597b7c08fc.ctex"]
 
 [params]
 

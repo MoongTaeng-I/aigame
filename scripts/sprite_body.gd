@@ -13,6 +13,7 @@ var cell_height := 0.0
 var baseline := 0.0
 var anchor_x: Variant = null
 var sprite_tint := Color.WHITE
+var flip_deadband := 0.3
 var foot_y := 0.0
 var animation_fps := 1.0
 var idle_fps := 1.0
@@ -32,6 +33,8 @@ var _pose_moving := false
 var _using_idle := false
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
+	var presentation: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
+	flip_deadband = float(presentation.Flip_deadband)
 	idle_texture = null
 	_using_idle = false
 	_animation_elapsed = 0.0
@@ -83,6 +86,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	queue_redraw()
 
 func configure_snapshot(snapshot: Dictionary) -> void:
+	flip_deadband = float(snapshot.get("flip_deadband",0.3))
 	anchor_x = snapshot.get("anchor_x")
 	sprite_tint = snapshot.get("sprite_tint",Color.WHITE)
 	shadow_size = snapshot.get("shadow_size",SHADOW_SIZE)
@@ -112,6 +116,7 @@ func pose_snapshot() -> Dictionary:
 		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
 		"anchor_x":anchor_x,"sprite_tint":sprite_tint,
+		"flip_deadband":flip_deadband,
 		"idle_fps":idle_fps,"attack_after_frame_sec":attack_after_frame_sec,
 		"frame_row":frame_row,"frame_column":frame_column,"flip_h":flip_h,
 		"using_fallback":using_fallback,"fallback_radius":fallback_radius,
@@ -123,7 +128,7 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	if direction!=Vector2.ZERO:
 		if absf(direction.x)>absf(direction.y):
 			frame_row = 2
-			flip_h = direction.x<0.0
+			update_movement_flip(direction)
 		else:
 			frame_row = 0 if direction.y>0.0 else 1
 			flip_h = false
@@ -145,8 +150,7 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	queue_redraw()
 
 func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
-	if direction.x<0.0: flip_h = true
-	elif direction.x>0.0: flip_h = false
+	update_movement_flip(direction)
 	var next_row := 1 if moving else 0
 	if _animation_row!=next_row:
 		_animation_row = next_row
@@ -168,12 +172,16 @@ func set_attack_pose(direction: Vector2, column: int) -> void:
 
 func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_facing: bool = false) -> void:
 	if not keep_facing:
-		if direction.x<0.0: flip_h = true
-		elif direction.x>0.0: flip_h = false
+		update_movement_flip(direction)
 	frame_row = 0
 	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
 	frame_column = floori(_animation_elapsed*animation_fps)%maxi(columns,1) if moving else 0
 	queue_redraw()
+
+func update_movement_flip(direction: Vector2) -> void:
+	var normalized := direction.normalized()
+	if absf(normalized.x)>flip_deadband:
+		flip_h = normalized.x<0.0
 
 func source_rect() -> Rect2:
 	var shown := current_texture()

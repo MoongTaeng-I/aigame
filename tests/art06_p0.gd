@@ -45,13 +45,13 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	await t.physics_frame
 	await t.physics_frame
 	var image: Node2D = a.sprite_body
-	t.check(image!=null and image.texture.get_size()==Vector2(2076,455) and image.source_rect().size==Vector2(519,455),"ART-06 bear2076x455 cells519x455")
+	t.check(image!=null and image.texture.get_size()==Vector2(1848,301) and image.source_rect().size==Vector2(308,301),"ART-07 bear1848x301 cells308x301")
 	t.check(image.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and image.texture.get_image().has_mipmaps(),"ART-06 bear transparency and mipmaps")
 	t.check(image.texture==b.sprite_body.texture,"ART-06 bear actors share one cached texture")
-	t.check(image.layout=="walk1" and image.anchor_x==277 and image.cell_height==99 and image.shadow_size==Vector2(60,20),"ART-06 bear walk1 dimensions anchor ground ellipse")
+	t.check(image.layout=="walk1" and image.anchor_x==154 and image.cell_height==72 and image.shadow_size==Vector2(48,16),"ART-07 bear walk1 dimensions anchor ground ellipse")
 	t.check(a.enemy_id=="enemy_01" and a.body_radius==16 and a.move_speed==120 and a.contact_damage==5 and a.push_weight==1 and a.max_hp==30,"ART-06 bear preserves identity and physical/combat values")
-	a.update_actor(1.0/9,Vector2(400,0),n.map.get_map_rect())
-	t.check(image.frame_row==0 and image.frame_column==1 and not image.flip_h,"ART-06 walk1 advances9fps right-facing")
+	a.update_actor(1.0/13,Vector2(400,0),n.map.get_map_rect())
+	t.check(image.frame_row==0 and image.frame_column==1 and not image.flip_h,"ART-07 walk1 advances13fps right-facing")
 	a.update_walk_visual(a.global_position+Vector2(-100,0),true,0,false)
 	t.check(image.flip_h,"ART-06 player left flips bear")
 	a.update_walk_visual(a.global_position+Vector2(0,100),true,0,false)
@@ -90,7 +90,7 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	row.Sprite_tint = "#d0d8f0"
 	row.Sprite_anchor_x = -1
 	t.check(preload("res://scripts/combat_data.gd").validate(store).contains("Sprite_anchor_x"),"ART-06 invalid enemy anchor rejected")
-	row.Sprite_anchor_x = 277
+	row.Sprite_anchor_x = 154
 	main.queue_free()
 	await t.process_frame
 	await t.process_frame

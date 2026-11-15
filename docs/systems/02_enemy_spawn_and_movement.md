@@ -219,20 +219,20 @@ ART-06은 일반 근접 `enemy_01`만 아이스 베어 이미지로 표시한다
 
 | 열 | 설명 | 예시(enemy_01) | 자료형 | 단위 | 허용값·빈칸 | 잘못된 값 |
 |---|---|---|---|---|---|---|
-| Sprite_path | 투명 걷기 시트 | res://assets/art/enemy/bear_sheet.png | Optional Path | 없음 | 빈칸은 도형; 사용 시 Texture2D 존재 | 데이터 오류 |
+| Sprite_path | 투명 걷기 시트 | res://assets/art/enemy/bear_walk6_sheet.png | Optional Path | 없음 | 빈칸은 도형; 사용 시 Texture2D 존재 | 데이터 오류 |
 | Sprite_layout | 시트 배치 | walk1 | Optional String | 없음 | 이미지 사용 시 walk1 | 데이터 오류 |
-| Sprite_cols | 가로 칸 수 | 4 | Optional Int | 칸 | 이미지 사용 시 양수 | 데이터 오류 |
+| Sprite_cols | 가로 칸 수 | 6 | Optional Int | 칸 | 이미지 사용 시 양수 | 데이터 오류 |
 | Sprite_rows | 세로 칸 수 | 1 | Optional Int | 칸 | 이미지 사용 시1 | 데이터 오류 |
-| Sprite_cell_height | 표시 높이 | 99 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
-| Sprite_baseline | 발 기준선 | 443 | Optional Float | 원본 px | 이미지 사용 시 유한 비음수 | 데이터 오류 |
-| Sprite_anchor_x | 몸 중심 가로 기준점 | 277 | Optional Float | 원본 px | 유한 비음수; 빈칸은 칸 가운데 | 데이터 오류 |
+| Sprite_cell_height | 표시 높이 | 72 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
+| Sprite_baseline | 발 기준선 | 289 | Optional Float | 원본 px | 이미지 사용 시 유한 비음수 | 데이터 오류 |
+| Sprite_anchor_x | 몸 중심 가로 기준점 | 154 | Optional Float | 원본 px | 유한 비음수; 빈칸은 칸 가운데 | 데이터 오류 |
 | Sprite_foot_y | 발 위치 | 8 | Optional Float | 화면 px | 이미지 사용 시 유한 좌표 | 데이터 오류 |
-| Anim_fps | 이동 칸 반복 속도 | 9 | Optional Float | 칸/초 | 이미지 사용 시 유한 양수 | 데이터 오류 |
-| Shadow_w | 발밑 타원 전체 너비 | 60 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
-| Shadow_h | 발밑 타원 전체 높이 | 20 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
+| Anim_fps | 이동 칸 반복 속도 | 13 | Optional Float | 칸/초 | 이미지 사용 시 유한 양수 | 데이터 오류 |
+| Shadow_w | 발밑 타원 전체 너비 | 48 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
+| Shadow_h | 발밑 타원 전체 높이 | 16 | Optional Float | 화면 px | 이미지 사용 시 유한 양수 | 데이터 오류 |
 | Sprite_tint | 그림 전용 곱 색 | #d0d8f0 | Optional String | HTML 색 | 빈칸은 흰색 | 데이터 오류 |
 
-걷는 중9fps 반복, 공포 정지는 첫 칸, 넉백 중 반전 방향은 유지한다. 그림에만 기본 tint를 곱하고 공포 중에는 기존 공포 색과50% 섞는다. 사망 modulate.a와 충돌 제거는 기존 흐름이다. 풀 활성화마다 행 값을 다시 적용하고 같은 리소스 캐시를 공유한다.
+걷는 중13fps로6칸 반복, 공포 정지는 첫 칸, 넉백 중 반전 방향은 유지한다. 그림에만 기본 tint를 곱하고 공포 중에는 기존 공포 색과50% 섞는다. 사망 modulate.a와 충돌 제거는 기존 흐름이다. 풀 활성화마다 행 값을 다시 적용하고 같은 리소스 캐시를 공유한다.
 
 ### spawn.csv
 
@@ -299,3 +299,5 @@ enemy.csv의 수치는 기본값으로 보존한다. 실제 생성 시 시간 �
 - 2026-11-14 S8-IMPL-04: 기존 양끝 포함 생성 규칙을 보존하며 근접 생성 행을2/3/4/5마리로 나누고 종료를59.999999/119.999999/179.999999로 조정해 경계 중복을 방지한다. 임시 원거리 행·상한·중단/재개 규칙은 유지한다.
 - 2026-11-14 BAL-01: 사용자 플레이에서 약4분20초의 적200마리 상태는 진행이 어려울 정도의 렉이 있었고120에서는 사라져, 동시 생존 상한을120으로 확정한다. 성능 최적화 코드와 다른 생성 수치는 바꾸지 않는다.
 - 2026-11-15 ART-06: 일반 근접 enemy_01의 표시명을 아이스 베어로 바꾸고2076×455 walk1 시트를 연결한다. 높이99·기준선443·가로277·발8·9fps·타원60×20·tint #d0d8f0, 공포 첫 칸/50% 색 혼합과 풀 재설정을 적용한다. 기존 전투·속도·생성·다른 행 도형은 유지한다. 직접 플레이 확인 전이다.
+
+- 2026-11-15 ART-07: 아이스 베어를1848×301·6×1(칸308×301) 시트로 교체. 높이72·발 기준선289·가로154·13fps·타원48×16. Flip_deadband는 combat_presentation.csv의0.3이며 정규화 방향의 |x|가 이를 초과할 때만 이동 반전을 변경한다. 넉백·공격 방향 고정과 전투·생성 규칙은 유지한다. 직접 플레이 확인 전이다.

@@ -16,3 +16,4 @@ Loading_sec,1.5
 Belion_chain_segments,12
 Belion_trail_sec,0.15
 Belion_chain_width,24
+Flip_deadband,0.3
