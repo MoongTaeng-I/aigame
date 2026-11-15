@@ -7,6 +7,10 @@ const GRID_STEP := 128
 const WALL_THICKNESS := 32.0
 
 func _ready() -> void:
+    var bodies := Node2D.new()
+    bodies.name = "CharacterBodies"
+    bodies.y_sort_enabled = true
+    add_child(bodies)
     _create_boundaries()
     queue_redraw()
 

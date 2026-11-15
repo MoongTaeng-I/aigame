@@ -218,7 +218,10 @@ func draw() -> void:
 	if now()<push_effect_until:
 		boss.draw_arc(boss.to_local(push_effect_center),float(rows[4].Use_range),0,TAU,48,PUSH_COLOR,2)
 	if hidden: return
-	boss.draw_circle(Vector2.ZERO,boss.body_radius,BODY_COLOR)
-	var bow_scale := PREP_BOW_SCALE if burst and now()<burst_first else 1.3
-	boss.draw_arc(Vector2.ZERO,boss.body_radius*bow_scale,-PI/2,PI/2,24,BOW_COLOR,2)
 	boss.draw_line(Vector2(-boss.body_radius,-boss.body_radius-8),Vector2(-boss.body_radius+boss.body_radius*2*float(boss.hp)/maxi(boss.max_hp,1),-boss.body_radius-8),Color("#ff6d6d"),4)
+
+func draw_body(canvas: Node2D) -> void:
+	if hidden: return
+	canvas.draw_circle(Vector2.ZERO,boss.body_radius,BODY_COLOR)
+	var bow_scale := PREP_BOW_SCALE if burst and now()<burst_first else 1.3
+	canvas.draw_arc(Vector2.ZERO,boss.body_radius*bow_scale,-PI/2,PI/2,24,BOW_COLOR,2)

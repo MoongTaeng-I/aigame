@@ -38,6 +38,7 @@ var dash_end_reason: String = "distance"
 var dash_hits: Dictionary = {}
 var dash_through_active: bool = false
 var sprite_body: Node2D
+var character_view: Node2D
 var sprite_hit_at := -INF
 var sweep_forward := true
 var sweep_sign := 1.0
@@ -47,6 +48,9 @@ var sweep_hits: Dictionary = {}
 var sweep_trail: Array = []
 var sweep_particles: Array = []
 var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+
+func _ready() -> void:
+	character_view = preload("res://scripts/character_presentation.gd").attach(self)
 
 func configure(owner_manager: Node2D, record: Dictionary, attack_record: Dictionary, motion_records: Array) -> void:
 	manager = owner_manager
@@ -61,6 +65,7 @@ func configure(owner_manager: Node2D, record: Dictionary, attack_record: Diction
 		sprite_body.name = "SpriteBody"
 		add_child(sprite_body)
 		sprite_body.configure(config,body_radius,Color("#151025"),Color("#9771dc"))
+		if is_instance_valid(character_view): sprite_body.reparent(character_view,false)
 	random.randomize()
 
 func apply_damage(_amount: int) -> bool:
@@ -493,10 +498,8 @@ func _draw() -> void:
 	if is_dash_through():
 		var circle := dash_visual_state()
 		if not circle.is_empty(): Visual.draw_circle_attack(self,circle)
-		Visual.draw_charger_pose(self,body_radius,facing)
 		return
 	if is_sweep():
-		if sprite_body==null: Visual.draw_belion_pose(self,body_radius,facing)
 		var sweep := sweep_visual_state()
 		if not sweep.is_empty():
 			if bool(sweep.windup): Visual.draw_belion_windup(self,facing,body_radius)
@@ -505,9 +508,18 @@ func _draw() -> void:
 		return
 	var sector := attack_visual_state()
 	if not sector.is_empty(): Visual.draw_sector(self,sector)
+
+func draw_body(canvas: Node2D) -> void:
 	if sprite_body==null:
-		var pose := snapshot()
-		Visual.draw_pose(self,body_radius,facing,int(pose.motion),float(pose.phase))
+		var size := Vector2(float(config.Shadow_w) if config.get("Shadow_w")!=null else 32.0,float(config.Shadow_h) if config.get("Shadow_h")!=null else 12.0)
+		SpriteBodyScript.draw_ground_shadow(canvas,size)
+		if is_dash_through():
+			Visual.draw_charger_pose(canvas,body_radius,facing)
+		elif is_sweep():
+			Visual.draw_belion_pose(canvas,body_radius,facing)
+		else:
+			var pose := snapshot()
+			Visual.draw_pose(canvas,body_radius,facing,int(pose.motion),float(pose.phase))
 
 func add_sweep_trail_tip() -> void:
 	var point := global_position+Vector2.RIGHT.rotated(sweep_current_angle)*float(attack.Range)

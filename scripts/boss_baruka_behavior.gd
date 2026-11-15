@@ -261,7 +261,6 @@ func geometry() -> Dictionary:
 
 func draw() -> void:
 	for zone in zones: boss.draw_circle(boss.to_local(zone.center),float(zone.radius),ICE)
-	Visual.draw_pose(boss,boss.body_radius,boss.facing,-1,0)
 	boss.draw_line(Vector2(-boss.body_radius,-boss.body_radius-8),Vector2(-boss.body_radius+boss.body_radius*2*float(boss.hp)/maxi(boss.max_hp,1),-boss.body_radius-8),Color("#ff6d6d"),4)
 	if boss.current.is_empty(): return
 	var kind: int = int(boss.current.Kind)

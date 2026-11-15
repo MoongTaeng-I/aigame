@@ -10,6 +10,7 @@ const OUTLINE_COLOR := Color("#ffe4df")
 enum AttackRangeType { MELEE, RANGED }
 
 var enemy_id: String = ""
+var character_view: Node2D
 var move_speed: float = 0.0
 var attack_range_type: AttackRangeType = AttackRangeType.MELEE
 var body_radius: float = 16.0
@@ -189,11 +190,12 @@ func move_toward_player(player_position: Vector2, delta: float) -> void:
 		move_and_collide(direction * move_speed * delta)
 
 func _ready() -> void:
+	character_view = preload("res://scripts/character_presentation.gd").attach(self)
 	collision_shape.shape = collision_shape.shape.duplicate()
 	(collision_shape.shape as CircleShape2D).radius = body_radius
 	collision_shape.disabled = not is_active
 	queue_redraw()
 
-func _draw() -> void:
-	draw_circle(Vector2.ZERO, body_radius, SkillUI.FEAR_COLOR if is_feared() else ENEMY_COLOR)
-	draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, OUTLINE_COLOR, 2.0)
+func draw_body(canvas: Node2D) -> void:
+	canvas.draw_circle(Vector2.ZERO, body_radius, SkillUI.FEAR_COLOR if is_feared() else ENEMY_COLOR)
+	canvas.draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, OUTLINE_COLOR, 2.0)

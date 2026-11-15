@@ -20,6 +20,7 @@ var frame_column := 0
 var flip_h := false
 var using_fallback := true
 var show_shadow := true
+var shadow_size := SHADOW_SIZE
 var fallback_radius := 18.0
 var fallback_color := Color("#b18cff")
 var fallback_outline := Color("#eee6ff")
@@ -29,6 +30,7 @@ var _pose_moving := false
 var _using_idle := false
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
+	shadow_size = Vector2(float(record.Shadow_w) if record.get("Shadow_w")!=null else SHADOW_SIZE.x,float(record.Shadow_h) if record.get("Shadow_h")!=null else SHADOW_SIZE.y)
 	fallback_radius = radius
 	fallback_color = color
 	fallback_outline = outline
@@ -69,6 +71,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	queue_redraw()
 
 func configure_snapshot(snapshot: Dictionary) -> void:
+	shadow_size = snapshot.get("shadow_size",SHADOW_SIZE)
 	texture = snapshot.get("texture") as Texture2D
 	layout = String(snapshot.get("layout","dir3"))
 	columns = int(snapshot.get("columns",1))
@@ -97,6 +100,7 @@ func pose_snapshot() -> Dictionary:
 		"idle_fps":idle_fps,"attack_after_frame_sec":attack_after_frame_sec,
 		"frame_row":frame_row,"frame_column":frame_column,"flip_h":flip_h,
 		"using_fallback":using_fallback,"fallback_radius":fallback_radius,
+		"shadow_size":shadow_size,
 		"fallback_color":fallback_color,"fallback_outline":fallback_outline,"show_shadow":false,
 	}
 
@@ -174,14 +178,11 @@ func _use_fallback(message: String) -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if show_shadow: draw_ground_shadow(self,shadow_size)
 	if using_fallback or texture==null:
 		draw_circle(Vector2.ZERO,fallback_radius,fallback_color)
 		draw_arc(Vector2.ZERO,fallback_radius,0.0,TAU,48,fallback_outline,2.0)
 		return
-	if show_shadow:
-		draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,SHADOW_SIZE.y/SHADOW_SIZE.x))
-		draw_circle(Vector2.ZERO,SHADOW_SIZE.x*0.5,SHADOW_COLOR)
-		draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
 	var destination := display_rect()
 	if flip_h:
 		draw_set_transform(Vector2.ZERO,0.0,Vector2(-1.0,1.0))
@@ -189,3 +190,8 @@ func _draw() -> void:
 	draw_texture_rect_region(current_texture(),destination,source_rect(),Color.WHITE,false,true)
 	if flip_h:
 		draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+
+static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
+	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,size.y/size.x))
+	canvas.draw_circle(Vector2.ZERO,size.x*0.5,SHADOW_COLOR)
+	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)

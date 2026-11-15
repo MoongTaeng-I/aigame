@@ -28,6 +28,7 @@ var stealth_remaining: float = 0.0
 var fear_cast_remaining: float = 0.0
 var freeze_remaining: float = 0.0
 var sprite_body: Node2D
+var character_view: Node2D
 
 func is_frozen() -> bool:
     return freeze_remaining > 0.000000001
@@ -73,9 +74,11 @@ func configure_visual(record: Dictionary) -> void:
     sprite_body.name = "SpriteBody"
     add_child(sprite_body)
     sprite_body.configure(record,body_radius,PLAYER_COLOR,Color("#eee6ff"))
+    if is_instance_valid(character_view): sprite_body.reparent(character_view,false)
     queue_redraw()
 
 func _ready() -> void:
+    character_view = preload("res://scripts/character_presentation.gd").attach(self)
     _create_hud()
     queue_redraw()
 
@@ -315,7 +318,7 @@ func _advance_boss_push(delta: float) -> void:
         boss_push_elapsed = boss_push_duration
     else: boss_push_elapsed = end_time
 
-func _draw() -> void:
+func draw_body(canvas: Node2D) -> void:
     if sprite_body==null:
-        draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
-        draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)
+        canvas.draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
+        canvas.draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)

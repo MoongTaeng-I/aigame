@@ -196,8 +196,6 @@ func _draw() -> void:
 	if elf!=null:
 		elf.draw()
 		return
-	draw_circle(Vector2.ZERO,body_radius,Color("#c5edff"))
-	draw_arc(Vector2.ZERO,body_radius,0,TAU,48,Color.WHITE,2)
 	# Reuse the existing enemy hp/max_hp state; temporary compact health bar.
 	draw_line(Vector2(-body_radius,-body_radius-8),Vector2(-body_radius+body_radius*2*float(hp)/maxi(max_hp,1),-body_radius-8),Color("#ff6d6d"),4)
 	if current.is_empty(): return
@@ -217,3 +215,12 @@ func _draw() -> void:
 			var angle := facing.angle()-deg_to_rad(float(current.Arc_deg))*0.5+deg_to_rad(float(current.Arc_deg))*i/32
 			polygon.append(center+Vector2.RIGHT.rotated(angle)*float(current.Range))
 		draw_colored_polygon(polygon,color)
+
+func draw_body(canvas: Node2D) -> void:
+	if baruka!=null:
+		preload("res://scripts/shadow_visual.gd").draw_pose(canvas,body_radius,facing,-1,0)
+	elif elf!=null:
+		elf.draw_body(canvas)
+	else:
+		canvas.draw_circle(Vector2.ZERO,body_radius,Color("#c5edff"))
+		canvas.draw_arc(Vector2.ZERO,body_radius,0,TAU,48,Color.WHITE,2)

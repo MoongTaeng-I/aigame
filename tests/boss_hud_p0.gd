@@ -73,7 +73,7 @@ func run(tree: SceneTree) -> void:
 	t.check(ShadowData.validate(store).contains("Icon"),"S8-B non-image resource Icon rejected")
 	var csv_text := FileAccess.get_file_as_string("res://data/shadow.csv")
 	var bad_store: CsvDataStore = t._store()
-	t.check(bad_store.load_text("shadow.csv",csv_text.replace(",이그리트,\n",",이그리트,not-a-resource-path\n")).contains("Icon"),"S8-B malformed Path rejected by common converter")
+	t.check(bad_store.load_text("shadow.csv",csv_text.replace(",이그리트,",",이그리트,not-a-resource-path")).contains("Icon"),"S8-B malformed Path rejected by common converter")
 	await changed_boss_values(manager,d,store)
 	manager._elapsed_seconds = 599
 	hud.refresh()

@@ -9,6 +9,8 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":{"type":"Optional","inner":"Float"}})
 	store.schemas["shadow.csv"]["Name_ko"] = "String"
 	store.schemas["shadow.csv"]["Icon"] = {"type":"Optional","inner":"Path"}
+	for column in ["Shadow_w","Shadow_h"]:
+		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 
 static func validate(store: CsvDataStore) -> String:
 	var attacks := store.get_table("shadow_attack.csv")
@@ -17,6 +19,8 @@ static func validate(store: CsvDataStore) -> String:
 		return error(store,"shadow.csv","igrit","Id","이그리트 행이 필요합니다.")
 	for id in store.get_table("shadow.csv"):
 		var row := store.get_row("shadow.csv",id)
+		for column in ["Shadow_w","Shadow_h"]:
+			if row.get(column)!=null and (not is_finite(float(row[column])) or float(row[column])<=0): return error(store,"shadow.csv",id,column,"유한한 양수여야 합니다.")
 		var sprite_columns := ["Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_foot_y","Anim_fps","Idle_fps","Attack_after_frame_sec"]
 		if row.Sprite_path==null:
 			for column in sprite_columns:

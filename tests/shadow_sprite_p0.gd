@@ -38,7 +38,7 @@ func run(tree: SceneTree) -> void:
 	var rect: Rect2 = igris.sprite_body.display_rect()
 	var source: Rect2 = igris.sprite_body.source_rect()
 	var baseline_y := rect.position.y+float(igris.config.Sprite_baseline)*(rect.size.y/source.size.y)
-	t.check(absf(rect.size.y-112.0)<=1.0 and is_equal_approx(baseline_y,float(igris.config.Sprite_foot_y)),"ART-02 Igris display height112 and baseline meets foot offset")
+	t.check(absf(rect.size.y-211.0)<=1.0 and is_equal_approx(baseline_y,float(igris.config.Sprite_foot_y)),"ART-04 Igris display height211 and baseline meets foot offset")
 	igris.global_position = Vector2.ZERO
 	igris.motion_picker = func(_size: int) -> int: return 0
 	var enemy = t._spawn(f,Vector2(100,0),100)

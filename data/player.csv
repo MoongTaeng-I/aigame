@@ -1,2 +1,2 @@
-﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Sprite_path,Idle_sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Note,Max_hp,Pickup_radius
-player_01,플레이어,250,16,3,res://assets/art/player/player_move_sheet.png,res://assets/art/player/player_idle_sheet.png,dir3,4,3,87,368,8,12,6,A단계 검증용 시작값,100,100
+﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Sprite_path,Idle_sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Note,Max_hp,Pickup_radius,Shadow_w,Shadow_h
+player_01,플레이어,250,16,3,res://assets/art/player/player_move_sheet.png,res://assets/art/player/player_idle_sheet.png,dir3,4,3,87,368,8,12,6,A단계 검증용 시작값,100,100,32,12

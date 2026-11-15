@@ -94,20 +94,24 @@ S7-IMPL-04에서 이미지가 없는 벨리온은 보라색 코드 도형으로 
 
 #### SpriteBody 표시 열
 
-`player.csv`와 `shadow.csv`가 공용으로 쓰는 표시 열이다. 그림자 전용 상태 시간 열은 플레이어에는 없으며, `shadow.csv`에서 `Sprite_path`가 빈 행은 나머지 표시 열도 비운다. 자세한 그림자 자료형·검증 규칙은 시스템7 표가 소유한다.
+`player.csv`와 `shadow.csv`가 공용으로 쓰는 표시 열이다. 그림자 전용 상태 시간 열은 플레이어에는 없으며, `shadow.csv`에서 `Sprite_path`가 빈 행은 나머지 이미지 열도 비운다. `Shadow_w`·`Shadow_h`는 이미지 유무와 독립이며 각각 빈칸이면32·12px를 쓴다. 유한한 양수만 허용하고 잘못된 값은 데이터 오류 화면으로 처리한다. 자세한 그림자 자료형·검증 규칙은 시스템7 표가 소유한다.
 
-| 열 | 의미 | player_01 예시 | igrit 예시 |
-|---|---|---|---|
-| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | res://assets/art/shadow/igris_sheet.png |
-| Idle_sprite_path | dir3 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | 해당 없음 |
-| Sprite_layout | 행 배치 종류 | dir3 | state3 |
-| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 4 / 3 | 4 / 3 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 87 | 112 |
-| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 368 | 410 |
-| Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 |
-| Anim_fps | 걷기·이동 반복 속도 | 12 | 8 |
-| Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 |
-| Attack_after_frame_sec | state3 타격 뒤3·4번 칸 각각의 시간(초) | 해당 없음 | 0.1 |
+| 열 | 의미 | player_01 예시 | igrit 예시 | belion 예시 |
+|---|---|---|---|---|
+| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | res://assets/art/shadow/igris_sheet.png | res://assets/art/shadow/belion_sheet.png |
+| Idle_sprite_path | dir3 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | 해당 없음 | 해당 없음 |
+| Sprite_layout | 행 배치 종류 | dir3 | state3 | state3 |
+| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 4 / 3 | 4 / 3 | 4 / 3 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 87 | 211 | 195 |
+| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 368 | 410 | 363 |
+| Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 | 8 |
+| Anim_fps | 걷기·이동 반복 속도 | 12 | 8 | 8 |
+| Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 | 6 |
+| Attack_after_frame_sec | 공격 뒤 칸 유지 시간(초) | 해당 없음 | 0.1 | 0.1 |
+| Shadow_w | 검정 발밑 타원 전체 너비(px), Optional Float | 32 | 56 | 60 |
+| Shadow_h | 검정 발밑 타원 전체 높이(px), Optional Float | 12 | 20 | 22 |
+
+ART-04에서 본체 그림만 공통 `CharacterBodies` 계층으로 분리해 발 기준 월드 y가 큰 순서로 앞에 그린다. 물리 노드·스폰·밀기 구조는 유지한다. UI·토스트·피해 표시·공격 범위·사슬 검은 캐릭터 위의 기존 경로를 유지하고 투사체의 부모·z·삽입 순서는 바꾸지 않는다. 벨리온 원본1816×1131, 칸454×377의 투명 이미지는 mipmap·선형 필터로 표시한다. 이그리트·벨리온 텔레포트와 플레이어 질주 잔상은 생성 순간의 확대된 표시 크기를 복제하며 별도 발밑 타원은 그리지 않는다.
 
 난도는 기존 피해 시점마다 원형 스킬 범위 안에 긴 직선 여러 개를 무작위 각도로 교차한다. 흰 중심·하늘색 가장자리의 짧은 청백색 효과다. 효과음 글자·레퍼런스 이미지 파일은 추가하지 않는다. 시각 난수는 전투 RNG와 분리한다. 최종 느낌은 직접 플레이 확인 대기다.
 
@@ -150,3 +154,4 @@ CSV Value는 String으로 읽고 각 연출 사용처에서 숫자/색으로 변
 - 2026-11-14 ART-02: 교체된1328×1167 플레이어 시트를 재import하고 이그리트1920×1260 state3 시트를 연결한다. 본체 그림자·포즈 잔상은 공용 표시 부품을 쓰며 베르 도형은 유지한다. 직접 플레이 확인 전이다.
 - 2026-11-14 ART-03: 플레이어 dir3 표시를1488×1140 이동·대기 시트로 분리하고 상태별12/6fps와 높이87·기준선368을 적용한다. 질주 잔상은 이동 시트 포즈를 유지하며 이그리트 등 다른 대상은 변경하지 않는다. 직접 플레이 확인 전이다.
 - 2026-11-15 S7-IMPL-04: 벨리온의 준비 발광·판정과 같은 각도/거리의 사슬 검12마디·칼끝0.15초 잔상·피격 파편과 도형 텔레포트 잔상을 추가한다. 최종 색·형태·가독성은 직접 플레이 확인 전이다.
+- 2026-11-15 ART-04: 그림자 확대·벨리온1816×1131 시트·발밑 타원 데이터·플레이어/그림자/일반 적/보스 본체 y 정렬을 연결한다. 공격 표시·사슬 검·UI와 투사체 경로는 유지하고 질주/텔레포트 잔상은 포즈 크기를 복제한다. 직접 플레이 확인 전이다.
