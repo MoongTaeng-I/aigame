@@ -1,11 +1,12 @@
 extends RefCounted
 
-enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT, SHADOW_CHARGER_TEST }
-const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT,"shadow_charger_test":Effect.SHADOW_CHARGER_TEST}
+enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT, SHADOW_CHARGER_TEST, SHADOW_BELION }
+const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT,"shadow_charger_test":Effect.SHADOW_CHARGER_TEST,"shadow_belion":Effect.SHADOW_BELION}
 
 static func shadow_id(effect: int) -> String:
 	if effect==Effect.SHADOW_IGRIT: return "igrit"
 	if effect==Effect.SHADOW_CHARGER_TEST: return "charger_test"
+	if effect==Effect.SHADOW_BELION: return "belion"
 	return ""
 
 static func register_schemas(store: CsvDataStore) -> void:

@@ -54,6 +54,7 @@ func _run() -> void:
 	await preload("res://tests/push_equivalence_p0.gd").new().run(self)
 	await preload("res://tests/push_shadow_p0.gd").new().run(self)
 	await preload("res://tests/shadow_summons_p0.gd").new().run(self)
+	await preload("res://tests/belion_sweep_p0.gd").new().run(self)
 	await preload("res://tests/shadow_sprite_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)

@@ -39,6 +39,14 @@ var dash_hits: Dictionary = {}
 var dash_through_active: bool = false
 var sprite_body: Node2D
 var sprite_hit_at := -INF
+var sweep_forward := true
+var sweep_sign := 1.0
+var sweep_previous_angle := 0.0
+var sweep_current_angle := 0.0
+var sweep_hits: Dictionary = {}
+var sweep_trail: Array = []
+var sweep_particles: Array = []
+var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
 
 func configure(owner_manager: Node2D, record: Dictionary, attack_record: Dictionary, motion_records: Array) -> void:
 	manager = owner_manager
@@ -107,6 +115,7 @@ func choose_in_stage(living: Array, radius: float, screen_only: bool, excluded: 
 func tick(delta: float) -> void:
 	var visual_origin := global_position
 	clock += delta
+	advance_belion_effects(delta)
 	var player: Node2D = manager.player
 	if global_position.distance_to(player.global_position)>=float(config.Teleport_distance):
 		teleport()
@@ -132,6 +141,15 @@ func act_on_target(player: Node2D, delta: float) -> void:
 	if target!=null:
 		if global_position.distance_to(target.global_position)<=float(config.Search_radius):
 			last_node = "attack"
+			if is_sweep():
+				var distance := global_position.distance_to(target.global_position)
+				if clock+0.000000001<ready_at:
+					if distance>float(attack.Range): move_to_distance(target.global_position,float(attack.Range),delta)
+					return
+				move_to_distance(target.global_position,float(attack.Range)*0.8,delta)
+				if global_position.distance_to(target.global_position)<=float(attack.Range)*0.8+0.00001:
+					start_attack()
+				return
 			move_to_distance(target.global_position,float(attack.Range),delta)
 			if is_dash_through():
 				var distance := global_position.distance_to(target.global_position)
@@ -218,7 +236,13 @@ func start_attack() -> void:
 	fan_aim_updated_at = clock
 	facing = global_position.direction_to(target.global_position)
 	if facing==Vector2.ZERO: facing = Vector2.RIGHT
-	motion_index = int(motion_picker.call(motions.size())) if motion_picker.is_valid() else random.randi_range(0,motions.size()-1)
+	motion_index = -1 if is_sweep() else (int(motion_picker.call(motions.size())) if motion_picker.is_valid() else random.randi_range(0,motions.size()-1))
+	if is_sweep():
+		sweep_sign = 1.0 if sweep_forward else -1.0
+		var start_offset := -deg_to_rad(float(attack.Arc_deg))*0.5*sweep_sign
+		sweep_previous_angle = facing.angle()+start_offset
+		sweep_current_angle = sweep_previous_angle
+		sweep_hits.clear()
 	if is_dash_through():
 		dash_origin = global_position
 		dash_goal = plan.endpoint
@@ -236,14 +260,68 @@ func start_attack() -> void:
 func is_dash_through() -> bool:
 	return int(attack.Shape)==Data.Shape.DASH_THROUGH
 
+func is_sweep() -> bool:
+	return int(attack.Shape)==Data.Shape.SWEEP
+
 func is_fan_cast_active() -> bool:
 	return cast_active and int(attack.Shape)==Data.Shape.FAN
+
+func is_push_exempt_cast_active() -> bool:
+	return cast_active and int(attack.Shape) in [Data.Shape.FAN,Data.Shape.SWEEP]
 
 func advance_attack(living: Array) -> void:
 	if is_dash_through():
 		advance_dash(living)
 		return
+	if is_sweep():
+		advance_sweep(living)
+		return
 	advance_fan_attack(living)
+
+func advance_sweep(living: Array) -> void:
+	var windup := float(attack.Windup_sec)
+	var duration := float(attack.Sweep_sec)
+	var age := clock-cast_started_at
+	if age+0.000000001<windup: return
+	var progress := 1.0 if age+0.000001>=windup+duration else clampf((age-windup)/duration,0.0,1.0)
+	var half_arc := deg_to_rad(float(attack.Arc_deg))*0.5
+	var start_offset := -half_arc*sweep_sign
+	var end_offset := half_arc*sweep_sign
+	var next_angle := facing.angle()+lerpf(start_offset,end_offset,progress)
+	var previous := sweep_current_angle
+	sweep_previous_angle = previous
+	sweep_current_angle = next_angle
+	for enemy: EnemyActor in living:
+		var key := enemy.get_instance_id()
+		if int(sweep_hits.get(key,-1))==enemy.spawn_order: continue
+		if in_sweep_interval(enemy,previous,next_angle):
+			sweep_hits[key] = enemy.spawn_order
+			enemy.apply_damage(int(attack.Damage))
+			spawn_belion_fragments(enemy.global_position)
+	add_sweep_trail_tip()
+	if progress>=1.0:
+		hit_done = true
+		cast_active = false
+		sprite_hit_at = clock
+		sweep_forward = not sweep_forward
+		ready_at = cast_started_at+windup+duration+float(attack.Interval_sec)
+
+func in_sweep_interval(enemy: EnemyActor, from_angle: float, to_angle: float) -> bool:
+	if not enemy.is_active or enemy.is_logically_dead: return false
+	var offset := enemy.global_position-global_position
+	if offset.length_squared()>float(attack.Range)*float(attack.Range)+0.0001: return false
+	var relative := angle_difference(facing.angle(),offset.angle()) if offset!=Vector2.ZERO else 0.0
+	var from_relative := angle_difference(facing.angle(),from_angle)
+	var to_relative := angle_difference(facing.angle(),to_angle)
+	return relative>=minf(from_relative,to_relative)-0.000001 and relative<=maxf(from_relative,to_relative)+0.000001
+
+func sweep_progress() -> float:
+	if not is_sweep() or not cast_active: return 1.0
+	return clampf((clock-cast_started_at-float(attack.Windup_sec))/float(attack.Sweep_sec),0.0,1.0)
+
+func sweep_visual_state() -> Dictionary:
+	if not is_sweep() or not cast_active: return {}
+	return {"windup":clock-cast_started_at<float(attack.Windup_sec),"center":global_position,"direction":Vector2.RIGHT.rotated(sweep_current_angle),"range":float(attack.Range),"progress":sweep_progress(),"sign":sweep_sign}
 
 func advance_fan_attack(living: Array) -> void:
 	var motion: Dictionary = motions[motion_index]
@@ -335,7 +413,7 @@ func attack_geometry() -> Dictionary:
 	return {"center":global_position,"direction":facing,"range":float(attack.Range),"arc_deg":float(attack.Arc_deg)}
 
 func attack_visual_state() -> Dictionary:
-	if not cast_active: return {}
+	if not cast_active or int(attack.Shape)!=Data.Shape.FAN: return {}
 	var state := attack_geometry()
 	state.hit_age = clock-cast_started_at-float(motions[motion_index].Hit_time_sec) if hit_done else -1.0
 	return state
@@ -350,6 +428,7 @@ func cancel_attack() -> void:
 	cast_active = false
 	hit_done = false
 	sprite_hit_at = -INF
+	sweep_hits.clear()
 	ready_at = clock
 
 func teleport() -> void:
@@ -367,6 +446,10 @@ func snapshot() -> Dictionary:
 	if is_dash_through():
 		var recovery_phase := clampf((clock-dash_hit_at)/float(motions[motion_index].Motion_sec),0,1) if cast_active and hit_done else 0.0
 		return {"radius":body_radius,"facing":facing,"motion":-1,"phase":recovery_phase,"kind":"charger_test"}
+	if is_sweep():
+		var sweep_result := {"radius":body_radius,"facing":facing,"motion":-1,"phase":sweep_progress(),"kind":"belion"}
+		if sprite_body!=null: sweep_result.sprite_pose = sprite_body.pose_snapshot()
+		return sweep_result
 	var phase := 0.0
 	if cast_active: phase = clampf((clock-cast_started_at)/float(motions[motion_index].Motion_sec),0,1)
 	var result := {"radius":body_radius,"facing":facing,"motion":motion_index if cast_active else -1,"phase":phase}
@@ -375,6 +458,19 @@ func snapshot() -> Dictionary:
 
 func update_sprite_visual(movement: Vector2, delta: float) -> void:
 	if sprite_body==null: return
+	if is_sweep():
+		if cast_active:
+			var age := clock-cast_started_at
+			if age<float(attack.Windup_sec): sprite_body.set_attack_pose(facing,0)
+			elif sweep_progress()<0.5: sprite_body.set_attack_pose(facing,1)
+			else: sprite_body.set_attack_pose(facing,2)
+			return
+		if sprite_hit_at>-INF and clock-sprite_hit_at<=float(config.Attack_after_frame_sec)+0.000000001:
+			sprite_body.set_attack_pose(facing,3)
+			return
+		sprite_hit_at = -INF
+		sprite_body.advance_state_pose(movement,movement.length_squared()>0.000001,delta)
+		return
 	if sprite_hit_at>-INF:
 		var age := clock-sprite_hit_at
 		var after := float(config.Attack_after_frame_sec)
@@ -399,8 +495,46 @@ func _draw() -> void:
 		if not circle.is_empty(): Visual.draw_circle_attack(self,circle)
 		Visual.draw_charger_pose(self,body_radius,facing)
 		return
+	if is_sweep():
+		if sprite_body==null: Visual.draw_belion_pose(self,body_radius,facing)
+		var sweep := sweep_visual_state()
+		if not sweep.is_empty():
+			if bool(sweep.windup): Visual.draw_belion_windup(self,facing,body_radius)
+			else: Visual.draw_belion_chain(self,sweep,int(float(presentation.Belion_chain_segments)))
+		draw_belion_effects()
+		return
 	var sector := attack_visual_state()
 	if not sector.is_empty(): Visual.draw_sector(self,sector)
 	if sprite_body==null:
 		var pose := snapshot()
 		Visual.draw_pose(self,body_radius,facing,int(pose.motion),float(pose.phase))
+
+func add_sweep_trail_tip() -> void:
+	var point := global_position+Vector2.RIGHT.rotated(sweep_current_angle)*float(attack.Range)
+	sweep_trail.append({"point":point,"age":0.0})
+
+func spawn_belion_fragments(point: Vector2) -> void:
+	for index in range(5):
+		var angle := TAU*float(index)/5.0+float(index%2)*0.23
+		sweep_particles.append({"point":point,"velocity":Vector2.RIGHT.rotated(angle)*(35.0+index*6.0),"age":0.0,"life":0.18})
+
+func advance_belion_effects(delta: float) -> void:
+	var trail_life := float(presentation.get("Belion_trail_sec",0.15))
+	for index in range(sweep_trail.size()-1,-1,-1):
+		sweep_trail[index].age = float(sweep_trail[index].age)+delta
+		if float(sweep_trail[index].age)>=trail_life: sweep_trail.remove_at(index)
+	for index in range(sweep_particles.size()-1,-1,-1):
+		var particle: Dictionary = sweep_particles[index]
+		particle.age = float(particle.age)+delta
+		particle.point = Vector2(particle.point)+Vector2(particle.velocity)*delta
+		sweep_particles[index] = particle
+		if float(particle.age)>=float(particle.life): sweep_particles.remove_at(index)
+
+func draw_belion_effects() -> void:
+	var trail_life := float(presentation.get("Belion_trail_sec",0.15))
+	for sample in sweep_trail:
+		var alpha := 1.0-float(sample.age)/trail_life
+		draw_circle(to_local(Vector2(sample.point)),4.0,Color(0.7,0.35,1.0,0.55*alpha))
+	for particle in sweep_particles:
+		var alpha := 1.0-float(particle.age)/float(particle.life)
+		draw_circle(to_local(Vector2(particle.point)),2.5,Color(0.82,0.55,1.0,0.8*alpha))

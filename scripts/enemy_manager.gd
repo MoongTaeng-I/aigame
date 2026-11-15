@@ -373,7 +373,7 @@ func _resolve_contact_push_pass() -> void:
 		active[index] = 1
 		kinds[index] = PushBodyKind.SHADOW
 		shadow_push_shares[index] = float(body.enemy_push_share)
-		shadow_fan_skip[index] = int(body.has_method("is_fan_cast_active") and body.is_fan_cast_active())
+		shadow_fan_skip[index] = int(body.has_method("is_push_exempt_cast_active") and body.is_push_exempt_cast_active())
 		shadow_enemy_skip[index] = int(body.get("dash_through_active")==true or shadow_fan_skip[index])
 		maximum_radius = maxf(maximum_radius,radii[index])
 	var cell_size := maxf(64.0, maximum_radius * 2.0 + separation_gap)
@@ -450,8 +450,8 @@ func _resolve_contact_pair(first: Variant, second: Variant) -> void:
 	if second.has_method("is_boss_dashing") and second.is_boss_dashing(): return
 	var first_shadow := _shadow_bodies.has(first)
 	var second_shadow := _shadow_bodies.has(second)
-	if first_shadow and (second==_player or second is EnemyActor or second_shadow) and first.has_method("is_fan_cast_active") and first.is_fan_cast_active(): return
-	if second_shadow and (first==_player or first is EnemyActor or first_shadow) and second.has_method("is_fan_cast_active") and second.is_fan_cast_active(): return
+	if first_shadow and (second==_player or second is EnemyActor or second_shadow) and first.has_method("is_push_exempt_cast_active") and first.is_push_exempt_cast_active(): return
+	if second_shadow and (first==_player or first is EnemyActor or first_shadow) and second.has_method("is_push_exempt_cast_active") and second.is_push_exempt_cast_active(): return
 	if first is EnemyActor and _shadow_bodies.has(second) and second.get("dash_through_active")==true: return
 	if second is EnemyActor and _shadow_bodies.has(first) and first.get("dash_through_active")==true: return
 	if _player.dash_pass_through and (first==_player or second==_player):

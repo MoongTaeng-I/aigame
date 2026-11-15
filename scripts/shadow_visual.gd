@@ -10,6 +10,9 @@ const SECTOR_SEGMENTS := 48
 const CHARGER_BODY := Color("#14323d")
 const CHARGER_OUTLINE := Color("#50d9d0")
 const CHARGER_MARK := Color("#b6fff4")
+const BELION_BODY := Color("#251334")
+const BELION_OUTLINE := Color("#bd66ff")
+const BELION_GLOW := Color(0.68,0.28,1.0,0.75)
 
 static func draw_circle_attack(canvas: Node2D, state: Dictionary) -> void:
 	var center := canvas.to_local(Vector2(state.center))
@@ -22,6 +25,31 @@ static func draw_charger_pose(canvas: CanvasItem, radius: float, facing: Vector2
 	canvas.draw_arc(Vector2.ZERO,radius,0,TAU,SECTOR_SEGMENTS,CHARGER_OUTLINE,2.0)
 	var tip := facing*radius*1.4
 	canvas.draw_colored_polygon(PackedVector2Array([tip,tip.rotated(2.4),tip.rotated(-2.4)]),CHARGER_MARK)
+
+static func draw_belion_pose(canvas: CanvasItem, radius: float, facing: Vector2) -> void:
+	canvas.draw_circle(Vector2.ZERO,radius,BELION_BODY)
+	canvas.draw_arc(Vector2.ZERO,radius,0,TAU,SECTOR_SEGMENTS,BELION_OUTLINE,2.0)
+	var hand := facing.normalized()*radius*0.75
+	canvas.draw_line(hand,hand+facing.normalized()*radius,Color("#d8a6ff"),3.0,true)
+
+static func draw_belion_windup(canvas: CanvasItem, facing: Vector2, radius: float) -> void:
+	var hand := facing.normalized()*radius*0.8
+	canvas.draw_circle(hand,radius*0.6,Color(0.68,0.28,1.0,0.16))
+	canvas.draw_arc(hand,radius*0.6,0,TAU,20,BELION_GLOW,2.0,true)
+
+static func draw_belion_chain(canvas: CanvasItem, state: Dictionary, segments: int) -> void:
+	segments = maxi(1,segments)
+	var direction: Vector2 = Vector2(state.direction).normalized()
+	var tangent := Vector2(-direction.y,direction.x)
+	var hand: Vector2 = canvas.to_local(Vector2(state.center))+direction*10.0
+	var previous: Vector2 = hand
+	for index in range(1,segments+1):
+		var fraction: float = float(index)/segments
+		var bend: float = -float(state.sign)*sin(PI*fraction)*12.0*fraction
+		var point: Vector2 = hand+direction*(float(state.range)-10.0)*fraction+tangent*bend
+		canvas.draw_line(previous,point,Color(0.42,0.16,0.65,0.8),4.0,true)
+		canvas.draw_circle(point,3.5,Color(0.78,0.42,1.0,0.95))
+		previous = point
 
 # Shared gameplay geometry is supplied by the actor; only tessellation and
 # color interpolation belong here. World points also support moved canvases.

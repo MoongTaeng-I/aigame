@@ -51,4 +51,5 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO,float(pose.radius),Color("#b18cff"))
 			draw_arc(Vector2.ZERO,float(pose.radius),0,TAU,48,Color("#eee6ff"),2)
 		elif pose.get("kind","")=="charger_test": Visual.draw_charger_pose(self,float(pose.radius),pose.facing)
+		elif pose.get("kind","")=="belion": Visual.draw_belion_pose(self,float(pose.radius),pose.facing)
 		else: Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))

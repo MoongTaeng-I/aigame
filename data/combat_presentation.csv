@@ -13,3 +13,5 @@ Toast_gap_px,8
 Toast_max,4
 Blink_trail_count,8
 Loading_sec,1.5
+Belion_chain_segments,12
+Belion_trail_sec,0.15

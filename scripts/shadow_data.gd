@@ -1,11 +1,11 @@
 extends RefCounted
 
-enum Shape { FAN, DASH_THROUGH }
-const SHAPES := {"fan":Shape.FAN,"dash_through":Shape.DASH_THROUGH}
+enum Shape { FAN, DASH_THROUGH, SWEEP }
+const SHAPES := {"fan":Shape.FAN,"dash_through":Shape.DASH_THROUGH,"sweep":Shape.SWEEP}
 
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("shadow.csv",{"Id":"String","Search_radius":"Float","Chase_leash_distance":"Float","Follow_distance":"Float","Move_speed":"Float","Teleport_distance":"Float","Afterimage_sec":"Float","Body_radius":"Float","Push_weight":"Float","Attack_id":"String","Enemy_push_share":"Float","Sprite_path":{"type":"Optional","inner":"Path"},"Sprite_layout":{"type":"Optional","inner":"String"},"Sprite_cols":{"type":"Optional","inner":"Int"},"Sprite_rows":{"type":"Optional","inner":"Int"},"Sprite_cell_height":{"type":"Optional","inner":"Float"},"Sprite_baseline":{"type":"Optional","inner":"Float"},"Sprite_foot_y":{"type":"Optional","inner":"Float"},"Anim_fps":{"type":"Optional","inner":"Float"},"Idle_fps":{"type":"Optional","inner":"Float"},"Attack_after_frame_sec":{"type":"Optional","inner":"Float"}})
-	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"},"Aim_turn_deg_per_sec":{"type":"Optional","inner":"Float"},"Aim_deadband_deg":{"type":"Optional","inner":"Float"}})
+	store.register_schema("shadow_attack.csv",{"Id":"String","Damage":"Int","Range":"Float","Arc_deg":{"type":"Optional","inner":"Float"},"Interval_sec":"Float","Shape":{"type":"Enum","values":SHAPES},"Dash_speed":{"type":"Optional","inner":"Float"},"Dash_distance":{"type":"Optional","inner":"Float"},"Dash_hit_radius":{"type":"Optional","inner":"Float"},"Dash_min_distance":{"type":"Optional","inner":"Float"},"Aim_turn_deg_per_sec":{"type":"Optional","inner":"Float"},"Aim_deadband_deg":{"type":"Optional","inner":"Float"},"Windup_sec":{"type":"Optional","inner":"Float"},"Sweep_sec":{"type":"Optional","inner":"Float"}})
 	store.register_schema("shadow_motion.csv",{"Id":"String","Attack_id":"String","Motion_sec":"Float","Hit_time_sec":{"type":"Optional","inner":"Float"}})
 	store.schemas["shadow.csv"]["Name_ko"] = "String"
 	store.schemas["shadow.csv"]["Icon"] = {"type":"Optional","inner":"Path"}
@@ -55,14 +55,22 @@ static func validate(store: CsvDataStore) -> String:
 				return error(store,"shadow_attack.csv",id,"Aim_turn_deg_per_sec","fan 방향 갱신 속도에는 유한한 양수가 필요합니다.")
 			if row.Arc_deg==null or float(row.Arc_deg)<=0 or float(row.Arc_deg)>360:
 				return error(store,"shadow_attack.csv",id,"Arc_deg","fan 각도는 0 초과 360 이하이어야 합니다.")
-		else:
+		elif int(row.Shape)==Shape.DASH_THROUGH:
 			for key in ["Dash_speed","Dash_distance","Dash_hit_radius","Dash_min_distance"]:
 				if row[key]==null or float(row[key])<=0.0:
 					return error(store,"shadow_attack.csv",id,key,"dash_through에는 양수가 필요합니다.")
+		else:
+			if row.Arc_deg==null or not is_finite(float(row.Arc_deg)) or float(row.Arc_deg)<=0.0 or float(row.Arc_deg)>360.0:
+				return error(store,"shadow_attack.csv",id,"Arc_deg","sweep 각도는 0 초과 360 이하이어야 합니다.")
+			for key in ["Windup_sec","Sweep_sec"]:
+				if row[key]==null or not is_finite(float(row[key])) or float(row[key])<=0.0:
+					return error(store,"shadow_attack.csv",id,key,"sweep에는 유한한 양수가 필요합니다.")
+		if int(row.Shape)!=Shape.SWEEP and (row.Windup_sec!=null or row.Sweep_sec!=null):
+			return error(store,"shadow_attack.csv",id,"Windup_sec","sweep 외 공격은 Windup_sec와 Sweep_sec를 비워야 합니다.")
 		var count := 0
 		for motion in motions.values():
 			if motion.Attack_id==id: count += 1
-		if count==0:
+		if int(row.Shape)!=Shape.SWEEP and count==0:
 			return error(store,"shadow_motion.csv","","Attack_id","공격의 모션이 없습니다.")
 	for id in motions:
 		var row: Dictionary = motions[id]

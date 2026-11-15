@@ -5,3 +5,4 @@ choice_attack_interval,기본 공격 간격,attack_interval_sub,10,A단계 검�
 choice_heal,체력 회복,heal,0,A단계 검증용 시작값
 choice_igrit,이그리트,shadow_igrit,10,A단계 검증용 시작값
 choice_charger_test,베르,shadow_charger_test,10,정식 종류 확정 시 정리할 검증용 임시 데이터
+choice_belion,벨리온,shadow_belion,10,MVP 세 번째 그림자 시작값

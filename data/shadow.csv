@@ -1,3 +1,4 @@
 ﻿Id,Search_radius,Chase_leash_distance,Follow_distance,Move_speed,Teleport_distance,Afterimage_sec,Body_radius,Push_weight,Attack_id,Enemy_push_share,Sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Attack_after_frame_sec,Name_ko,Icon
 igrit,280,560,200,320,900,1,16,3,igrit_attack,0.1,res://assets/art/shadow/igris_sheet.png,state3,4,3,112,410,8,8,6,0.1,이그리트,
 charger_test,280,560,200,320,900,1,16,3,charger_attack,0.1,,,,,,,,,,,베르,
+belion,360,560,200,320,900,1,16,3,belion_attack,0.1,,,,,,,,,,,벨리온,
