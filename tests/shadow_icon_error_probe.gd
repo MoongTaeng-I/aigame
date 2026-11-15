@@ -18,4 +18,9 @@ func run() -> void:
 	var state := FileAccess.open("res://.local/s8-impl-01-b-icon-error-state.json",FileAccess.WRITE)
 	state.store_string(JSON.stringify({"message":error,"loaded":loaded.is_empty(),"paused":paused,"label_matches":found}))
 	state.close()
+	# Dispose the paused fixture before SceneTree shutdown, allowing queued cleanup.
+	root.remove_child(main)
+	main.free()
+	for frame in range(4):
+		await process_frame
 	quit(0 if loaded.is_empty() and error.contains("열 Icon") and paused and found else 1)
