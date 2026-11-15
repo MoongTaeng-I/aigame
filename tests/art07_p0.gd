@@ -4,7 +4,9 @@ func run(t: SceneTree) -> void:
 	var store: CsvDataStore = t._store()
 	t.check(store.load_all().is_empty(),"ART-07 data loads")
 	var view := preload("res://scripts/sprite_body.gd").new()
-	view.configure(store.get_row("enemy.csv","enemy_01"),16,Color.WHITE,Color.WHITE)
+	var legacy: Dictionary = store.get_row("enemy.csv","enemy_01").duplicate(true)
+	legacy.merge({"Sprite_path":"res://assets/art/enemy/bear_walk6_sheet.png","Sprite_layout":"walk1","Sprite_cols":6,"Sprite_rows":1,"Sprite_cell_height":72},true)
+	view.configure(legacy,16,Color.WHITE,Color.WHITE)
 	t.check(view.columns==6 and view.animation_fps==13 and absf(view.display_rect().size.y-72)<=1,"ART-07 six cells 13fps height72")
 	for i in range(13):
 		view.advance_walk_pose(Vector2.RIGHT,true,0.01/13 if i==0 else 1.0/13)
@@ -27,7 +29,7 @@ func run(t: SceneTree) -> void:
 	var custom := saved.duplicate()
 	custom.Flip_deadband = "0.8"
 	Engine.set_meta(&"combat_presentation",custom)
-	view.configure(store.get_row("player.csv","player_01"),8,Color.WHITE,Color.WHITE)
+	view.configure(preload("res://tests/legacy_art_records.gd").player(store.get_row("player.csv","player_01")),8,Color.WHITE,Color.WHITE)
 	t.check(view.flip_deadband==0.8,"ART-07 reads deadband CSV cache")
 	view.advance_pose(Vector2(-0.75,sqrt(1-0.75*0.75)),true,0)
 	t.check(view.frame_row==2 and not view.flip_h,"ART-07 dir3 side retains below CSV band")

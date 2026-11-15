@@ -100,13 +100,13 @@ ART-05 베르는 `state3`1928×1170(4×3, 칸482×390) 시트와52×18 발밑 �
 
 | 열 | 의미 | player_01 예시 | igrit 예시 | belion 예시 | charger_test(베르) 예시 |
 |---|---|---|---|---|---|
-| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | res://assets/art/shadow/igris_sheet.png | res://assets/art/shadow/belion_sheet.png | res://assets/art/shadow/beru_sheet.png |
-| Idle_sprite_path | dir3 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | 해당 없음 | 해당 없음 | 해당 없음 |
-| Sprite_layout | 행 배치 종류 | dir3 | state3 | state3 | state3 |
-| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 4 / 3 | 4 / 3 | 4 / 3 | 4 / 3 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 87 | 211 | 195 | 180 |
-| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 368 | 410 | 363 | 376 |
-| Sprite_anchor_x | 원본 칸 안 몸 중심x(px), 빈칸이면 칸 가운데 | 185 | 170 | 200 | 279 |
+| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/shadow/belion_sheet.png | res://assets/art/shadow/beru_sheet.png |
+| Idle_sprite_path | dir3 대기 시트 리소스 경로 | (빈칸) | 해당 없음 | 해당 없음 | 해당 없음 |
+| Sprite_layout | 행 배치 종류 | pose | pose | state3 | state3 |
+| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 2 / 1 | 2 / 1 | 4 / 3 | 4 / 3 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 95 | 143 | 195 | 180 |
+| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 187 | 279 | 363 | 376 |
+| Sprite_anchor_x | 원본 칸 안 몸 중심x(px), 빈칸이면 칸 가운데 | 68 | 125 | 200 | 279 |
 | Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 | 8 | 8 |
 | Anim_fps | 걷기·이동 반복 속도 | 12 | 8 | 8 | 8 |
 | Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 | 6 | 6 |
@@ -124,15 +124,15 @@ ART-06의 `Sprite_anchor_x`는 유한한 비음수인 선택적 원본 px다. �
 
 | 열 | 의미 | enemy_01 예시 |
 |---|---|---|
-| Sprite_path | 오른쪽 걷기 투명 시트 경로 | res://assets/art/enemy/bear_walk6_sheet.png |
-| Sprite_layout | 한 행 오른쪽 걷기 배치 | walk1 |
-| Sprite_cols / Sprite_rows | 가로/세로 칸 수 | 6 / 1 |
-| Sprite_cell_height | 화면 한 칸 높이(px) | 72 |
-| Sprite_baseline / Sprite_anchor_x | 원본 발y/몸 중심x(px) | 289 / 154 |
+| Sprite_path | 오른쪽 걷기 투명 시트 경로 | res://assets/art/sd/sd_bear.png |
+| Sprite_layout | 한 행 오른쪽 걷기 배치 | pose |
+| Sprite_cols / Sprite_rows | 가로/세로 칸 수 | 1 / 1 |
+| Sprite_cell_height | 화면 한 칸 높이(px) | 111 |
+| Sprite_baseline / Sprite_anchor_x | 원본 발y/몸 중심x(px) | 219 / 118 |
 | Sprite_foot_y | 판정 중심 아래 발 위치(px) | 8 |
 | Anim_fps | 이동 중 반복 속도 | 13 |
 | Shadow_w / Shadow_h | 발밑 검정 타원 전체 크기(px) | 48 / 16 |
-| Sprite_tint | 그림에만 곱하는 HTML 색 | #d0d8f0 |
+| Sprite_tint | 그림에만 곱하는 HTML 색 | #ffffff |
 
 곰 원본은1848×301·6×1(칸308×301)이다. 정규화한 플레이어 방향의 |x|가 Flip_deadband를 초과할 때만 부호에 따라 반전하고, 그 외에는 직전 반전을 유지한다. 공포로 정지하면 첫 칸을 쓰고 기존 공포 색과50% 섞는다. 넉백 중에는 직전 방향을 유지한다. 사망의 actor modulate.a 흐려짐은 그대로이며 그림 색은 타원에 곱하지 않는다. 풀 활성화마다 해당 행으로 다시 설정하고 ResourceLoader 캐시로 텍스처를 공유한다. 다른 적 행의 빈 이미지 열은 기존 도형을 유지한다.
 
@@ -172,14 +172,41 @@ CSV Value는 String으로 읽고 각 연출 사용처에서 숫자/색으로 변
 | enemy.csv 열 | 아이스 엘프 예시 | 의미 |
 |---|---|---|
 | Name_ko / Note | 아이스 엘프 / 정식 원거리 적(ART-08) | 표시명·설명 |
-| Sprite_path | res://assets/art/enemy/elf_sheet.png | 투명1604×872,칸401×436 |
+| Sprite_path | res://assets/art/enemy/elf_sheet.png | res://assets/art/sd/sd_bear.png |
 | Sprite_layout / Sprite_cols / Sprite_rows | walk_shoot / 4 / 2 | 1행 걷기·2행 쏘기;4열2행 필수 |
-| Sprite_cell_height | 97 | 화면 높이px |
+| Sprite_cell_height | 97 | 111 |
 | Sprite_baseline / Sprite_anchor_x / Sprite_foot_y | 424 / 144 / 8 | 원본 발y·몸 중심x·화면 발y |
 | Anim_fps | 8 | 걷기 반복 칸/초 |
 | Shadow_w / Shadow_h / Sprite_tint | 36 / 13 / #d0d8f0 | 타원 화면px·그림 곱 색 |
 
 walk_shoot는 기본1행 걷기를 Anim_fps로 반복하고 공포 정지는1번 칸이다. 발사가 가능한 사거리 안에서 Shot_interval_sec − shot_elapsed가0.3초 이하면2행1번,0.15초 이하면2번. 실제 투사체 생성 순간3번을0.1초,그다음4번을0.1초 표시한 뒤 걷기로 복귀한다. 사거리 이탈·플레이어 은신·공포는 겨누기와 발사 후 표시를 즉시 취소한다. 플레이어 방향을 정규화해 Flip_deadband 규칙으로 반전하며 넉백 방향 유지도 보존한다. 표시 타이머는 발사 타이머와 분리하며 실제 발사 시점을 바꾸지 않는다.
+
+
+### ART-09 SD 포즈·코드 움직임
+
+사용자 결정(2026-11-15): 아기자기한2D(SD·카툰) 화풍으로 전환하며 걷기 시트 대신 포즈 이미지와 코드 움직임을 사용한다. 1단계는 플레이어·이그리트·아이스 베어에 적용한다. 베르·벨리온·아이스 엘프와 판정·이동·공격·생성 규칙은 유지한다. 기존 시트 배치와 에셋도 유지한다.
+
+| player.csv·shadow.csv·enemy.csv 열 | 의미·빈칸 | player_01 예시 | igrit 예시 | enemy_01 예시 |
+|---|---|---|---|---|
+| Sprite_path | 포즈 시트 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/sd/sd_bear.png |
+| Sprite_layout | 1행 N열 포즈 | pose | pose | pose |
+| Sprite_cols / Sprite_rows | 가로/세로 칸 수 | 2 / 1 | 2 / 1 | 1 / 1 |
+| Sprite_cell_height | 화면 칸 높이px | 95 | 143 | 111 |
+| Sprite_baseline / Sprite_anchor_x | 원본 발y / 몸 중심x | 187 / 68 | 279 / 125 | 219 / 118 |
+| Sprite_foot_y | 화면 발y,기존 유지 | 8 | 8 | 8 |
+| Shadow_w / Shadow_h | 발밑 타원 전체px,기존 유지 | 32 / 12 | 56 / 20 | 48 / 16 |
+| Sprite_tint | 그림 곱 색 | 기존 기본 흰색 | 기존 기본 흰색 | #ffffff |
+| Bob_px | Optional Float,상방 출렁임 화면px;빈칸0 | 3 | 4 | 3 |
+| Step_hz | Optional Float,이동 sin 주기/초;빈칸0 | 4 | 3 | 3 |
+| Squash | Optional Float,출렁임 비례 가로확대/세로축소 비율;빈칸0 | 0.06 | 0.05 | 0.05 |
+| Tilt_deg | Optional Float,좌우 sin 기울기 도;빈칸0 | 4 | 3 | 3 |
+| Breath | Optional Float,정지 세로 ±비율;빈칸0 | 0.02 | 0.02 | 0 |
+
+새5열은 유한한 비음수이고 Squash·Breath는1 미만이다. 모두 빈칸이면 변형이 없다. 플레이어 Idle_sprite_path는 빈칸이며 pose에서 별도 대기 시트를 사용하지 않는다. 위쪽 이동(y<0,절댓값y>절댓값x,정규화 y가 Flip_deadband 문턱 초과) 중 뒷모습2열,그 외 앞모습1열이다. 좌우는 정규화 x의 기존 Flip_deadband를 적용한다. 그림자는 cast_active 시작부터 종료까지2열,그 외1열이며 기존 공격 방향 규칙을 따른다. 적은1열이다.
+
+그림만 발 기준점 주위에서 변형한다. 이동 시 Bob_px×abs(sin),Step_hz 주기,납작/길쭉 Squash와 Tilt_deg×sin을 사용한다. 정지는1Hz 호흡으로 세로±Breath. 공격 포즈 시작 순간 방향으로4px 내딛기·짧은10% 찌그러짐을0.1초 동안 감쇠한다. 판정·발밑 타원 위치·정렬 기준은 움직이지 않는다. 잔상은 생성 순간 포즈·반전·변형을 복제하고 고정한다. 적·보스 피격은0.08초 흰색 셰이더 표시이며 원래 알파·사망 흐려짐은 유지한다.
+
+원본 규격: sd_player282×191(칸141×191),sd_igris782×287(칸391×287),sd_bear237×222. 모두 투명. import는 밉맵 생성,표시는 선형 밉맵 필터다.
 
 ## 승인·변경 이력
 
@@ -207,3 +234,5 @@ walk_shoot는 기본1행 걷기를 Anim_fps로 반복하고 공포 정지는1번
 - 2026-11-15 ART-07: 베어6칸·13fps·높이72로 교체하고 이동 좌우 반전에 Flip_deadband(0.3)를 적용한다. 정규화 x 절댓값이 문턱을 초과할 때만 변경하며 공격 방향 고정과 잔상 스냅샷은 유지한다. 필수 행의 누락·빈칸·비숫자·비유한·0~1 밖은 데이터 오류다. 기존 시트는 다른 참조가 없어 삭제한다. 직접 플레이 확인 전이다.
 
 - 2026-11-15 ART-08: 정식 일반 적2종을 아이스 베어(근접)·아이스 엘프(원거리)로 기록하고 elf_sheet walk_shoot 표시를 연결한다. 기존 발사·판정·이동·생성 규칙과 내부Id는 유지한다. 직접 플레이 확인 전이다.
+
+- 2026-11-15 ART-09: 사용자 결정으로 SD·카툰2D와 포즈+코드 움직임으로 전환한다. 1단계 플레이어·이그리트·곰만 pose로 교체하고 새5열·피격 표시·잔상 변형 복제를 적용한다. 전투·생성 규칙 및 다른3개 캐릭터는 유지한다. 직접 플레이 확인 전이다.

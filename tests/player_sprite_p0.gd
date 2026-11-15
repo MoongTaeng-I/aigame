@@ -22,7 +22,7 @@ func make_view(record: Dictionary) -> Node2D:
 	return view
 
 func actual_sheet() -> void:
-	var record: Dictionary = store.get_row("player.csv","player_01")
+	var record: Dictionary = preload("res://tests/legacy_art_records.gd").player(store.get_row("player.csv","player_01"))
 	var view = make_view(record)
 	t.check(not view.using_fallback and view.texture!=null and view.idle_texture!=null and view.columns==4 and view.rows==3,"ART-03 separate4x3 move and idle sheets connect")
 	t.check(view.texture.get_width()==1488 and view.texture.get_height()==1140 and view.idle_texture.get_width()==1488 and view.idle_texture.get_height()==1140,"ART-03 both player sheets are1488x1140")
@@ -60,7 +60,7 @@ func actual_sheet() -> void:
 	await t.process_frame
 
 func fallback_paths() -> void:
-	var base: Dictionary = store.get_row("player.csv","player_01").duplicate(true)
+	var base: Dictionary = preload("res://tests/legacy_art_records.gd").player(store.get_row("player.csv","player_01"))
 	for value in ["","res://assets/art/player/not_found_idle.png"]:
 		var idle_record := base.duplicate(true)
 		idle_record.Idle_sprite_path = value

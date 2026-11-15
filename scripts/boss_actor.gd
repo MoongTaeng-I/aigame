@@ -66,6 +66,7 @@ func is_boss_dashing() -> bool:
 	return phase=="dash" and not current.is_empty()
 
 func boss_tick(delta: float) -> void:
+	advance_hit_flash(delta)
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
 	if baruka!=null:

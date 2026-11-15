@@ -482,6 +482,9 @@ func snapshot() -> Dictionary:
 
 func update_sprite_visual(movement: Vector2, delta: float) -> void:
 	if sprite_body==null: return
+	if sprite_body.layout=="pose":
+		sprite_body.advance_shadow_pose(movement,movement.length_squared()>0.000001,delta,cast_active,facing)
+		return
 	if is_dash_through():
 		var after := float(config.Attack_after_frame_sec)
 		if dash_through_active:

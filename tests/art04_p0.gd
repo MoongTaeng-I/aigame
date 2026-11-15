@@ -15,7 +15,7 @@ func run(t: SceneTree) -> void:
 	var texture: Texture2D = belion.sprite_body.texture
 	t.check(texture.get_size()==Vector2(1816,1131) and belion.sprite_body.source_rect().size==Vector2(454,377),"ART-04 Belion1816x1131 4x3 cells454x377")
 	t.check(texture.get_image().detect_alpha()!=Image.ALPHA_NONE and texture.get_image().has_mipmaps(),"ART-04 Belion transparency and mipmaps retained")
-	for entry in [[igrit,211.0,Vector2(56,20)],[belion,195.0,Vector2(60,22)]]:
+	for entry in [[igrit,143.0,Vector2(56,20)],[belion,195.0,Vector2(60,22)]]:
 		var actor: Node2D = entry[0]
 		var view: Node2D = actor.sprite_body
 		t.check(absf(view.display_rect().size.y-float(entry[1]))<=1.0,"ART-04 approved display height "+actor.config.Id)
@@ -35,7 +35,7 @@ func run(t: SceneTree) -> void:
 	var copy := preload("res://scripts/shadow_afterimage.gd").new()
 	copy.configure({"sprite_pose":p.sprite_body.pose_snapshot()},1)
 	n.map.add_child(copy)
-	t.check(copy.sprite_body.cell_height==87 and copy.sprite_body.display_rect()==p.sprite_body.display_rect(),"ART-04 player dash snapshot size preserved")
+	t.check(copy.sprite_body.cell_height==95 and copy.sprite_body.display_rect()==p.sprite_body.display_rect(),"ART-09 player dash snapshot size preserved")
 	n.manager._spawn_from_row({"Enemy_id":"enemy_01","Spawn_count":1})
 	var enemy: Node2D = n.manager.get_living_enemies().back()
 	var boss: Node2D = n.manager.create_boss("boss_ice_bear",[],func() -> Node2D: return p)

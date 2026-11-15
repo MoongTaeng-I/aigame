@@ -68,20 +68,47 @@
 | Move_speed | 플레이어 이동 속도 | 250 | Float | px/s | 미정 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 내용·범위 검증 없음 | 범위 조건은 문서·로더에 명시되지 않음 |
 | Body_radius | 몸체 충돌·밀어내기 및 맵 경계 보정에 쓰는 반경 | 16 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Push_weight | 몸체 밀림을 반비례 배분하는 무게 | 3 | Float | 상대 가중치 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 적-그림자 쌍은 Enemy_push_share를 사용 |
-| Sprite_path | 이동 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | String | 해당 없음 | 빈 문자열 또는 res:// 리소스 경로 | 허용 | PNG 텍스처 | 경로가 비었거나 파일이 없으면 경고1줄 뒤 기존 원형 표시 | dir3의 아래·위·오른쪽 행, 왼쪽 반전 |
-| Idle_sprite_path | 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | String | 해당 없음 | 빈 문자열 또는 res:// 리소스 경로 | 허용 | PNG 텍스처 | 경로가 비었거나 파일이 없으면 경고1줄 뒤 이동 시트 첫 칸 고정 | 이동 시트와 같은 칸 수·크기·기준선 공유 |
-| Sprite_layout | 시트 행 배치 종류 | dir3 | String | 해당 없음 | dir3 | 불가 | Sprite_path·Idle_sprite_path | 조건 위반: 데이터 오류 화면 | 아래·위·오른쪽 행, 왼쪽 반전 |
-| Sprite_cols | 시트 가로 칸 수 | 4 | Int | 칸 | 1 이상 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 없음 |
-| Sprite_rows | 시트 세로 칸 수 | 3 | Int | 칸 | 1 이상 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 없음 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이 | 87 | Float | 화면 px | 유한한 양수 | 불가 | 없음 | 자료형 오류·조건 위반: 데이터 오류 화면 | 원본 비율 유지 |
-| Sprite_anchor_x | 칸 안 몸 중심의 가로 기준점 | 185 | Optional Float | 원본 px | 유한한 비음수 | 허용:칸 가운데 | Sprite_path·Idle_sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 이 x를 판정 중심에 맞추고 이를 축으로 반전; 잔상도 보존 |
-| Sprite_baseline | 원본 칸 위쪽부터 발 기준선까지 거리 | 368 | Float | 원본 px | 유한한 비음수 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 이 지점을 판정 원 중심+Sprite_foot_y에 맞춤 |
+| Sprite_path | 이동 시트 리소스 경로 | res://assets/art/sd/sd_player.png | String | 해당 없음 | 빈 문자열 또는 res:// 리소스 경로 | 허용 | PNG 텍스처 | 경로가 비었거나 파일이 없으면 경고1줄 뒤 기존 원형 표시 | pose의 최신 동작은 ART-09 절 참조; dir3도 지원 |
+| Idle_sprite_path | 대기 시트 리소스 경로 | (빈칸) | String | 해당 없음 | 빈 문자열 또는 res:// 리소스 경로 | 허용 | PNG 텍스처 | 경로가 비었거나 파일이 없으면 경고1줄 뒤 이동 시트 첫 칸 고정 | pose의 최신 동작은 ART-09 절 참조; dir3도 지원 |
+| Sprite_layout | 시트 행 배치 종류 | pose | String | 해당 없음 | dir3 또는1행 pose | 불가 | Sprite_path·Idle_sprite_path | 조건 위반: 데이터 오류 화면 | pose의 최신 동작은 ART-09 절 참조; dir3도 지원 |
+| Sprite_cols | 시트 가로 칸 수 | 2 | Int | 칸 | 1 이상 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 없음 |
+| Sprite_rows | 시트 세로 칸 수 | 1 | Int | 칸 | 1 이상 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 없음 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이 | 95 | Float | 화면 px | 유한한 양수 | 불가 | 없음 | 자료형 오류·조건 위반: 데이터 오류 화면 | 원본 비율 유지 |
+| Sprite_anchor_x | 칸 안 몸 중심의 가로 기준점 | 68 | Optional Float | 원본 px | 유한한 비음수 | 허용:칸 가운데 | Sprite_path·Idle_sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 이 x를 판정 중심에 맞추고 이를 축으로 반전; 잔상도 보존 |
+| Sprite_baseline | 원본 칸 위쪽부터 발 기준선까지 거리 | 187 | Float | 원본 px | 유한한 비음수 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 이 지점을 판정 원 중심+Sprite_foot_y에 맞춤 |
 | Sprite_foot_y | 판정 원 중심 아래의 발 기준선 위치 | 8 | Float | 화면 px | 유한한 값 | 불가 | Sprite_baseline | 자료형 오류·조건 위반: 데이터 오류 화면 | 아래 방향이 양수 |
-| Anim_fps | 이동 칸 재생 속도 | 12 | Float | 칸/초 | 유한한 양수 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 이동 중4칸 반복 |
-| Idle_fps | 대기 칸 재생 속도 | 6 | Float | 칸/초 | 유한한 양수 | 불가 | Idle_sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | 정지·이동 불가 중4칸 반복; 대기 시트 누락 시 미사용 |
+| Anim_fps | 이동 칸 재생 속도 | 12 | Float | 칸/초 | 유한한 양수 | 불가 | Sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | pose의 최신 동작은 ART-09 절 참조; dir3도 지원 |
+| Idle_fps | 대기 칸 재생 속도 | 6 | Float | 칸/초 | 유한한 양수 | 불가 | Idle_sprite_path | 자료형 오류·조건 위반: 데이터 오류 화면 | pose의 최신 동작은 ART-09 절 참조; dir3도 지원 |
 | Note | 작성자가 남기는 설명; 게임 동작에는 사용하지 않음 | A단계 검증용 시작값 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | 없음 |
 | Max_hp | 플레이어 최대 체력 | 100 | Int | 체력 | 미정 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 내용·범위 검증 없음 | 범위 검증 없음; player_01 행이 실제 사용됨 |
 | Pickup_radius | 경험치를 끌어당기기 시작하는 중심 간 거리 | 100 | Float | px | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
+
+
+### ART-09 SD 포즈·코드 움직임
+
+사용자 결정(2026-11-15): 아기자기한2D(SD·카툰) 화풍으로 전환하며 걷기 시트 대신 포즈 이미지와 코드 움직임을 사용한다. 1단계는 플레이어·이그리트·아이스 베어에 적용한다. 베르·벨리온·아이스 엘프와 판정·이동·공격·생성 규칙은 유지한다. 기존 시트 배치와 에셋도 유지한다.
+
+| player.csv·shadow.csv·enemy.csv 열 | 의미·빈칸 | player_01 예시 | igrit 예시 | enemy_01 예시 |
+|---|---|---|---|---|
+| Sprite_path | 포즈 시트 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/sd/sd_bear.png |
+| Sprite_layout | 1행 N열 포즈 | pose | pose | pose |
+| Sprite_cols / Sprite_rows | 가로/세로 칸 수 | 2 / 1 | 2 / 1 | 1 / 1 |
+| Sprite_cell_height | 화면 칸 높이px | 95 | 143 | 111 |
+| Sprite_baseline / Sprite_anchor_x | 원본 발y / 몸 중심x | 187 / 68 | 279 / 125 | 219 / 118 |
+| Sprite_foot_y | 화면 발y,기존 유지 | 8 | 8 | 8 |
+| Shadow_w / Shadow_h | 발밑 타원 전체px,기존 유지 | 32 / 12 | 56 / 20 | 48 / 16 |
+| Sprite_tint | 그림 곱 색 | 기존 기본 흰색 | 기존 기본 흰색 | #ffffff |
+| Bob_px | Optional Float,상방 출렁임 화면px;빈칸0 | 3 | 4 | 3 |
+| Step_hz | Optional Float,이동 sin 주기/초;빈칸0 | 4 | 3 | 3 |
+| Squash | Optional Float,출렁임 비례 가로확대/세로축소 비율;빈칸0 | 0.06 | 0.05 | 0.05 |
+| Tilt_deg | Optional Float,좌우 sin 기울기 도;빈칸0 | 4 | 3 | 3 |
+| Breath | Optional Float,정지 세로 ±비율;빈칸0 | 0.02 | 0.02 | 0 |
+
+새5열은 유한한 비음수이고 Squash·Breath는1 미만이다. 모두 빈칸이면 변형이 없다. 플레이어 Idle_sprite_path는 빈칸이며 pose에서 별도 대기 시트를 사용하지 않는다. 위쪽 이동(y<0,절댓값y>절댓값x,정규화 y가 Flip_deadband 문턱 초과) 중 뒷모습2열,그 외 앞모습1열이다. 좌우는 정규화 x의 기존 Flip_deadband를 적용한다. 그림자는 cast_active 시작부터 종료까지2열,그 외1열이며 기존 공격 방향 규칙을 따른다. 적은1열이다.
+
+그림만 발 기준점 주위에서 변형한다. 이동 시 Bob_px×abs(sin),Step_hz 주기,납작/길쭉 Squash와 Tilt_deg×sin을 사용한다. 정지는1Hz 호흡으로 세로±Breath. 공격 포즈 시작 순간 방향으로4px 내딛기·짧은10% 찌그러짐을0.1초 동안 감쇠한다. 판정·발밑 타원 위치·정렬 기준은 움직이지 않는다. 잔상은 생성 순간 포즈·반전·변형을 복제하고 고정한다. 적·보스 피격은0.08초 흰색 셰이더 표시이며 원래 알파·사망 흐려짐은 유지한다.
+
+원본 규격: sd_player282×191(칸141×191),sd_igris782×287(칸391×287),sd_bear237×222. 모두 투명. import는 밉맵 생성,표시는 선형 밉맵 필터다.
 
 ## 승인·변경 이력
 
@@ -96,3 +123,5 @@
 - 2026-11-14 ART-01: 플레이어에 데이터 연결형4×3 걷기 시트·발 기준선 정렬·발밑 그림자·방향/정지 애니메이션을 적용한다. 판정·충돌·이동·공격 범위는 유지하고 이미지 누락 시 원형 표시로 대체한다. 직접 플레이 확인 전이다.
 - 2026-11-14 ART-03: 플레이어 표시를 동일한 dir3 구성의 이동·대기 시트로 분리한다. 이동12fps·대기6fps, 화면 높이87·기준선368을 적용하고 상태 전환 시 첫 칸부터 시작한다. 직접 플레이 확인 전이다.
 - 2026-11-15 ART-06: Sprite_anchor_x185를 원본 몸 중심x로 지정하고 이 점을 축으로 좌우 반전한다. 빈칸은 기존 칸 가운데이며 질주 잔상도 같은 기준점을 쓴다. 판정·이동은 유지하며 직접 화면 확인 전이다.
+
+- 2026-11-15 ART-09: 사용자 결정으로 SD·카툰2D와 포즈+코드 움직임으로 전환한다. 1단계 플레이어·이그리트·곰만 pose로 교체하고 새5열·피격 표시·잔상 변형 복제를 적용한다. 전투·생성 규칙 및 다른3개 캐릭터는 유지한다. 직접 플레이 확인 전이다.

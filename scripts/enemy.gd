@@ -32,6 +32,7 @@ var shot_range: float = 0.0
 var projectile_id: String = ""
 var shot_elapsed: float = 0.0
 var shot_visual_age: float = 1.0
+var hit_flash_remaining: float = 0.0
 var knockback_direction := Vector2.ZERO
 var knockback_distance: float = 0.0
 var knockback_duration: float = 0.0
@@ -85,6 +86,8 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	spawn_order = order
 	shot_elapsed = 0.0
 	shot_visual_age = 1.0
+	hit_flash_remaining = 0.0
+	update_hit_flash_material()
 	has_wander_target = false
 	fear_remaining = 0.0
 	_fade_elapsed = 0.0
@@ -111,6 +114,8 @@ func deactivate_to_pool() -> void:
 func apply_damage(amount: int) -> bool:
 	if not is_active or is_logically_dead or amount <= 0:
 		return false
+	hit_flash_remaining = 0.08
+	update_hit_flash_material()
 	hp = maxi(0, hp - amount)
 	damaged.emit(global_position)
 	if hp == 0:
@@ -147,6 +152,7 @@ func start_knockback(source_position: Vector2, distance: float, duration: float)
 	knockback_elapsed = 0.0
 
 func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at_target: bool = false) -> void:
+	advance_hit_flash(delta)
 	var visual_origin := global_position
 	var visual_knockback := knockback_elapsed<knockback_duration
 	map_bounds = bounds
@@ -246,3 +252,18 @@ func update_shoot_visual(player_position: Vector2, enabled: bool, delta: float, 
 	if knockback_elapsed>=knockback_duration:
 		sprite_body.update_movement_flip(global_position.direction_to(player_position))
 	sprite_body.set_shoot_pose(shot_interval_sec-shot_elapsed,shot_visual_age,enabled)
+
+func advance_hit_flash(delta: float) -> void:
+	if hit_flash_remaining<=0.0: return
+	hit_flash_remaining = maxf(0.0,hit_flash_remaining-maxf(0.0,delta))
+	update_hit_flash_material()
+
+func update_hit_flash_material() -> void:
+	for canvas in [character_view,sprite_body]:
+		if not is_instance_valid(canvas): continue
+		if canvas.material==null and hit_flash_remaining>0:
+			var effect := ShaderMaterial.new()
+			effect.shader = preload("res://scripts/hit_flash.gdshader")
+			canvas.material = effect
+		if canvas.material is ShaderMaterial:
+			canvas.material.set_shader_parameter("hit_flash",1.0 if hit_flash_remaining>0.000000001 else 0.0)

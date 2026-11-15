@@ -9,6 +9,8 @@ func run(tree: SceneTree) -> void:
 	var helper = HelperScript.new()
 	helper.t = t
 	var f: Dictionary = helper.fixture()
+	var legacy: Dictionary = preload("res://tests/legacy_art_records.gd").igrit(f.store.get_row("shadow.csv","igrit"))
+	f.store.get_row("shadow.csv","igrit").merge(legacy,true)
 	if f.store.get_table("shadow.csv").is_empty():
 		await helper.close(f)
 		return
@@ -18,7 +20,7 @@ func run(tree: SceneTree) -> void:
 	t.check(player_texture!=null and player_idle_texture!=null and player_texture.get_width()==1488 and player_texture.get_height()==1140 and player_idle_texture.get_width()==1488 and player_idle_texture.get_height()==1140,"ART-03 player move and idle sheets are1488x1140")
 	t.check(igris_texture!=null and igris_texture.get_width()==1920 and igris_texture.get_height()==1260,"ART-02 Igris sheet is1920x1260")
 	t.check(player_texture.get_image().has_mipmaps() and player_idle_texture.get_image().has_mipmaps() and igris_texture.get_image().has_mipmaps(),"ART-03 player sheets and Igris sheet import mipmaps")
-	var player_row: Dictionary = f.store.get_row("player.csv","player_01")
+	var player_row: Dictionary = preload("res://tests/legacy_art_records.gd").player(f.store.get_row("player.csv","player_01"))
 	var player_view := preload("res://scripts/sprite_body.gd").new()
 	f.host.add_child(player_view)
 	player_view.configure(player_row,16,Color("#b18cff"),Color("#eee6ff"))

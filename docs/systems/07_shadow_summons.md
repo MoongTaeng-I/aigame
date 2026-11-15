@@ -431,12 +431,12 @@ flowchart TD
 | Push_weight | 플레이어·그림자 쌍의 밀림 분배 무게 | 3 | Float | 상대 가중치 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Attack_id | 이 그림자가 사용하는 공격 | igrit_attack | String | 해당 없음 | shadow_attack.csv에 참조 행 존재 | 불가 | shadow_attack.csv.Id | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Enemy_push_share | 적-그림자 겹침 해소량 중 그림자가 받는 비율 | 0.1 | Float | 비율 | 0 이상 1 이하 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 적은 나머지 비율; 이 쌍은 Push_weight를 쓰지 않음 |
-| Sprite_path | 그림자 표시 시트 경로 | res://assets/art/shadow/igris_sheet.png | Optional Path | 해당 없음 | res:// 경로·역슬래시 없음·Texture2D 존재 | 허용 | 이미지 리소스 | 자료형/경로/이미지 오류: 데이터 오류 화면 | 빈칸이면 같은 행의 이미지 열도 모두 비우고 기존 코드 도형 사용 |
-| Sprite_layout | 시트의 행 배치 종류 | state3 | Optional String | 해당 없음 | 이미지 사용 그림자는 state3 | 이미지 미사용 시 허용 | Sprite_path | 조건 위반: 데이터 오류 화면 | state3=대기/이동/공격 행 |
-| Sprite_cols | 시트 가로 칸 수 | 4 | Optional Int | 칸 | 이미지 사용 시1 이상 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
-| Sprite_rows | 시트 세로 칸 수 | 3 | Optional Int | 칸 | 이미지 사용 시1 이상 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이 | 211 | Optional Float | 화면 px | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 원본 비율 유지; 벨리온195 |
-| Sprite_baseline | 원본 칸 위쪽부터 발 기준선까지 거리 | 410 | Optional Float | 원본 px | 이미지 사용 시 유한한 비음수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
+| Sprite_path | 그림자 표시 시트 경로 | res://assets/art/sd/sd_igris.png | Optional Path | 해당 없음 | res:// 경로·역슬래시 없음·Texture2D 존재 | 허용 | 이미지 리소스 | 자료형/경로/이미지 오류: 데이터 오류 화면 | 빈칸이면 같은 행의 이미지 열도 모두 비우고 기존 코드 도형 사용 |
+| Sprite_layout | 시트의 행 배치 종류 | pose | Optional String | 해당 없음 | state3 또는1행 pose | 이미지 미사용 시 허용 | Sprite_path | 조건 위반: 데이터 오류 화면 | state3=대기/이동/공격 행 |
+| Sprite_cols | 시트 가로 칸 수 | 2 | Optional Int | 칸 | 이미지 사용 시1 이상 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
+| Sprite_rows | 시트 세로 칸 수 | 1 | Optional Int | 칸 | 이미지 사용 시1 이상 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이 | 143 | Optional Float | 화면 px | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 원본 비율 유지; 벨리온195 |
+| Sprite_baseline | 원본 칸 위쪽부터 발 기준선까지 거리 | 279 | Optional Float | 원본 px | 이미지 사용 시 유한한 비음수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
 | Sprite_foot_y | 판정 원 중심 아래 발 기준선 위치 | 8 | Optional Float | 화면 px | 이미지 사용 시 유한한 값 | 이미지 미사용 시 허용 | Sprite_baseline | 자료형/조건 위반: 데이터 오류 화면 | 아래 방향이 양수 |
 | Anim_fps | 이동4칸 반복 속도 | 8 | Optional Float | 칸/초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
 | Idle_fps | 대기4칸 반복 속도 | 6 | Optional Float | 칸/초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
@@ -445,7 +445,7 @@ flowchart TD
 | Icon | 보유 그림자 HUD의 이미지 경로 | (빈칸) | Optional Path | 해당 없음 | res:// 경로·역슬래시 없음·리소스 존재·Texture2D 이미지 | 허용 | 이미지 리소스 | 자료형/경로/이미지 오류: 데이터 오류 화면 | 빈칸은 shadow_visual 임시 모양으로 대체 |
 | Shadow_w | 발밑 타원의 전체 너비 | 56 | Optional Float | 화면 px | 유한한 양수 | 허용:32 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온60·베르52; 판정과 독립 |
 | Shadow_h | 발밑 타원의 전체 높이 | 20 | Optional Float | 화면 px | 유한한 양수 | 허용:12 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온22·베르18 |
-| Sprite_anchor_x | 칸 안 몸 중심의 가로 기준점 | 이그리트170·벨리온200·베르279 | Optional Float | 원본 px | 유한한 비음수 | 허용:칸 가운데 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 판정 중심x에 맞춰 이 점을 축으로 반전; 모든 포즈 잔상 보존 |
+| Sprite_anchor_x | 칸 안 몸 중심의 가로 기준점 | 이그리트125·벨리온200·베르279 | Optional Float | 원본 px | 유한한 비음수 | 허용:칸 가운데 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 판정 중심x에 맞춰 이 점을 축으로 반전; 모든 포즈 잔상 보존 |
 | Chain_hand_x | 오른쪽을 볼 때 발 기준 사슬 손 x | (빈칸); 벨리온15 | Optional Float | 화면 px | 유한한 좌표; x/y 함께 지정 | 허용 | Sprite_foot_y·Chain_hand_y | 자료형/조건 위반: 데이터 오류 화면 | 왼쪽 반전 시 부호 반대; 다른 그림자 빈칸 |
 | Chain_hand_y | 발 기준 사슬 손 높이 | (빈칸); 벨리온-95 | Optional Float | 화면 px | 유한한 좌표; x/y 함께 지정 | 허용 | Sprite_foot_y·Chain_hand_x | 자료형/조건 위반: 데이터 오류 화면 | 위쪽 음수; 좌우 반전해도 유지 |
 
@@ -488,6 +488,33 @@ flowchart TD
 ### 선택창 소환 토스트
 
 선택창에서 실제 새 소환이 성립한 순간 shadow.csv Name_ko로 `[그림자 병사 n을 소환합니다]`를 한 번 표시한다. 을/를은 이름의 받침에 따라 고른다. 기존 그림자 강화 선택·소환 실패·직접 디버그 소환·그림자 스킬에는 표시하지 않는다. 화면 상단 공통 영역의 쌓기·수명·페이드는 시스템8·10을 따른다.
+
+
+### ART-09 SD 포즈·코드 움직임
+
+사용자 결정(2026-11-15): 아기자기한2D(SD·카툰) 화풍으로 전환하며 걷기 시트 대신 포즈 이미지와 코드 움직임을 사용한다. 1단계는 플레이어·이그리트·아이스 베어에 적용한다. 베르·벨리온·아이스 엘프와 판정·이동·공격·생성 규칙은 유지한다. 기존 시트 배치와 에셋도 유지한다.
+
+| player.csv·shadow.csv·enemy.csv 열 | 의미·빈칸 | player_01 예시 | igrit 예시 | enemy_01 예시 |
+|---|---|---|---|---|
+| Sprite_path | 포즈 시트 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/sd/sd_bear.png |
+| Sprite_layout | 1행 N열 포즈 | pose | pose | pose |
+| Sprite_cols / Sprite_rows | 가로/세로 칸 수 | 2 / 1 | 2 / 1 | 1 / 1 |
+| Sprite_cell_height | 화면 칸 높이px | 95 | 143 | 111 |
+| Sprite_baseline / Sprite_anchor_x | 원본 발y / 몸 중심x | 187 / 68 | 279 / 125 | 219 / 118 |
+| Sprite_foot_y | 화면 발y,기존 유지 | 8 | 8 | 8 |
+| Shadow_w / Shadow_h | 발밑 타원 전체px,기존 유지 | 32 / 12 | 56 / 20 | 48 / 16 |
+| Sprite_tint | 그림 곱 색 | 기존 기본 흰색 | 기존 기본 흰색 | #ffffff |
+| Bob_px | Optional Float,상방 출렁임 화면px;빈칸0 | 3 | 4 | 3 |
+| Step_hz | Optional Float,이동 sin 주기/초;빈칸0 | 4 | 3 | 3 |
+| Squash | Optional Float,출렁임 비례 가로확대/세로축소 비율;빈칸0 | 0.06 | 0.05 | 0.05 |
+| Tilt_deg | Optional Float,좌우 sin 기울기 도;빈칸0 | 4 | 3 | 3 |
+| Breath | Optional Float,정지 세로 ±비율;빈칸0 | 0.02 | 0.02 | 0 |
+
+새5열은 유한한 비음수이고 Squash·Breath는1 미만이다. 모두 빈칸이면 변형이 없다. 플레이어 Idle_sprite_path는 빈칸이며 pose에서 별도 대기 시트를 사용하지 않는다. 위쪽 이동(y<0,절댓값y>절댓값x,정규화 y가 Flip_deadband 문턱 초과) 중 뒷모습2열,그 외 앞모습1열이다. 좌우는 정규화 x의 기존 Flip_deadband를 적용한다. 그림자는 cast_active 시작부터 종료까지2열,그 외1열이며 기존 공격 방향 규칙을 따른다. 적은1열이다.
+
+그림만 발 기준점 주위에서 변형한다. 이동 시 Bob_px×abs(sin),Step_hz 주기,납작/길쭉 Squash와 Tilt_deg×sin을 사용한다. 정지는1Hz 호흡으로 세로±Breath. 공격 포즈 시작 순간 방향으로4px 내딛기·짧은10% 찌그러짐을0.1초 동안 감쇠한다. 판정·발밑 타원 위치·정렬 기준은 움직이지 않는다. 잔상은 생성 순간 포즈·반전·변형을 복제하고 고정한다. 적·보스 피격은0.08초 흰색 셰이더 표시이며 원래 알파·사망 흐려짐은 유지한다.
+
+원본 규격: sd_player282×191(칸141×191),sd_igris782×287(칸391×287),sd_bear237×222. 모두 투명. import는 밉맵 생성,표시는 선형 밉맵 필터다.
 
 ## 승인·변경 이력
 
@@ -532,3 +559,5 @@ flowchart TD
 - 2026-11-15 S7-FIX-05 사용자 확정: 벨리온 Range300→450으로 판정 길이를1.5배 늘리고 접근 거리 Range×0.8=360 규칙은 유지한다. 사슬 두께8→24px는 combat_presentation.csv의 Belion_chain_width로 옮겨 마름모·빛 테두리를 비례 확대한다. Search_radius360·Arc180·시전/간격/피해·손 좌표·번갈아 방향·이미지 칸은 유지한다. 직접 플레이 확인 전이다.
 - 2026-11-15 ART-05 사용자 추가 결정: "기존 판정 유지: 준비 1번 생략, 돌진 2→3·후딜 4번"을 선택했다. 베르 state3 시트1928×1170·높이180·기준선376·발8·타원52×18을 연결하고 고정 돌진 방향의2/3/4번 칸과 포즈 잔상을 표시한다. Motion_sec0.3은 기존 후딜이며 준비 지연을 추가하지 않는다. 내부charger_test·전투/이동/돌진 값은 유지한다. 직접 플레이 확인 전이다.
 - 2026-11-15 ART-06: Sprite_anchor_x를 이그리트170·벨리온200·베르279로 지정해 그림과 반전 축을 몸 중심에 맞춘다. 포즈 잔상도 기준점을 복제하고 벨리온 손 좌표는 유지한다. 전투 판정·수치는 변경하지 않으며 직접 화면 확인 전이다.
+
+- 2026-11-15 ART-09: 사용자 결정으로 SD·카툰2D와 포즈+코드 움직임으로 전환한다. 1단계 플레이어·이그리트·곰만 pose로 교체하고 새5열·피격 표시·잔상 변형 복제를 적용한다. 전투·생성 규칙 및 다른3개 캐릭터는 유지한다. 직접 플레이 확인 전이다.

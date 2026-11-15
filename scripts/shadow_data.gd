@@ -13,6 +13,8 @@ static func register_schemas(store: CsvDataStore) -> void:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 	for column in ["Chain_hand_x","Chain_hand_y","Sprite_anchor_x"]:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
+	for column in ["Bob_px","Step_hz","Squash","Tilt_deg","Breath"]:
+		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 
 static func validate(store: CsvDataStore) -> String:
 	if store.tables.has("combat_presentation.csv"):
@@ -42,7 +44,7 @@ static func validate(store: CsvDataStore) -> String:
 				return error(store,"shadow.csv",id,"Sprite_path","사용 가능한 이미지 경로가 아닙니다.")
 			for column in sprite_columns:
 				if row[column]==null: return error(store,"shadow.csv",id,column,"이미지 경로가 있으면 필수입니다.")
-			if String(row.Sprite_layout)!="state3": return error(store,"shadow.csv",id,"Sprite_layout","그림자 시트는 state3이어야 합니다.")
+			if not (String(row.Sprite_layout) in ["state3","pose"]) or (row.Sprite_layout=="pose" and int(row.Sprite_rows)!=1): return error(store,"shadow.csv",id,"Sprite_layout","그림자 시트는 state3 또는1행 pose이어야 합니다.")
 			if int(row.Sprite_cols)<1 or int(row.Sprite_rows)<1: return error(store,"shadow.csv",id,"Sprite_cols","칸 수는 1 이상이어야 합니다.")
 			for column in ["Sprite_cell_height","Anim_fps","Idle_fps","Attack_after_frame_sec"]:
 				if not is_finite(float(row[column])) or float(row[column])<=0: return error(store,"shadow.csv",id,column,"유한한 양수여야 합니다.")

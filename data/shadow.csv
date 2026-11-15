@@ -1,4 +1,4 @@
-﻿Id,Search_radius,Chase_leash_distance,Follow_distance,Move_speed,Teleport_distance,Afterimage_sec,Body_radius,Push_weight,Attack_id,Enemy_push_share,Sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Attack_after_frame_sec,Name_ko,Icon,Shadow_w,Shadow_h,Chain_hand_x,Chain_hand_y,Sprite_anchor_x
-igrit,280,560,200,320,900,1,16,3,igrit_attack,0.1,res://assets/art/shadow/igris_sheet.png,state3,4,3,211,410,8,8,6,0.1,이그리트,,56,20,,,170
-charger_test,280,560,200,320,900,1,16,3,charger_attack,0.1,res://assets/art/shadow/beru_sheet.png,state3,4,3,180,376,8,8,6,0.1,베르,,52,18,,,279
-belion,360,560,200,320,900,1,16,3,belion_attack,0.1,res://assets/art/shadow/belion_sheet.png,state3,4,3,195,363,8,8,6,0.1,벨리온,,60,22,15,-95,200
+﻿Id,Search_radius,Chase_leash_distance,Follow_distance,Move_speed,Teleport_distance,Afterimage_sec,Body_radius,Push_weight,Attack_id,Enemy_push_share,Sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Attack_after_frame_sec,Name_ko,Icon,Shadow_w,Shadow_h,Chain_hand_x,Chain_hand_y,Sprite_anchor_x,Bob_px,Step_hz,Squash,Tilt_deg,Breath
+igrit,280,560,200,320,900,1,16,3,igrit_attack,0.1,res://assets/art/sd/sd_igris.png,pose,2,1,143,279,8,8,6,0.1,이그리트,,56,20,,,125,4,3,0.05,3,0.02
+charger_test,280,560,200,320,900,1,16,3,charger_attack,0.1,res://assets/art/shadow/beru_sheet.png,state3,4,3,180,376,8,8,6,0.1,베르,,52,18,,,279,,,,,
+belion,360,560,200,320,900,1,16,3,belion_attack,0.1,res://assets/art/shadow/belion_sheet.png,state3,4,3,195,363,8,8,6,0.1,벨리온,,60,22,15,-95,200,,,,,

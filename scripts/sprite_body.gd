@@ -32,8 +32,21 @@ var _animation_row := -1
 var _pose_moving := false
 var _using_idle := false
 var _walk_frame_column := 0
+var motion_values: Dictionary = {}
+var motion_transform := Transform2D.IDENTITY
+var _motion_clock := 0.0
+var _visual_cast_active := false
+var _lunge_remaining := 0.0
+var _lunge_direction := Vector2.RIGHT
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
+	motion_values.clear()
+	for key in ["Bob_px","Step_hz","Squash","Tilt_deg","Breath"]:
+		if record.get(key)!=null: motion_values[key] = float(record[key])
+	motion_transform = Transform2D.IDENTITY
+	_motion_clock = 0.0
+	_visual_cast_active = false
+	_lunge_remaining = 0.0
 	var presentation: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
 	flip_deadband = float(presentation.Flip_deadband)
 	idle_texture = null
@@ -68,12 +81,12 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 		_use_fallback("Sprite_path 파일이 없어 원형 표시를 사용합니다: "+path)
 		return
 	var loaded: Resource = texture if texture!=null and texture.resource_path==path else ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_REUSE)
-	if not (loaded is Texture2D) or not (layout in ["dir3","state3","walk1","walk_shoot"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
+	if not (loaded is Texture2D) or not (layout in ["dir3","state3","walk1","walk_shoot","pose"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
 		_use_fallback("스프라이트 설정을 읽을 수 없어 원형 표시를 사용합니다: "+path)
 		return
 	texture = loaded
 	using_fallback = false
-	if record.has("Idle_sprite_path"):
+	if record.has("Idle_sprite_path") and layout!="pose":
 		var idle_path := String(record.get("Idle_sprite_path","")).strip_edges()
 		if idle_path.is_empty() or not ResourceLoader.exists(idle_path,"Texture2D"):
 			print("ART-03 경고: Idle_sprite_path가 비었거나 파일이 없어 이동 시트 첫 칸을 사용합니다: "+idle_path)
@@ -88,6 +101,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	queue_redraw()
 
 func configure_snapshot(snapshot: Dictionary) -> void:
+	motion_transform = snapshot.get("motion_transform",Transform2D.IDENTITY)
 	flip_deadband = float(snapshot.get("flip_deadband",0.3))
 	anchor_x = snapshot.get("anchor_x")
 	sprite_tint = snapshot.get("sprite_tint",Color.WHITE)
@@ -115,6 +129,7 @@ func configure_snapshot(snapshot: Dictionary) -> void:
 
 func pose_snapshot() -> Dictionary:
 	return {
+		"motion_transform":motion_transform,
 		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
 		"anchor_x":anchor_x,"sprite_tint":sprite_tint,
@@ -127,6 +142,13 @@ func pose_snapshot() -> Dictionary:
 	}
 
 func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
+	if layout=="pose":
+		update_movement_flip(direction)
+		var normalized := direction.normalized()
+		frame_row = 0
+		frame_column = 1 if moving and columns>1 and normalized.y < -flip_deadband and absf(normalized.y)>absf(normalized.x) else 0
+		advance_pose_motion(moving,delta)
+		return
 	if direction!=Vector2.ZERO:
 		if absf(direction.x)>absf(direction.y):
 			frame_row = 2
@@ -152,6 +174,9 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	queue_redraw()
 
 func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
+	if layout=="pose":
+		advance_shadow_pose(direction,moving,delta,false,direction)
+		return
 	update_movement_flip(direction)
 	var next_row := 1 if moving else 0
 	if _animation_row!=next_row:
@@ -176,6 +201,10 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 	if not keep_facing:
 		update_movement_flip(direction)
 	frame_row = 0
+	if layout=="pose":
+		frame_column = 0
+		advance_pose_motion(moving,delta)
+		return
 	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
 	frame_column = floori(_animation_elapsed*animation_fps)%maxi(columns,1) if moving else 0
 	_walk_frame_column = frame_column
@@ -191,6 +220,43 @@ func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void
 		elif remaining<=0.3+0.000000001:
 			frame_row = 1
 			frame_column = 0 if remaining>0.15+0.000000001 else 1
+	queue_redraw()
+
+func advance_shadow_pose(direction: Vector2, moving: bool, delta: float, attacking: bool, attack_direction: Vector2) -> void:
+	if attacking:
+		if attack_direction.x<0: flip_h = true
+		elif attack_direction.x>0: flip_h = false
+	else: update_movement_flip(direction)
+	frame_row = 0
+	frame_column = 1 if attacking and columns>1 else 0
+	advance_pose_motion(moving,delta,attacking,attack_direction)
+
+func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, attack_direction: Vector2 = Vector2.RIGHT) -> void:
+	_motion_clock += maxf(delta,0.0)
+	var began := attacking and not _visual_cast_active
+	if began:
+		_lunge_remaining = 0.1
+		_lunge_direction = attack_direction.normalized()
+	else: _lunge_remaining = maxf(0.0,_lunge_remaining-maxf(delta,0.0))
+	_visual_cast_active = attacking
+	motion_transform = Transform2D.IDENTITY
+	if motion_values.is_empty():
+		queue_redraw()
+		return
+	var wave := sin(_motion_clock*TAU*float(motion_values.get("Step_hz",0.0))) if moving else 0.0
+	var bounce := absf(wave)
+	var squash := float(motion_values.get("Squash",0.0))*bounce
+	var stretch := Vector2(1.0+squash,1.0-squash)
+	var offset := Vector2(0,-float(motion_values.get("Bob_px",0.0))*bounce)
+	if not moving: stretch.y += float(motion_values.get("Breath",0.0))*sin(_motion_clock*TAU)
+	if _lunge_remaining>0:
+		var impulse := _lunge_remaining/0.1
+		offset += _lunge_direction*4.0*impulse
+		stretch *= Vector2(1.0+0.1*impulse,1.0-0.1*impulse)
+	var angle := deg_to_rad(float(motion_values.get("Tilt_deg",0.0)))*wave
+	motion_transform = Transform2D(angle,stretch,0.0,Vector2.ZERO)
+	var pivot := Vector2(0,foot_y)
+	motion_transform.origin = pivot+offset-motion_transform*pivot
 	queue_redraw()
 
 func update_movement_flip(direction: Vector2) -> void:
@@ -237,7 +303,7 @@ func _draw() -> void:
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 func image_transform() -> Transform2D:
-	return Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
+	return motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
 
 static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
 	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,size.y/size.x))

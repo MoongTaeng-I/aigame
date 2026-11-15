@@ -5,7 +5,7 @@ func run(t: SceneTree) -> void:
 	var failed: int = t.failures
 	var store: CsvDataStore = t._store()
 	t.check(store.load_all().is_empty(),"ART-06 real data loads with new optional columns")
-	for entry in [["player.csv","player_01",185.0],["shadow.csv","igrit",170.0],["shadow.csv","belion",200.0],["shadow.csv","charger_test",279.0]]:
+	for entry in [["player.csv","player_01",68.0],["shadow.csv","igrit",125.0],["shadow.csv","belion",200.0],["shadow.csv","charger_test",279.0]]:
 		var row: Dictionary = store.get_row(entry[0],entry[1])
 		var view := preload("res://scripts/sprite_body.gd").new()
 		t.root.add_child(view)
@@ -45,18 +45,18 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	await t.physics_frame
 	await t.physics_frame
 	var image: Node2D = a.sprite_body
-	t.check(image!=null and image.texture.get_size()==Vector2(1848,301) and image.source_rect().size==Vector2(308,301),"ART-07 bear1848x301 cells308x301")
+	t.check(image!=null and image.texture.get_size()==Vector2(237,222) and image.source_rect().size==Vector2(237,222),"ART-09 bear237x222 single pose")
 	t.check(image.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and image.texture.get_image().has_mipmaps(),"ART-06 bear transparency and mipmaps")
 	t.check(image.texture==b.sprite_body.texture,"ART-06 bear actors share one cached texture")
-	t.check(image.layout=="walk1" and image.anchor_x==154 and image.cell_height==72 and image.shadow_size==Vector2(48,16),"ART-07 bear walk1 dimensions anchor ground ellipse")
+	t.check(image.layout=="pose" and image.anchor_x==118 and image.cell_height==111 and image.shadow_size==Vector2(48,16),"ART-09 bear pose dimensions anchor unchanged ground ellipse")
 	t.check(a.enemy_id=="enemy_01" and a.body_radius==16 and a.move_speed==120 and a.contact_damage==5 and a.push_weight==1 and a.max_hp==30,"ART-06 bear preserves identity and physical/combat values")
 	a.update_actor(1.0/13,Vector2(400,0),n.map.get_map_rect())
-	t.check(image.frame_row==0 and image.frame_column==1 and not image.flip_h,"ART-07 walk1 advances13fps right-facing")
+	t.check(image.frame_row==0 and image.frame_column==0 and not image.flip_h,"ART-09 moving bear keeps single pose")
 	a.update_walk_visual(a.global_position+Vector2(-100,0),true,0,false)
 	t.check(image.flip_h,"ART-06 player left flips bear")
 	a.update_walk_visual(a.global_position+Vector2(0,100),true,0,false)
 	t.check(image.flip_h,"ART-06 player vertical preserves previous flip")
-	var base := Color("#d0d8f0")
+	var base := Color.WHITE
 	t.check(image.sprite_tint==base and a.modulate==Color.WHITE and image.modulate==Color.WHITE,"ART-06 tint applies to texture only, not actor fade or ground shadow")
 	a.apply_fear(1)
 	a.update_actor(0.1,Vector2(400,0),n.map.get_map_rect())
@@ -90,7 +90,7 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	row.Sprite_tint = "#d0d8f0"
 	row.Sprite_anchor_x = -1
 	t.check(preload("res://scripts/combat_data.gd").validate(store).contains("Sprite_anchor_x"),"ART-06 invalid enemy anchor rejected")
-	row.Sprite_anchor_x = 154
+	row.Sprite_anchor_x = 118
 	main.queue_free()
 	await t.process_frame
 	await t.process_frame

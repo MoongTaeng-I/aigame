@@ -1,6 +1,6 @@
-﻿Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value,Sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_anchor_x,Sprite_foot_y,Anim_fps,Shadow_w,Shadow_h,Sprite_tint
-enemy_01,아이스 베어,120,melee,16,1,A단계 검증용 시작값,30,5,1,0.4,,,,1,res://assets/art/enemy/bear_walk6_sheet.png,walk1,6,1,72,289,154,8,13,48,16,#d0d8f0
-enemy_test_ranged,아이스 엘프,100,ranged,16,1,정식 원거리 적(ART-08),30,5,1,0.4,2,400,proj_test_01,2,res://assets/art/enemy/elf_sheet.png,walk_shoot,4,2,97,424,144,8,8,36,13,#d0d8f0
-boss_ice_bear,아이스 베어 우두머리,90,melee,48,50,A단계 검증용 시작값,1100,10,1,0.4,,,,50,,,,,,,,,,,,
-boss_ice_elf,아이스 엘프 정예병,110,ranged,28,10,S8-IMPL-02 초안,525,0,1,0.4,0.8,416,elf_arrow,70,,,,,,,,,,,,
-boss_baruka,바루카,0,melee,30,20,S8-IMPL-03 일반 속도는 boss.csv 참조 계산,1750,10,1,0.4,,,,0,,,,,,,,,,,,
+﻿Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value,Sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_anchor_x,Sprite_foot_y,Anim_fps,Shadow_w,Shadow_h,Sprite_tint,Bob_px,Step_hz,Squash,Tilt_deg,Breath
+enemy_01,아이스 베어,120,melee,16,1,A단계 검증용 시작값,30,5,1,0.4,,,,1,res://assets/art/sd/sd_bear.png,pose,1,1,111,219,118,8,13,48,16,#ffffff,3,3,0.05,3,0
+enemy_test_ranged,아이스 엘프,100,ranged,16,1,정식 원거리 적(ART-08),30,5,1,0.4,2,400,proj_test_01,2,res://assets/art/enemy/elf_sheet.png,walk_shoot,4,2,97,424,144,8,8,36,13,#d0d8f0,,,,,
+boss_ice_bear,아이스 베어 우두머리,90,melee,48,50,A단계 검증용 시작값,1100,10,1,0.4,,,,50,,,,,,,,,,,,,,,,,
+boss_ice_elf,아이스 엘프 정예병,110,ranged,28,10,S8-IMPL-02 초안,525,0,1,0.4,0.8,416,elf_arrow,70,,,,,,,,,,,,,,,,,
+boss_baruka,바루카,0,melee,30,20,S8-IMPL-03 일반 속도는 boss.csv 참조 계산,1750,10,1,0.4,,,,0,,,,,,,,,,,,,,,,,
