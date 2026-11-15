@@ -31,6 +31,7 @@ var _animation_elapsed := 0.0
 var _animation_row := -1
 var _pose_moving := false
 var _using_idle := false
+var _walk_frame_column := 0
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
 	var presentation: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
@@ -42,6 +43,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	_pose_moving = false
 	frame_column = 0
 	frame_row = 0
+	_walk_frame_column = 0
 	flip_h = false
 	anchor_x = record.get("Sprite_anchor_x")
 	sprite_tint = Color(String(record.Sprite_tint)) if record.get("Sprite_tint")!=null else Color.WHITE
@@ -66,7 +68,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 		_use_fallback("Sprite_path 파일이 없어 원형 표시를 사용합니다: "+path)
 		return
 	var loaded: Resource = texture if texture!=null and texture.resource_path==path else ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_REUSE)
-	if not (loaded is Texture2D) or not (layout in ["dir3","state3","walk1"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
+	if not (loaded is Texture2D) or not (layout in ["dir3","state3","walk1","walk_shoot"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
 		_use_fallback("스프라이트 설정을 읽을 수 없어 원형 표시를 사용합니다: "+path)
 		return
 	texture = loaded
@@ -176,6 +178,19 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 	frame_row = 0
 	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
 	frame_column = floori(_animation_elapsed*animation_fps)%maxi(columns,1) if moving else 0
+	_walk_frame_column = frame_column
+	queue_redraw()
+
+func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void:
+	frame_row = 0
+	frame_column = _walk_frame_column
+	if enabled:
+		if release_age<0.2-0.000000001:
+			frame_row = 1
+			frame_column = 2 if release_age<0.1-0.000000001 else 3
+		elif remaining<=0.3+0.000000001:
+			frame_row = 1
+			frame_column = 0 if remaining>0.15+0.000000001 else 1
 	queue_redraw()
 
 func update_movement_flip(direction: Vector2) -> void:

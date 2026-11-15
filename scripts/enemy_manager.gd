@@ -235,6 +235,12 @@ func _on_enemy_died(enemy: EnemyActor) -> void:
 		enemy_died.emit(enemy)
 
 func _update_enemy_shot(enemy: EnemyActor, delta: float) -> void:
+	var count_before := _projectiles.size()
+	_advance_enemy_shot(enemy,delta)
+	var enabled: bool = not _player.is_stealthed() and not enemy.is_feared() and enemy.is_active and not enemy.is_logically_dead and not enemy.projectile_id.is_empty() and enemy.shot_interval_sec>0.0 and enemy.global_position.distance_to(_player.global_position)<=enemy.shot_range
+	enemy.update_shoot_visual(_player.global_position,enabled,delta,_projectiles.size()>count_before)
+
+func _advance_enemy_shot(enemy: EnemyActor, delta: float) -> void:
 	if _player.is_stealthed() or enemy.is_feared():
 		return
 	if not enemy.is_active or enemy.is_logically_dead or enemy.projectile_id.is_empty() or enemy.shot_interval_sec <= 0.0:

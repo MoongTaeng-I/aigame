@@ -31,6 +31,7 @@ var shot_interval_sec: float = 0.0
 var shot_range: float = 0.0
 var projectile_id: String = ""
 var shot_elapsed: float = 0.0
+var shot_visual_age: float = 1.0
 var knockback_direction := Vector2.ZERO
 var knockback_distance: float = 0.0
 var knockback_duration: float = 0.0
@@ -83,6 +84,7 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	is_logically_dead = false
 	spawn_order = order
 	shot_elapsed = 0.0
+	shot_visual_age = 1.0
 	has_wander_target = false
 	fear_remaining = 0.0
 	_fade_elapsed = 0.0
@@ -213,6 +215,7 @@ func draw_body(canvas: Node2D) -> void:
 	canvas.draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, OUTLINE_COLOR, 2.0)
 
 func configure_visual() -> void:
+	shot_visual_age = 1.0
 	if visual_record.get("Sprite_path")==null or String(visual_record.get("Sprite_path","")).is_empty():
 		if sprite_body!=null: sprite_body.hide()
 		return
@@ -235,3 +238,11 @@ func update_walk_visual(player_position: Vector2, moved: bool, delta: float, kee
 	if sprite_body==null or not sprite_body.visible: return
 	sprite_body.advance_walk_pose(global_position.direction_to(player_position),moved and not is_feared(),delta,keep_facing)
 	update_sprite_tint()
+
+func update_shoot_visual(player_position: Vector2, enabled: bool, delta: float, fired: bool) -> void:
+	if sprite_body==null or not sprite_body.visible or sprite_body.layout!="walk_shoot": return
+	shot_visual_age = 0.0 if fired else shot_visual_age+maxf(delta,0.0)
+	if not enabled: shot_visual_age = 1.0
+	if knockback_elapsed>=knockback_duration:
+		sprite_body.update_movement_flip(global_position.direction_to(player_position))
+	sprite_body.set_shoot_pose(shot_interval_sec-shot_elapsed,shot_visual_age,enabled)
