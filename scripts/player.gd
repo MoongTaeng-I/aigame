@@ -10,6 +10,13 @@ var trail_elapsed := 0.0
 signal leveled_up(new_level: int)
 signal damaged(world_position: Vector2)
 signal died
+signal death_presented
+var death_presentation: Node
+var death_presentation_complete := false
+var last_hit_direction := Vector2.RIGHT
+var basic_pose_remaining := 0.0
+var basic_pose_started := false
+var basic_pose_direction := Vector2.RIGHT
 var managed_results := false
 var run_finished := false
 var level: int = 1
@@ -128,15 +135,27 @@ func apply_damage(amount: int) -> void:
     _update_hp_label()
     if hp == 0:
         is_dead = true
-        if not managed_results:
-            _death_label = Label.new()
-            _death_label.text = "사망"
-            _death_label.position = Vector2(570.0, 320.0)
-            _death_label.add_theme_font_size_override("font_size", 48)
-            _death_label.add_theme_color_override("font_color", Color("#ff7b83"))
-            _hud_layer.add_child(_death_label)
         get_tree().paused = true
+        death_presentation = preload("res://scripts/player_death_presentation.gd").new()
+        add_child(death_presentation)
+        death_presentation.configure(self,presentation)
         died.emit()
+
+func record_damage_source(source: Vector2) -> void:
+    var direction := global_position.direction_to(source)
+    last_hit_direction = direction if direction!=Vector2.ZERO else last_move_direction
+
+func finish_death_presentation() -> void:
+    if death_presentation_complete: return
+    death_presentation_complete = true
+    if not managed_results:
+        _death_label = Label.new()
+        _death_label.text = "사망"
+        _death_label.position = Vector2(570.0,320.0)
+        _death_label.add_theme_font_size_override("font_size",48)
+        _death_label.add_theme_color_override("font_color",Color("#ff7b83"))
+        _hud_layer.add_child(_death_label)
+    death_presented.emit()
 
 func update_basic_attack(now: float, enemies: Array) -> void:
     if is_dead or run_finished or _attack_data.is_empty():
@@ -198,6 +217,10 @@ func heal_percent(percent: float) -> void:
 func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var facing: Vector2 = global_position.direction_to(target.global_position)
     if facing==Vector2.ZERO: facing = last_move_direction
+    basic_pose_started = true
+    basic_pose_remaining = float(presentation.get("Basic_pose_after_sec",0.08))
+    basic_pose_direction = facing
+    apply_basic_pose()
     var base := global_position+facing*body_radius
     var width := _attack_cast_range*float(_attack_data.get("Tri_width_ratio",0.381))
     if visuals_enabled:
@@ -262,6 +285,7 @@ func begin_dash(distance: float, duration: float) -> void:
 func _physics_process(delta: float) -> void:
     if is_dead:
         return
+    basic_pose_remaining = maxf(0,basic_pose_remaining-delta)
     stealth_remaining = maxf(0.0,stealth_remaining-delta)
     var frozen_time := minf(delta,freeze_remaining)
     freeze_remaining = maxf(0.0,freeze_remaining-delta)
@@ -287,6 +311,7 @@ func _physics_process(delta: float) -> void:
         var moved := global_position.distance_squared_to(before)>0.000001
         var slash_active: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
         sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
+        apply_basic_pose()
     if dash_pass_through and visuals_enabled:
         var at := trail_elapsed
         while at<=dash_step+0.000000001:
@@ -332,3 +357,14 @@ func draw_body(canvas: Node2D) -> void:
     if sprite_body==null:
         canvas.draw_circle(Vector2.ZERO, body_radius, PLAYER_COLOR)
         canvas.draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, Color("#eee6ff"), 2.0)
+
+func apply_basic_pose() -> void:
+    if sprite_body==null or sprite_body.layout!="pose" or is_dead: return
+    if int(presentation.get("Basic_pose_enabled",1))==0 or not basic_pose_started: return
+    if _remaining_hits<=0 and basic_pose_remaining<=0.000000001: return
+    var slash: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
+    if fear_cast_remaining>0 or dash_remaining>0 or slash: return
+    sprite_body.frame_row = 0
+    sprite_body.frame_column = clampi(int(presentation.get("Basic_pose_col",3)),0,sprite_body.columns-1)
+    if basic_pose_direction.x!=0: sprite_body.flip_h = basic_pose_direction.x<0
+    sprite_body.queue_redraw()

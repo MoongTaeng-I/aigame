@@ -45,13 +45,13 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	await t.physics_frame
 	await t.physics_frame
 	var image: Node2D = a.sprite_body
-	t.check(image!=null and image.texture.get_size()==Vector2(237,222) and image.source_rect().size==Vector2(237,222),"ART-09 bear237x222 single pose")
+	t.check(image!=null and image.texture.get_size()==Vector2(2700,230) and image.source_rect().size==Vector2(300,230),"ART-09 bear237x222 single pose")
 	t.check(image.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and image.texture.get_image().has_mipmaps(),"ART-06 bear transparency and mipmaps")
 	t.check(image.texture==b.sprite_body.texture,"ART-06 bear actors share one cached texture")
-	t.check(image.layout=="pose" and image.anchor_x==118 and image.cell_height==111 and image.shadow_size==Vector2(64,20),"ART-10 bear pose dimensions anchor ground64x20")
+	t.check(image.layout=="pose" and image.anchor_x==150 and image.cell_height==115 and image.shadow_size==Vector2(64,20),"ART-10 bear pose dimensions anchor ground64x20")
 	t.check(a.enemy_id=="enemy_01" and a.body_radius==16 and a.move_speed==120 and a.contact_damage==5 and a.push_weight==1 and a.max_hp==30,"ART-06 bear preserves identity and physical/combat values")
 	a.update_actor(1.0/13,Vector2(400,0),n.map.get_map_rect())
-	t.check(image.frame_row==0 and image.frame_column==0 and not image.flip_h,"ART-09 moving bear keeps single pose")
+	t.check(image.frame_row==0 and image.frame_column==1 and not image.flip_h,"ART-14 moving bear starts walking cell1")
 	a.update_walk_visual(a.global_position+Vector2(-100,0),true,0,false)
 	t.check(image.flip_h,"ART-06 player left flips bear")
 	a.update_walk_visual(a.global_position+Vector2(0,100),true,0,false)
@@ -90,7 +90,7 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	row.Sprite_tint = "#d0d8f0"
 	row.Sprite_anchor_x = -1
 	t.check(preload("res://scripts/combat_data.gd").validate(store).contains("Sprite_anchor_x"),"ART-06 invalid enemy anchor rejected")
-	row.Sprite_anchor_x = 118
+	row.Sprite_anchor_x = 150
 	main.queue_free()
 	await t.process_frame
 	await t.process_frame

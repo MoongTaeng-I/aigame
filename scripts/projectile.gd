@@ -52,6 +52,7 @@ func advance(delta: float) -> void:
 	if player != null and is_instance_valid(player) and _segment_hits_player(origin, global_position):
 		spent = true
 		visible = false
+		if player.has_method("record_damage_source"): player.record_damage_source(origin)
 		player.apply_damage(damage)
 		queue_free()
 		return

@@ -3,7 +3,7 @@ extends RefCounted
 func run(t: SceneTree) -> void:
 	var store: CsvDataStore = t._store()
 	t.check(store.load_all().is_empty(),"ART-09 pose data loads")
-	for entry in [["player.csv","player_01",Vector2(4641,221),Vector2(221,221),110],["shadow.csv","igrit",Vector2(782,287),Vector2(391,287),143],["enemy.csv","enemy_01",Vector2(237,222),Vector2(237,222),111]]:
+	for entry in [["player.csv","player_01",Vector2(5083,221),Vector2(221,221),110],["shadow.csv","igrit",Vector2(3910,287),Vector2(391,287),143],["enemy.csv","enemy_01",Vector2(2700,230),Vector2(300,230),115]]:
 		var view := SpriteBody.new()
 		view.configure(store.get_row(entry[0],entry[1]),16,Color.WHITE,Color.WHITE)
 		t.check(view.layout=="pose" and view.texture.get_size()==entry[2] and view.source_rect().size==entry[3] and view.texture.get_image().detect_alpha()!=Image.ALPHA_NONE,"ART-09 transparent SD sheet "+entry[1])

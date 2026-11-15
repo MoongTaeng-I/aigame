@@ -10,7 +10,7 @@ func run(t: SceneTree) -> void:
 	t.check(store.load_all().is_empty(),"ART13 actual CSV schemas load")
 	var row: Dictionary = store.get_row("player.csv","player_01")
 	var view := make_view(row)
-	t.check(view.texture.get_size()==Vector2(4641,221) and view.columns==21 and view.source_rect().size==Vector2(221,221),"ART13 player21 cells221x221")
+	t.check(view.texture.get_size()==Vector2(5083,221) and view.columns==23 and view.source_rect().size==Vector2(221,221),"ART14 player23 cells221x221")
 	t.check(view.walk_fps==12 and view.motion_values.Bob_px==2 and view.motion_values.Step_hz==1.5 and view.motion_values.Squash==0.03 and view.motion_values.Tilt_deg==1,"ART13 approved walking fps and motion")
 	for direction in [Vector2.DOWN,Vector2.RIGHT,Vector2.UP]:
 		view.configure(row,16,Color.WHITE,Color.WHITE)
@@ -47,14 +47,14 @@ func run(t: SceneTree) -> void:
 	view.configure(no_back,16,Color.WHITE,Color.WHITE)
 	view.advance_pose(Vector2.UP,true,0.25)
 	t.check(view.frame_column==8,"ART13 missing back span uses front walking")
-	for bad in ["a-b","5-21","12-5","-1-4","5","5-4294967296"]:
+	for bad in ["a-b","5-23","12-5","-1-4","5","5-4294967296"]:
 		var invalid: Dictionary = row.duplicate()
 		invalid.Walk_cols = bad
 		view.configure(invalid,16,Color.WHITE,Color.WHITE)
 		view.advance_pose(Vector2.UP,true,0.1)
 		t.check(view.walk_cols.x<0 and view.frame_column==1,"ART13 invalid span warns and uses original back pose "+bad)
 	var invalid: Dictionary = row.duplicate()
-	invalid.Walk_back_cols = "13-21"
+	invalid.Walk_back_cols = "13-23"
 	view.configure(invalid,16,Color.WHITE,Color.WHITE)
 	view.advance_pose(Vector2.RIGHT,true,0.1)
 	t.check(view.frame_column==0,"ART13 invalid back span disables walking safely")
@@ -77,6 +77,7 @@ func run(t: SceneTree) -> void:
 	view.free()
 	for file in ["enemy.csv","shadow.csv"]:
 		for record in store.get_table(file).values():
+			if record.Walk_cols!=null: continue # ART14 bear/igrit are covered by their new walking tests.
 			var before: Dictionary = record.duplicate()
 			for key in ["Walk_cols","Walk_back_cols","Walk_fps"]: before.erase(key)
 			var actual := make_view(record)

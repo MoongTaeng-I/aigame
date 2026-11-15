@@ -144,6 +144,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		toggle_pause()
 
 func toggle_pause() -> void:
+	if is_instance_valid(session) and session.round_finished: return
 	if state=="paused":
 		resume()
 		return
@@ -153,6 +154,7 @@ func toggle_pause() -> void:
 	ui.show_modal("일시정지","",[{"text":"계속","call":resume},{"text":"메인으로","call":show_menu}])
 
 func resume() -> void:
+	if is_instance_valid(session) and session.round_finished: return
 	if state!="paused": return
 	ui.close_modal()
 	ui.queue_redraw()

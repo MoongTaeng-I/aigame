@@ -84,6 +84,7 @@ func run(tree: SceneTree) -> void:
 	var level: int = n.player.level
 	var old := descendants(flow.session)
 	n.player.apply_damage(n.player.hp)
+	if not n.player.death_presentation_complete: await n.player.death_presented
 	t.check(flow.state=="result" and t.paused and not flow.result.cleared,"S9 actual death creates failed result and immediate pause")
 	t.check(flow.result.seconds==132.7 and flow.result.level==level and flow.result.kills==2 and flow.result.shadows==names,"S9 death summary exact time level kills owned shadow names")
 	t.check(flow.ui.result_text.text.contains("02:12") and flow.ui.result_text.text.contains("처치 수  2") and n.player._death_label==null,"S9 MM:SS result replaces standalone death label")

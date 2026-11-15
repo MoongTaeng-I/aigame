@@ -182,6 +182,7 @@ func advance() -> void:
 			if kind==8: leave_trails(minf(now(),end_time))
 			if kind in [7,8,9] and not boss.dash_hit and Geometry.in_corridor(target().global_position,previous,boss.global_position,boss.facing,boss.body_radius+target().body_radius):
 				boss.dash_hit = true
+				if target().has_method("record_damage_source"): target().record_damage_source(boss.origin)
 				target().apply_damage(int(boss.current.Damage))
 			if now()+0.000000001<end_time: return
 			boss.global_position = boss.dash_end
@@ -189,6 +190,7 @@ func advance() -> void:
 			if kind==7:
 				if not boss.dash_hit and triangle_contains(target().global_position):
 					boss.dash_hit = true
+					if target().has_method("record_damage_source"): target().record_damage_source(boss.origin)
 					target().apply_damage(int(boss.current.Damage))
 				finish(end_time)
 				return

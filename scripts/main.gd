@@ -22,6 +22,8 @@ var supplied_data: CsvDataStore
 var managed_flow := false
 var round_finished := false
 var kills := 0
+var round_result: Dictionary = {}
+var result_emitted := false
 var round_nodes: Dictionary = {}
 
 func _ready() -> void:
@@ -144,6 +146,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 		player._hp_label.position = Vector2(20,558)
 		experience_manager._label.position = Vector2(20,596)
 		player.died.connect(_end_round.bind(false))
+		player.death_presented.connect(_present_round_result)
 		boss_director.run_completed.connect(_end_round.bind(true))
 		enemy_manager.enemy_died.connect(_count_kill)
 	round_nodes = {"map":map,"player":player,"manager":enemy_manager,"skills":skill_manager,"choices":choices,"shadows":shadows,"director":boss_director}
@@ -157,7 +160,7 @@ func _end_round(cleared: bool) -> void:
 	var player: Node2D = round_nodes.player
 	var names: Array[String] = []
 	for actor in round_nodes.shadows.actors: names.append(String(actor.config.Name_ko))
-	var result := {"cleared":cleared,"seconds":round_nodes.manager._elapsed_seconds,"level":player.level,"kills":kills,"shadows":names}
+	round_result = {"cleared":cleared,"seconds":round_nodes.manager._elapsed_seconds,"level":player.level,"kills":kills,"shadows":names}
 	player.run_finished = true
 	round_nodes.director.result_locked = true
 	round_nodes.choices.result_locked = true
@@ -166,7 +169,12 @@ func _end_round(cleared: bool) -> void:
 	round_nodes.choices.ui.hide()
 	round_nodes.director.toast_view.result_keep_running = true
 	get_tree().paused = true
-	round_ended.emit(result)
+	if cleared or not player.is_dead or player.death_presentation_complete: _present_round_result()
+
+func _present_round_result() -> void:
+	if not round_finished or result_emitted: return
+	result_emitted = true
+	round_ended.emit(round_result.duplicate(true))
 
 func _validate_gameplay_data(data_store: Variant, player_record: Dictionary, enemy_records: Dictionary, spawn_records: Dictionary, spawn_rule: Dictionary) -> String:
 	if float(player_record["Body_radius"]) <= 0.0:

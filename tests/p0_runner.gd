@@ -67,6 +67,7 @@ func _run() -> void:
 	await preload("res://tests/art11_p0.gd").new().run(self)
 	await preload("res://tests/art12_p0.gd").new().run(self)
 	await preload("res://tests/art13_p0.gd").new().run(self)
+	await preload("res://tests/art14_p0.gd").new().run(self)
 	await preload("res://tests/art04_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)
@@ -425,6 +426,7 @@ func _test_player_death() -> void:
 	f.player.configure_combat(10,_attack())
 	f.player.apply_damage(10)
 	check(f.player.is_dead and paused, "P0-10 zero HP pauses SceneTree")
+	if not f.player.death_presentation_complete: await f.player.death_presented
 	check(f.player._death_label != null and f.player._death_label.visible and f.player._death_label.text == "\uC0AC\uB9DD", "P0-10 death indicator appears")
 	check(f.player._hp_label.text.contains("0 / 10"), "P0-10 temporary HP display reflects death")
 	f.player.apply_damage(10)

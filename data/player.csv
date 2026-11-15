@@ -1,2 +1,2 @@
 ﻿Id,Name_ko,Move_speed,Body_radius,Push_weight,Sprite_path,Idle_sprite_path,Sprite_layout,Sprite_cols,Sprite_rows,Sprite_cell_height,Sprite_baseline,Sprite_foot_y,Anim_fps,Idle_fps,Note,Max_hp,Pickup_radius,Shadow_w,Shadow_h,Sprite_anchor_x,Bob_px,Step_hz,Squash,Tilt_deg,Breath,Walk_cols,Walk_back_cols,Walk_fps
-player_01,플레이어,250,16,3,res://assets/art/sd/sd_player.png,,pose,21,1,110,202,8,12,6,A단계 검증용 시작값,100,100,32,12,101,2,1.5,0.03,1,0.02,5-12,13-20,12
+player_01,플레이어,250,16,3,res://assets/art/sd/sd_player.png,,pose,23,1,110,202,8,12,6,A단계 검증용 시작값,100,100,32,12,101,2,1.5,0.03,1,0.02,5-12,13-20,12

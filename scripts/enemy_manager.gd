@@ -506,6 +506,7 @@ func _apply_contact_damage(enemy: EnemyActor) -> void:
 	var ready_at := float(_contact_ready_at.get(key, 0.0))
 	if _elapsed_seconds + 0.000000001 < ready_at:
 		return
+	if _player.has_method("record_damage_source"): _player.record_damage_source(enemy.global_position)
 	_player.apply_damage(enemy.contact_damage)
 	_contact_ready_at[key] = _elapsed_seconds + enemy.contact_rehit_sec
 

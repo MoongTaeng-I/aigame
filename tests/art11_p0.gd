@@ -6,7 +6,7 @@ func run(t: SceneTree) -> void:
 	var row: Dictionary = store.get_row("player.csv","player_01")
 	var view := SpriteBody.new()
 	view.configure(row,16,Color.WHITE,Color.WHITE)
-	t.check(view.texture.get_size()==Vector2(4641,221) and view.columns==21 and view.rows==1 and view.source_rect().size==Vector2(221,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-13 player21 columns retains original five poses")
+	t.check(view.texture.get_size()==Vector2(5083,221) and view.columns==23 and view.rows==1 and view.source_rect().size==Vector2(221,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-13 player21 columns retains original five poses")
 	t.check(view.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and view.texture.get_image().has_mipmaps(),"ART-11 player alpha and mipmaps")
 	var dragon: Texture2D = load("res://assets/art/fx/fx_dragon_head.png")
 	t.check(dragon.get_size()==Vector2(496,640) and dragon.get_image().detect_alpha()!=Image.ALPHA_NONE and dragon.get_image().has_mipmaps(),"ART-11 dragon496x640 alpha mipmaps")

@@ -83,3 +83,14 @@ Stealth_wave_hz,0.6
 Stealth_wave_strength,0.15
 Boss_strike_pose_sec,0.25
 Boss_shot_pose_sec,0.2
+Death_present_sec,1.2
+Death_stagger_sec,0.3
+Death_drop_sec,0.12
+Death_knock_px,7
+Death_tilt_deg,6
+Death_flash_sec,0.3
+Death_drop_squash,0.12
+Death_dim_alpha,0.45
+Basic_pose_enabled,1
+Basic_pose_col,3
+Basic_pose_after_sec,0.08

@@ -189,6 +189,7 @@ func advance_action() -> void:
 		else:
 			var hit := Geometry.in_sector(origin,facing,float(current.Range),float(current.Arc_deg),target.global_position) if int(current.Kind)==0 else origin.distance_to(target.global_position)<=float(current.Slam_radius)
 			if hit:
+				if target.has_method("record_damage_source"): target.record_damage_source(origin)
 				target.apply_damage(int(current.Damage))
 				if int(current.Kind)==2: push_skill_hit(target)
 			finish_action(phase_end)
@@ -200,6 +201,7 @@ func advance_action() -> void:
 		# Telegraph and damage both use the clipped body-width corridor.
 		if not dash_hit and Geometry.in_corridor(target.global_position,previous,global_position,facing,body_radius):
 			dash_hit = true
+			if target.has_method("record_damage_source"): target.record_damage_source(origin)
 			target.apply_damage(int(current.Damage))
 			push_skill_hit(target)
 		if travelled>=dash_length: finish_action(dash_started+dash_length/float(current.Dash_speed))

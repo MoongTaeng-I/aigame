@@ -23,6 +23,7 @@ var frame_column := 0
 var flip_h := false
 var using_fallback := true
 var show_shadow := true
+var show_image := true
 var shadow_size := SHADOW_SIZE
 var fallback_radius := 18.0
 var fallback_color := Color("#b18cff")
@@ -363,6 +364,7 @@ func _use_fallback(message: String) -> void:
 
 func _draw() -> void:
 	if show_shadow: draw_ground_shadow(self,shadow_size)
+	if not show_image: return
 	if using_fallback or texture==null:
 		draw_circle(Vector2.ZERO,fallback_radius,fallback_color)
 		draw_arc(Vector2.ZERO,fallback_radius,0.0,TAU,48,fallback_outline,2.0)
