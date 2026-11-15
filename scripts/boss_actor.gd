@@ -20,8 +20,15 @@ var dash_hit := false
 var rng := RandomNumberGenerator.new()
 var elf: RefCounted
 var baruka: RefCounted
+var visual_settings: Dictionary = {}
+var visual_strike_until := -1.0
+var visual_shot_until := -1.0
+var visual_facing := Vector2.RIGHT
 
 func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable) -> void:
+	visual_settings = preload("res://scripts/shadow_afterimage.gd").presentation()
+	visual_strike_until = -1.0
+	visual_shot_until = -1.0
 	manager = owner_manager
 	actions = rows.duplicate(true)
 	target_provider = provider
@@ -66,6 +73,30 @@ func is_boss_dashing() -> bool:
 	return phase=="dash" and not current.is_empty()
 
 func boss_tick(delta: float) -> void:
+	var previous_position := global_position
+	var previous_action := current.duplicate()
+	var previous_phase := phase
+	var previous_end := phase_end
+	var previous_shots: int = elf.shots_fired if elf!=null else 0
+	var previous_push: float = elf.push_effect_until if elf!=null else 0.0
+	var previous_burst: bool = elf.burst if elf!=null else false
+	_tick_behavior(delta)
+	if not is_active or is_logically_dead: return
+	# Observe resolved actions without writing any combat state or advancing clocks.
+	if not previous_action.is_empty() and previous_phase=="telegraph" and current.is_empty() and clock>=previous_end and not is_feared():
+		if int(previous_action.Kind) in [0,2,10]:
+			visual_strike_until = previous_end+float(visual_settings.Boss_strike_pose_sec)
+	if elf!=null:
+		if elf.shots_fired!=previous_shots:
+			visual_shot_until = clock+float(visual_settings.Boss_shot_pose_sec)
+		if elf.push_effect_until!=previous_push:
+			visual_strike_until = clock+float(visual_settings.Boss_strike_pose_sec)
+		if elf.shots_fired!=previous_shots or elf.push_effect_until!=previous_push or (elf.burst and not previous_burst):
+			var target: Node2D = target_provider.call()
+			if is_instance_valid(target): visual_facing = global_position.direction_to(target.global_position)
+	update_boss_visual(delta,not global_position.is_equal_approx(previous_position))
+
+func _tick_behavior(delta: float) -> void:
 	advance_hit_flash(delta)
 	if not is_active or is_logically_dead: return
 	clock = manager._elapsed_seconds
@@ -198,7 +229,7 @@ func _draw() -> void:
 		elf.draw()
 		return
 	# Reuse the existing enemy hp/max_hp state; temporary compact health bar.
-	draw_line(Vector2(-body_radius,-body_radius-8),Vector2(-body_radius+body_radius*2*float(hp)/maxi(max_hp,1),-body_radius-8),Color("#ff6d6d"),4)
+	draw_health_bar()
 	if current.is_empty(): return
 	var color := Color(0.3,0.7,1,0.3)
 	var center := to_local(origin)
@@ -218,6 +249,7 @@ func _draw() -> void:
 		draw_colored_polygon(polygon,color)
 
 func draw_body(canvas: Node2D) -> void:
+	if has_boss_sprite(): return
 	if baruka!=null:
 		preload("res://scripts/shadow_visual.gd").draw_pose(canvas,body_radius,facing,-1,0)
 	elif elf!=null:
@@ -225,3 +257,45 @@ func draw_body(canvas: Node2D) -> void:
 	else:
 		canvas.draw_circle(Vector2.ZERO,body_radius,Color("#c5edff"))
 		canvas.draw_arc(Vector2.ZERO,body_radius,0,TAU,48,Color.WHITE,2)
+
+func has_boss_sprite() -> bool:
+	return sprite_body!=null and not sprite_body.using_fallback and sprite_body.texture!=null
+
+func configure_visual() -> void:
+	super.configure_visual()
+	if sprite_body!=null and sprite_body.using_fallback: sprite_body.hide()
+
+func update_boss_visual(delta: float, moving: bool) -> void:
+	if not has_boss_sprite(): return
+	sprite_body.visible = elf==null or not elf.hidden
+	var column := 0
+	var locked := false
+	var direction := facing
+	if not is_feared():
+		if elf!=null:
+			direction = visual_facing
+			if not elf.fleeing and elf.last_branch!="flee":
+				if clock<visual_strike_until: column = 2
+				elif elf.burst or clock<visual_shot_until: column = 1
+			locked = column!=0
+		elif not current.is_empty():
+			locked = true
+			if phase=="telegraph": column = 1
+			elif phase=="dash": column = 2
+			elif phase=="interval": column = sprite_body.frame_column
+		elif clock<visual_strike_until:
+			column = 2
+			locked = true
+	if not locked:
+		var target: Node2D = target_provider.call()
+		if is_instance_valid(target): direction = global_position.direction_to(target.global_position)
+	sprite_body.advance_explicit_pose(column,direction,moving and not is_feared(),delta,locked)
+	update_sprite_tint()
+	queue_redraw()
+
+func health_bar_y() -> float:
+	return sprite_body.display_rect().position.y-8 if has_boss_sprite() else -body_radius-8
+
+func draw_health_bar() -> void:
+	var y := health_bar_y()
+	draw_line(Vector2(-body_radius,y),Vector2(-body_radius+body_radius*2*float(hp)/maxi(max_hp,1),y),Color("#ff6d6d"),4)

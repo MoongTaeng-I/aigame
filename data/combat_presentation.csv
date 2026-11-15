@@ -81,3 +81,5 @@ Skill_pose_sway_deg,1
 Stealth_alpha,0.45
 Stealth_wave_hz,0.6
 Stealth_wave_strength,0.15
+Boss_strike_pose_sec,0.25
+Boss_shot_pose_sec,0.2

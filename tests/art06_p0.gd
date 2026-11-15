@@ -83,7 +83,7 @@ func enemies(t: SceneTree, store: CsvDataStore) -> void:
 	t.check(reused.is_logically_dead and reused.collision_layer==0 and is_equal_approx(reused.modulate.a,0.5) and is_equal_approx(reused.character_view.modulate.a,0.5) and reused.sprite_body.modulate.a==1,"ART-06 original death fade and collision removal remain effective")
 	for id in ["boss_ice_bear","boss_ice_elf","boss_baruka"]:
 		var boss: EnemyActor = n.manager.create_boss(id,[],func() -> Node2D: return n.player)
-		t.check(boss.sprite_body==null,"ART-06 existing boss procedural body retained "+id)
+		t.check(boss.sprite_body!=null and not boss.sprite_body.using_fallback,"ART-12 configured boss pose replaces procedural body "+id)
 	var row: Dictionary = store.get_row("enemy.csv","enemy_01")
 	row.Sprite_tint = "bad-color"
 	t.check(preload("res://scripts/combat_data.gd").validate(store).contains("Sprite_tint"),"ART-06 malformed image tint rejected")

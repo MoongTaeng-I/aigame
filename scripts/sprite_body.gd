@@ -240,6 +240,19 @@ func advance_shadow_pose(direction: Vector2, moving: bool, delta: float, attacki
 	frame_column = 1 if attacking and columns>1 else 0
 	advance_pose_motion(moving,delta,attacking,attack_direction)
 
+# Boss-only explicit pose path; existing player/shadow/enemy selection is unchanged.
+func advance_explicit_pose(column: int, direction: Vector2, moving: bool, delta: float, locked_facing: bool) -> void:
+	if locked_facing:
+		if direction.x<0: flip_h = true
+		elif direction.x>0: flip_h = false
+	else: update_movement_flip(direction)
+	var entering_strike := column==2 and frame_column!=2
+	frame_row = 0
+	frame_column = clampi(column,0,maxi(columns-1,0))
+	# The existing 4px lunge fires on entry to column2, including repeated casts.
+	_visual_cast_active = not entering_strike and column==2
+	advance_pose_motion(moving,delta,column==2,direction)
+
 func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, attack_direction: Vector2 = Vector2.RIGHT) -> void:
 	basic_step_remaining = maxf(0,basic_step_remaining-maxf(delta,0))
 	_motion_clock += maxf(delta,0.0)

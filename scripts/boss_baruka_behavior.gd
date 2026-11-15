@@ -216,7 +216,14 @@ func leave_trails(until: float) -> void:
 	var travelled := minf(boss.dash_length,maxf(0,until-boss.dash_started)*float(boss.current.Dash_speed))
 	while trail_index<count and boss.dash_length*(trail_index+1)/count<=travelled+0.000001:
 		var copy := Afterimage.new()
-		copy.configure({"radius":boss.body_radius,"facing":boss.facing,"motion":-1,"phase":0.0},float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
+		var snapshot := {"radius":boss.body_radius,"facing":boss.facing,"motion":-1,"phase":0.0}
+		if boss.has_boss_sprite():
+			var sprite_pose: Dictionary = boss.sprite_body.pose_snapshot()
+			# Trails are emitted during dash, before the end-of-tick visual update.
+			sprite_pose.frame_column = 2
+			if boss.facing.x!=0: sprite_pose.flip_h = boss.facing.x<0
+			snapshot.sprite_pose = sprite_pose
+		copy.configure(snapshot,float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
 		boss.add_child(copy)
 		copy.top_level = true
 		copy.global_position = boss.origin+boss.facing*boss.dash_length*(trail_index+1)/count
@@ -261,7 +268,7 @@ func geometry() -> Dictionary:
 
 func draw() -> void:
 	for zone in zones: boss.draw_circle(boss.to_local(zone.center),float(zone.radius),ICE)
-	boss.draw_line(Vector2(-boss.body_radius,-boss.body_radius-8),Vector2(-boss.body_radius+boss.body_radius*2*float(boss.hp)/maxi(boss.max_hp,1),-boss.body_radius-8),Color("#ff6d6d"),4)
+	boss.draw_health_bar()
 	if boss.current.is_empty(): return
 	var kind: int = int(boss.current.Kind)
 	if kind==7:
