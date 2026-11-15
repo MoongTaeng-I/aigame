@@ -330,6 +330,7 @@ func sweep_visual_state() -> Dictionary:
 	if has_chain_hand():
 		state.hand = chain_hand_position()
 		state.foot = global_position+Vector2(0,float(config.Sprite_foot_y))
+		state.chain_width = float(presentation.Belion_chain_width)
 	return state
 
 func has_chain_hand() -> bool:

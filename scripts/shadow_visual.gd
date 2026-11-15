@@ -13,7 +13,6 @@ const CHARGER_MARK := Color("#b6fff4")
 const BELION_BODY := Color("#251334")
 const BELION_OUTLINE := Color("#bd66ff")
 const BELION_GLOW := Color(0.68,0.28,1.0,0.75)
-const BELION_CHAIN_WIDTH := 8.0
 const BELION_CHAIN_EDGE := Color(0.82,0.55,1.0,0.95)
 
 static func draw_circle_attack(canvas: Node2D, state: Dictionary) -> void:
@@ -47,9 +46,9 @@ static func draw_belion_chain(canvas: CanvasItem, state: Dictionary, segments: i
 			for point in diamond: local.append(canvas.to_local(point))
 			var border := local.duplicate()
 			border.append(border[0])
-			canvas.draw_polyline(border,Color(0.68,0.28,1.0,0.22),6.0,true)
+			canvas.draw_polyline(border,Color(0.68,0.28,1.0,0.22),geometry.glow_width,true)
 			canvas.draw_colored_polygon(local,Color(0.32,0.1,0.5,0.95))
-			canvas.draw_polyline(border,BELION_CHAIN_EDGE,1.5,true)
+			canvas.draw_polyline(border,BELION_CHAIN_EDGE,geometry.edge_width,true)
 		return
 	# Image-free procedural Belion keeps its previous chain presentation.
 	segments = maxi(1,segments)
@@ -76,6 +75,7 @@ static func belion_chain_geometry(state: Dictionary, segments: int) -> Dictionar
 	var center: Vector2 = state.center
 	var tip := center+Vector2(state.direction)*float(state.range)
 	var foot: Vector2 = state.foot
+	var width := float(state.chain_width)
 	var ground_hand := Vector2(hand.x,foot.y)
 	var height := hand.y-foot.y
 	var points := PackedVector2Array()
@@ -90,9 +90,9 @@ static func belion_chain_geometry(state: Dictionary, segments: int) -> Dictionar
 		if index>0:
 			var previous := points[index-1]
 			var middle := (previous+point)*0.5
-			var normal := previous.direction_to(point).orthogonal()*BELION_CHAIN_WIDTH*0.5
+			var normal := previous.direction_to(point).orthogonal()*width*0.5
 			diamonds.append(PackedVector2Array([previous,middle+normal,point,middle-normal]))
-	return {"hand":hand,"tip":tip,"points":points,"diamonds":diamonds}
+	return {"hand":hand,"tip":tip,"points":points,"diamonds":diamonds,"glow_width":width*0.75,"edge_width":width*0.1875}
 
 # Shared gameplay geometry is supplied by the actor; only tessellation and
 # color interpolation belong here. World points also support moved canvases.

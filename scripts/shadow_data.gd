@@ -15,6 +15,10 @@ static func register_schemas(store: CsvDataStore) -> void:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 
 static func validate(store: CsvDataStore) -> String:
+	if store.tables.has("combat_presentation.csv"):
+		var width := store.get_row("combat_presentation.csv","Belion_chain_width")
+		if width.is_empty() or not String(width.Value).is_valid_float() or not is_finite(float(width.Value)) or float(width.Value)<=0:
+			return error(store,"combat_presentation.csv","Belion_chain_width","Value","Belion_chain_width는 유한한 양수여야 합니다.")
 	var attacks := store.get_table("shadow_attack.csv")
 	var motions := store.get_table("shadow_motion.csv")
 	if store.get_row("shadow.csv","igrit").is_empty():

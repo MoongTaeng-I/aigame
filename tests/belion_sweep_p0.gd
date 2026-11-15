@@ -33,7 +33,7 @@ func data_and_card() -> void:
 	var shadow: Dictionary = store.get_row("shadow.csv","belion")
 	var attack: Dictionary = store.get_row("shadow_attack.csv","belion_attack")
 	t.check(shadow.Name_ko=="벨리온" and shadow.Search_radius==360.0 and shadow.Attack_id=="belion_attack" and shadow.Move_speed==320.0 and shadow.Chase_leash_distance==560.0 and shadow.Follow_distance==200.0 and shadow.Teleport_distance==900.0 and shadow.Sprite_path=="res://assets/art/shadow/belion_sheet.png","ART-04 Belion keeps common values with approved sprite path")
-	t.check(attack.Damage==12 and attack.Range==300.0 and attack.Arc_deg==180.0 and attack.Interval_sec==1.5 and int(attack.Shape)==Data.Shape.SWEEP and attack.Windup_sec==0.4 and attack.Sweep_sec==0.3,"S7-I4 sweep approved starting values")
+	t.check(attack.Damage==12 and attack.Range==450.0 and attack.Arc_deg==180.0 and attack.Interval_sec==1.5 and int(attack.Shape)==Data.Shape.SWEEP and attack.Windup_sec==0.4 and attack.Sweep_sec==0.3,"S7-F5 sweep approved Range450 with other values unchanged")
 	var presentation := preload("res://scripts/shadow_afterimage.gd").presentation()
 	t.check(int(float(presentation.Belion_chain_segments))==12 and float(presentation.Belion_trail_sec)==0.15,"S7-I4 chain presentation values")
 	var choices := Choices.new()
@@ -61,9 +61,9 @@ func approach_windup_sweep_and_cooldown() -> void:
 	f.player.position = Vector2.ZERO
 	var belion = f.summons.summon("belion")
 	belion.position = Vector2.ZERO
-	var target = t._spawn(f,Vector2(300,0),100)
+	var target = t._spawn(f,Vector2(360,0),100)
 	belion.tick(1.0)
-	t.check(belion.cast_active and absf(belion.position.distance_to(target.position)-240.0)<=EPS,"S7-I4 approach stops and starts at Range times0.8")
+	t.check(belion.cast_active and absf(belion.position.distance_to(target.position)-360.0)<=EPS,"S7-F5 approach starts at Range450 times0.8")
 	var cast_position: Vector2 = belion.position
 	var fixed_facing: Vector2 = belion.facing
 	target.position = cast_position+Vector2(0,200)
@@ -72,7 +72,7 @@ func approach_windup_sweep_and_cooldown() -> void:
 	var low = t._spawn(f,cast_position+Vector2.RIGHT.rotated(-PI/4.0)*150.0,100)
 	var center = t._spawn(f,cast_position+Vector2(150,0),100)
 	var high = t._spawn(f,cast_position+Vector2.RIGHT.rotated(PI/4.0)*150.0,100)
-	var outside_range = t._spawn(f,cast_position+Vector2(301,0),100)
+	var outside_range = t._spawn(f,cast_position+Vector2(451,0),100)
 	var outside_angle = t._spawn(f,cast_position+Vector2(-150,0),100)
 	belion.tick(0.2)
 	t.check(absf(angle_difference(fixed_facing.angle(),belion.sweep_current_angle)+PI/2.0)<=EPS,"S7-I4 sweep begins at negative half arc")
@@ -85,9 +85,9 @@ func approach_windup_sweep_and_cooldown() -> void:
 	var waiting: Vector2 = belion.position
 	belion.tick(0.5)
 	t.check(belion.position==waiting and not belion.cast_active,"S7-I4 cooldown waits in place while target remains in Range")
-	target.position = belion.position+Vector2(340,0)
+	target.position = belion.position+Vector2(510,0)
 	belion.tick(0.1)
-	t.check(belion.position!=waiting and belion.position.distance_to(target.position)<340.0,"S7-I4 cooldown moves when target is outside Range")
+	t.check(belion.position!=waiting and belion.position.distance_to(target.position)<510.0,"S7-F5 retained target outside Range450 still causes movement")
 	target.position = belion.position+Vector2(200,0)
 	belion.tick(0.9)
 	t.check(belion.cast_active and belion.sweep_sign==-1.0 and absf(angle_difference(belion.facing.angle(),belion.sweep_current_angle)-PI/2.0)<=EPS,"S7-I4 next sweep alternates from positive half arc")
