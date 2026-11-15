@@ -17,9 +17,10 @@ func run() -> void:
 		if label.text=="데이터 오류\n\n"+error: found = true
 	var state := FileAccess.open("res://.local/s7-impl-02-data-error-state.json",FileAccess.WRITE)
 	state.store_string(JSON.stringify({"message":error,"loaded":loaded.is_empty(),"paused":paused,"label_matches":found}))
+	state.close()
 	if loaded.is_empty() and error.contains("열 Shape") and paused and found:
 		print("S7-ERROR-SCREEN PASS")
-		quit(0)
+		await preload("res://tests/test_exit.gd").finish("shadow_data_error_probe",0)
 	else:
 		print("S7-ERROR-SCREEN FAIL")
-		quit(1)
+		await preload("res://tests/test_exit.gd").finish("shadow_data_error_probe",1)

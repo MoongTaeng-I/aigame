@@ -18,4 +18,5 @@ func run() -> void:
 		if label.text=="데이터 오류\n\n"+error: found = true
 	var file := FileAccess.open("res://.local/s8-impl-04-scaling-error-state.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify({"message":error,"loaded":loaded.is_empty(),"paused":paused,"label_matches":found}))
-	quit(0 if loaded.is_empty() and error.contains("Time_start") and paused and found else 1)
+	file.close()
+	await preload("res://tests/test_exit.gd").finish("scaling_error_probe",0 if loaded.is_empty() and error.contains("Time_start") and paused and found else 1)

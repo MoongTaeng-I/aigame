@@ -199,7 +199,7 @@ func main_and_error_screen() -> void:
 	main.queue_free()
 	await t.process_frame
 	var output: Array = []
-	var code := OS.execute(OS.get_executable_path(),PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/hit_fx_error_probe.gd","--log-file",ProjectSettings.globalize_path("res://.local/godot_logs/fx-impl-01-error.log")]),output,true)
+	var code := preload("res://tests/godot_probe_process.gd").execute(PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/hit_fx_error_probe.gd","--log-file",ProjectSettings.globalize_path("res://.local/godot_logs/fx-impl-01-error.log")]),output,"res://.local/godot_logs/hit_fx_p0.log")
 	var raw := FileAccess.open("res://.local/fx-impl-01-error.out",FileAccess.WRITE)
 	raw.store_string("\n".join(output))
 	var state: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://.local/fx-impl-01-error-state.json"))

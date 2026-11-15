@@ -400,7 +400,7 @@ func error_screen() -> void:
 	# Capture an intentionally invalid-data child process, including its
 	# expected error diagnostic, rather than sending it to the P0 stderr.
 	var output: Array = []
-	var exit_code := OS.execute(OS.get_executable_path(),PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/shadow_data_error_probe.gd","--log-file",ProjectSettings.globalize_path("res://.local/godot_logs/s7-impl-02-data-error.log")]),output,true)
+	var exit_code := preload("res://tests/godot_probe_process.gd").execute(PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/shadow_data_error_probe.gd","--log-file",ProjectSettings.globalize_path("res://.local/godot_logs/s7-impl-02-data-error.log")]),output,"res://.local/godot_logs/shadow_regions_dash_p0.log")
 	var captured := "\n".join(output)
 	var raw := FileAccess.open("res://.local/s7-impl-02-data-error.out",FileAccess.WRITE)
 	raw.store_string(captured)

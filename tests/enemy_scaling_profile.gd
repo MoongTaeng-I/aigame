@@ -66,4 +66,4 @@ func run() -> void:
 	print("S8-I4 PHYSICS ",JSON.stringify(result))
 	f.host.queue_free()
 	await process_frame
-	quit(0 if all_120 and spawned_hp==90 and is_equal_approx(spawned_speed,156) and spawned_damage==8 else 1)
+	await preload("res://tests/test_exit.gd").finish("enemy_scaling_profile",0 if all_120 and spawned_hp==90 and is_equal_approx(spawned_speed,156) and spawned_damage==8 else 1)

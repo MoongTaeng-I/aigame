@@ -14,4 +14,5 @@ func run() -> void:
 	var state := {"state":flow.state,"paused":paused,"no_session":flow.session==null,"no_regions":flow.regions.is_empty(),"label_matches":found,"progress":flow.load_progress}
 	var file := FileAccess.open("res://.local/s9-impl-01-error-state.json",FileAccess.WRITE)
 	file.store_string(JSON.stringify(state))
-	quit(0 if flow.state=="error" and paused and flow.session==null and found and flow.regions.is_empty() else 1)
+	file.close()
+	await preload("res://tests/test_exit.gd").finish("flow_error_probe",0 if flow.state=="error" and paused and flow.session==null and found and flow.regions.is_empty() else 1)

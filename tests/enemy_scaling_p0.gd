@@ -218,4 +218,3 @@ func error_screen() -> void:
 	raw.store_string("\n".join(output))
 	var state: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://.local/s8-impl-04-scaling-error-state.json"))
 	t.check(code==0 and state is Dictionary and state.loaded and state.paused and state.label_matches and state.message.contains("enemy_scaling.csv"),"S8-I4 invalid scaling reaches actual paused data-error screen")
-	if (code&0xffffffff)==0xc0000005: t.quit(1)

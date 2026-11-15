@@ -86,7 +86,7 @@ func _run() -> void:
 	for item in foundation.mismatches:
 		print("MISMATCH ", JSON.stringify(item))
 	print("P0 RESULT: %d checks, %d failures, %d spec mismatches" % [checks, failures, foundation.mismatches.size()])
-	quit(0 if failures == 0 else 1)
+	await preload("res://tests/test_exit.gd").finish("p0_runner",0 if failures == 0 else 1)
 
 func check(condition: bool, label: String) -> void:
 	checks += 1
