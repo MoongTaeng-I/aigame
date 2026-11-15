@@ -39,6 +39,7 @@ var dash_hits: Dictionary = {}
 var dash_through_active: bool = false
 var sprite_body: Node2D
 var character_view: Node2D
+var aura_fx: Node2D
 var sprite_hit_at := -INF
 var dash_trail_cast_at := -INF
 var dash_trail_next_age := 0.0
@@ -72,6 +73,12 @@ func configure(owner_manager: Node2D, record: Dictionary, attack_record: Diction
 
 func apply_damage(_amount: int) -> bool:
 	return false
+
+func setup_visual_aura() -> void:
+	if int(presentation.get("Shadow_aura_enabled",1))==0 or is_instance_valid(aura_fx): return
+	aura_fx = preload("res://scripts/shadow_aura_fx.gd").new()
+	add_child(aura_fx)
+	aura_fx.configure(self,presentation)
 
 func nearest(enemies: Array, radius: float, screen_only: bool = false, excluded: Array = [], region_mode: int = -1) -> EnemyActor:
 	var best: EnemyActor = null
@@ -461,6 +468,7 @@ func teleport() -> void:
 	if diagnostic_sink.is_valid(): diagnostic_sink.call("cancel",{"reason":"teleport","had_cast":cast_active})
 	cancel_attack()
 	last_node = "teleport"
+	if is_instance_valid(aura_fx): aura_fx.burst()
 	queue_redraw()
 
 func snapshot() -> Dictionary:

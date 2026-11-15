@@ -47,6 +47,7 @@ func summon(id: String = "igrit", from_selection: bool = false) -> Node2D:
 	actors.append(actor)
 	enemies.register_shadow_body(actor)
 	actor.tree_exiting.connect(_remove_actor.bind(actor),CONNECT_ONE_SHOT)
+	actor.setup_visual_aura()
 	list_changed.emit()
 	if from_selection:
 		preload("res://scripts/boss_toast.gd").notify(self,"[그림자 병사 %s 소환합니다]" % preload("res://scripts/boss_toast.gd").particle(String(record.Name_ko),"을","를"))

@@ -456,3 +456,57 @@ HUD는 위쪽 전체 폭 경험치 바·왼쪽 위 Lv N,기존 오른쪽 위 시
 | Fear_bat_eye_px | 1 | 피어: 화면 px |
 | Fear_shake_px | 8 | 피어: 화면 px |
 | Fear_shake_sec | 0.25 | 피어: 시간/간격 초 |
+
+## FX-03 그림자 병사 아우라 — combat_presentation.csv (2026-11-16)
+
+그림자 병사만 적용하며 잔상에는 복제하지 않는다. 알파 윤곽 셰이더는 현재 시트 칸 안에서만 샘플링하고 원래 그림 안쪽은 칠하지 않는다. 아우라는 그림 뒤의 별도 재질이며 기존 틴트/피격 셰이더를 변경하지 않는다. 불씨는 월드 좌표,줄기는 몸 로컬 좌표. 소환/텔레포트 연기는 몸 높이에서만 만들며 별도의 발밑 연기는 없다. 고정 풀 재사용·일시정지 정지·배우 제거 시 정리. 전투 RNG와 별도의 visual_rng 사용.
+
+| Id(키) | Value 예시 | 의미 |
+|---|---|---|
+| Shadow_aura_enabled | 1 | 공통: 0이면 관련 노드/풀/그리기를 만들지 않음; 시작 시 적용 |
+| Aura_px | 6 | 아우라: 원본 알파 외곽 확장 화면px |
+| Aura_flame_px | 14 | 아우라: 위쪽 불꽃 확장 화면px |
+| Aura_flicker_hz | 2.5 | 아우라: 일시정지 가능한 시각 시계의 초당 노이즈 흐름 |
+| Aura_color | #7a5cff | 아우라: HTML 색 |
+| Aura_core_color | #c9b8ff | 아우라: HTML 색 |
+| Aura_alpha | 0.75 | 아우라: 평시 최대 알파 |
+| Aura_attack_boost | 1.3 | 아우라: cast_active 중 최대 알파 배수,상한1 |
+| Aura_attack_flame_mult | 1.4 | 아우라: cast_active 중 불꽃 길이 배수 |
+| Ember_rate | 6 | 불씨: 그림자당 초당 생성 수; 풀은 ceil(rate×life)+1 |
+| Ember_life_sec | 0.8 | 불씨: 수명 초 |
+| Ember_rise_px | 40 | 불씨: 월드 좌표 불씨의 위쪽 이동 px/초 |
+| Ember_height_min | 0.3 | 불씨: 발~몸높이 중 최소 생성 비율 |
+| Ember_height_max | 1 | 불씨: 발~몸높이 중 최대 생성 비율 |
+| Ember_spread_ratio | 0.25 | 불씨: 몸 표시 폭 대비 좌우 생성 반폭 |
+| Ember_sway_px | 10 | 불씨: 좌우 흔들림 최대px |
+| Ember_sway_hz | 1.5 | 불씨: 초당 주기 |
+| Ember_min_px | 2 | 불씨: 화면px |
+| Ember_max_px | 4 | 불씨: 화면px |
+| Ember_color | #a99bff | 불씨: HTML 색 |
+| Ember_core_ratio | 0.45 | 불씨: 비율 |
+| Wisp_count | 2 | 줄기: 그림자당 고정 로컬 줄기 수 |
+| Wisp_length_px | 50 | 줄기: 화면px |
+| Wisp_life_sec | 1 | 줄기: 수명 초 |
+| Wisp_height_ratio | 0.75 | 줄기: 어깨 시작 높이 / 몸 높이 |
+| Wisp_spread_ratio | 0.15 | 줄기: 어깨 시작 좌우 반폭 / 몸 표시 폭 |
+| Wisp_steps | 16 | 줄기: 고정 선 분할 수 |
+| Wisp_turns | 1.5 | 줄기: 줄기 길이 내 굽이 수 |
+| Wisp_flow_hz | 1 | 줄기: 초당 주기 |
+| Wisp_sway_px | 6 | 줄기: 화면px |
+| Wisp_start_width | 3 | 줄기: 폭px |
+| Wisp_end_width | 1 | 줄기: 폭px |
+| Wisp_color | #1a1240 | 줄기: HTML 색 |
+| Wisp_alpha | 0.85 | 줄기: 줄기 시작 알파; 시간/길이를 따라0으로 감소 |
+| Burst_puffs | 12 | 몸 높이 소환/텔레포트 연기: 사건당 고정 풀 개수; 중첩 사건은 같은 풀 재사용 |
+| Burst_sec | 0.35 | 몸 높이 소환/텔레포트 연기: 수명 초 |
+| Burst_height_ratio | 0.6 | 몸 높이 소환/텔레포트 연기: 연기 중심 높이 / 몸 높이; 발밑 연기 없음 |
+| Burst_min_px | 6 | 몸 높이 소환/텔레포트 연기: 화면px |
+| Burst_max_px | 12 | 몸 높이 소환/텔레포트 연기: 화면px |
+| Burst_spread_px | 30 | 몸 높이 소환/텔레포트 연기: 화면px |
+| Burst_above_foot_px | 8 | 몸 높이 소환/텔레포트 연기: 퍼짐 중심의 발 위 최소 간격px |
+| Burst_outline_px | 2 | 몸 높이 소환/텔레포트 연기: 화면px |
+| Burst_outline_color | #1a1240 | 몸 높이 소환/텔레포트 연기: HTML 색 |
+| Burst_color | #46378f | 몸 높이 소환/텔레포트 연기: HTML 색 |
+| Aura_noise_scale | 0.09 | 아우라: 화면 좌표에 곱하는 노이즈 입도 |
+| Aura_core_spread_ratio | 0.5 | 아우라: 안쪽 색의 윤곽 반경 / Aura_px |
+| Aura_core_flame_ratio | 0.3 | 아우라: 안쪽 색의 불꽃 길이 / 바깥 불꽃 길이 |
