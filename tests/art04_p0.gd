@@ -7,6 +7,7 @@ func run(t: SceneTree) -> void:
 	t.root.add_child(main)
 	main.process_mode = Node.PROCESS_MODE_DISABLED
 	var n: Dictionary = main.round_nodes
+	n.shadows.records.belion = preload("res://tests/legacy_art_records.gd").shadow(n.shadows.records.belion)
 	var p: Node2D = n.player
 	var store = t._store()
 	t.check(store.load_all().is_empty(),"ART-04 production CSV loads")
@@ -31,7 +32,7 @@ func run(t: SceneTree) -> void:
 	t.check(ber_view.shadow_size==Vector2(32,12),"ART-04 omitted ground dimensions default32x12")
 	ber_view.free()
 	var ber: Dictionary = store.get_row("shadow.csv","charger_test")
-	t.check(ber.Shadow_w==52.0 and ber.Shadow_h==18.0,"ART-05 Ber ground dimensions52x18")
+	t.check(ber.Shadow_w==48.0 and ber.Shadow_h==16.0,"ART-10 Ber ground dimensions48x16")
 	var copy := preload("res://scripts/shadow_afterimage.gd").new()
 	copy.configure({"sprite_pose":p.sprite_body.pose_snapshot()},1)
 	n.map.add_child(copy)

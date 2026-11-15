@@ -9,6 +9,7 @@ func run(t: SceneTree) -> void:
 	t.root.add_child(main)
 	for node in main.find_children("*","Node",true,false): node.set_physics_process(false)
 	var n: Dictionary = main.round_nodes
+	n.manager._enemy_records.enemy_test_ranged = preload("res://tests/legacy_art_records.gd").elf(n.manager._enemy_records.enemy_test_ranged)
 	n.manager._spawn_from_row({"Enemy_id":"enemy_test_ranged","Spawn_count":1})
 	var enemy: EnemyActor = n.manager.get_living_enemies()[0]
 	enemy.position = Vector2.ZERO

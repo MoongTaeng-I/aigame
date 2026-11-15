@@ -246,7 +246,7 @@ func update_walk_visual(player_position: Vector2, moved: bool, delta: float, kee
 	update_sprite_tint()
 
 func update_shoot_visual(player_position: Vector2, enabled: bool, delta: float, fired: bool) -> void:
-	if sprite_body==null or not sprite_body.visible or sprite_body.layout!="walk_shoot": return
+	if sprite_body==null or not sprite_body.visible or not (sprite_body.layout in ["walk_shoot","pose"]) or projectile_id.is_empty(): return
 	shot_visual_age = 0.0 if fired else shot_visual_age+maxf(delta,0.0)
 	if not enabled: shot_visual_age = 1.0
 	if knockback_elapsed>=knockback_duration:

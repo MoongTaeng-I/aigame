@@ -46,6 +46,7 @@ func sprite_and_trail(t: SceneTree) -> void:
 	var helper := Helper.new()
 	helper.t = t
 	var f: Dictionary = helper.fixture()
+	f.summons.records.charger_test = preload("res://tests/legacy_art_records.gd").shadow(f.summons.records.charger_test)
 	var actor: Node2D = f.summons.summon("charger_test")
 	actor.global_position = Vector2.ZERO
 	var image: Node2D = actor.sprite_body
@@ -83,6 +84,7 @@ func sprite_and_trail(t: SceneTree) -> void:
 	t.check(not actor.cast_active and image.frame_row!=2,"ART-05 recovery end returns to idle or movement without extra delay")
 	await helper.close(f)
 	f = helper.fixture()
+	f.summons.records.charger_test = preload("res://tests/legacy_art_records.gd").shadow(f.summons.records.charger_test)
 	actor = f.summons.summon("charger_test")
 	actor.global_position = Vector2.ZERO
 	target = t._spawn(f,Vector2(-100,0),100)
@@ -107,6 +109,7 @@ func landing_without_recovery(t: SceneTree) -> void:
 	var helper := Helper.new()
 	helper.t = t
 	var f: Dictionary = helper.fixture()
+	f.summons.records.charger_test = preload("res://tests/legacy_art_records.gd").shadow(f.summons.records.charger_test)
 	var actor: Node2D = f.summons.summon("charger_test")
 	actor.global_position = Vector2.ZERO
 	# Presentation-only synthetic edge case; production recovery remains0.3.

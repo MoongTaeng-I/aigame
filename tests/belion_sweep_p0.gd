@@ -32,7 +32,7 @@ func data_and_card() -> void:
 	t.check(loaded.is_empty() and Data.validate(store).is_empty(),"S7-I4 actual sweep data validates")
 	var shadow: Dictionary = store.get_row("shadow.csv","belion")
 	var attack: Dictionary = store.get_row("shadow_attack.csv","belion_attack")
-	t.check(shadow.Name_ko=="벨리온" and shadow.Search_radius==360.0 and shadow.Attack_id=="belion_attack" and shadow.Move_speed==320.0 and shadow.Chase_leash_distance==560.0 and shadow.Follow_distance==200.0 and shadow.Teleport_distance==900.0 and shadow.Sprite_path=="res://assets/art/shadow/belion_sheet.png","ART-04 Belion keeps common values with approved sprite path")
+	t.check(shadow.Name_ko=="벨리온" and shadow.Search_radius==360.0 and shadow.Attack_id=="belion_attack" and shadow.Move_speed==320.0 and shadow.Chase_leash_distance==560.0 and shadow.Follow_distance==200.0 and shadow.Teleport_distance==900.0 and shadow.Sprite_path=="res://assets/art/sd/sd_belion.png","ART-10 Belion keeps common values with approved sprite path")
 	t.check(attack.Damage==12 and attack.Range==450.0 and attack.Arc_deg==180.0 and attack.Interval_sec==1.5 and int(attack.Shape)==Data.Shape.SWEEP and attack.Windup_sec==0.4 and attack.Sweep_sec==0.3,"S7-F5 sweep approved Range450 with other values unchanged")
 	var presentation := preload("res://scripts/shadow_afterimage.gd").presentation()
 	t.check(int(float(presentation.Belion_chain_segments))==12 and float(presentation.Belion_trail_sec)==0.15,"S7-I4 chain presentation values")

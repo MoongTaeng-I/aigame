@@ -50,6 +50,8 @@ func visual_checks(t: SceneTree) -> void:
 	var helper := Helper.new()
 	helper.t = t
 	var f: Dictionary = helper.fixture()
+	f.summons.records = f.summons.records.duplicate(true)
+	f.summons.records.belion = preload("res://tests/legacy_art_records.gd").shadow(f.summons.records.belion)
 	var b: Node2D = f.summons.summon("belion")
 	b.global_position = Vector2(40,25)
 	var target: EnemyActor = t._spawn(f,b.global_position+Vector2(100,0),100)
@@ -123,7 +125,7 @@ func visual_checks(t: SceneTree) -> void:
 	t.check(not b.sweep_visual_state().has("hand"),"S7-F4 image-free procedural chain and windup keep legacy path")
 	var store: CsvDataStore = f.store
 	var row: Dictionary = store.get_row("shadow.csv","belion")
-	t.check(row.Chain_hand_x==15.0 and row.Chain_hand_y==-95.0 and store.get_row("shadow.csv","igrit").Chain_hand_x==null and store.get_row("shadow.csv","charger_test").Chain_hand_y==null,"S7-F4 approved hand CSV values and other shadows empty")
+	t.check(row.Chain_hand_x==8.0 and row.Chain_hand_y==-62.0 and store.get_row("shadow.csv","igrit").Chain_hand_x==null and store.get_row("shadow.csv","charger_test").Chain_hand_y==null,"ART-10 approved hand CSV values and other shadows empty")
 	for column in ["Chain_hand_x","Chain_hand_y"]:
 		var old: Variant = row[column]
 		row[column] = INF
@@ -131,7 +133,7 @@ func visual_checks(t: SceneTree) -> void:
 		row[column] = old
 	row.Chain_hand_y = null
 	t.check(preload("res://scripts/shadow_data.gd").validate(store).contains("Chain_hand_y"),"S7-F4 rejects incomplete hand coordinate pair")
-	row.Chain_hand_y = -95.0
+	row.Chain_hand_y = -62.0
 	await helper.close(f)
 
 func range_and_width_checks(t: SceneTree) -> void:

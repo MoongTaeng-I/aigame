@@ -483,7 +483,7 @@ func snapshot() -> Dictionary:
 func update_sprite_visual(movement: Vector2, delta: float) -> void:
 	if sprite_body==null: return
 	if sprite_body.layout=="pose":
-		sprite_body.advance_shadow_pose(movement,movement.length_squared()>0.000001,delta,cast_active,facing)
+		sprite_body.advance_shadow_pose(movement,movement.length_squared()>0.000001,delta,cast_active,dash_direction if is_dash_through() else facing)
 		return
 	if is_dash_through():
 		var after := float(config.Attack_after_frame_sec)
@@ -553,8 +553,8 @@ func update_dash_trail(previous: Vector2, delta: float, was_active: bool) -> voi
 		if age<life:
 			var fraction := clampf((dash_trail_next_age-start_age)/maxf(end_age-start_age,0.000000001),0,1)
 			var pose := snapshot()
-			pose.sprite_pose.frame_row = 2
-			pose.sprite_pose.frame_column = 1 if dash_trail_next_age<float(config.Attack_after_frame_sec)-0.000000001 else 2
+			pose.sprite_pose.frame_row = 0 if sprite_body.layout=="pose" else 2
+			pose.sprite_pose.frame_column = 1 if sprite_body.layout=="pose" or dash_trail_next_age<float(config.Attack_after_frame_sec)-0.000000001 else 2
 			pose.sprite_pose.flip_h = dash_direction.x<0.0
 			var copy: Node2D = manager.leave_afterimage(departure.lerp(global_position,fraction),pose,life,float(presentation.Trail_alpha))
 			copy.set_meta("beru_dash_trail",true)

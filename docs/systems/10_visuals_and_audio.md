@@ -100,13 +100,13 @@ ART-05 베르는 `state3`1928×1170(4×3, 칸482×390) 시트와52×18 발밑 �
 
 | 열 | 의미 | player_01 예시 | igrit 예시 | belion 예시 | charger_test(베르) 예시 |
 |---|---|---|---|---|---|
-| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/shadow/belion_sheet.png | res://assets/art/shadow/beru_sheet.png |
+| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/sd/sd_player.png | res://assets/art/sd/sd_igris.png | res://assets/art/sd/sd_belion.png | res://assets/art/sd/sd_beru.png |
 | Idle_sprite_path | dir3 대기 시트 리소스 경로 | (빈칸) | 해당 없음 | 해당 없음 | 해당 없음 |
-| Sprite_layout | 행 배치 종류 | pose | pose | state3 | state3 |
-| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 2 / 1 | 2 / 1 | 4 / 3 | 4 / 3 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 95 | 143 | 195 | 180 |
-| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 187 | 279 | 363 | 376 |
-| Sprite_anchor_x | 원본 칸 안 몸 중심x(px), 빈칸이면 칸 가운데 | 68 | 125 | 200 | 279 |
+| Sprite_layout | 행 배치 종류 | pose | pose | pose | pose |
+| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 2 / 1 | 2 / 1 | 2 / 1 | 2 / 1 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 95 | 143 | 158 | 144 |
+| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 187 | 279 | 297 | 269 |
+| Sprite_anchor_x | 원본 칸 안 몸 중심x(px), 빈칸이면 칸 가운데 | 68 | 125 | 105 | 89 |
 | Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 | 8 | 8 |
 | Anim_fps | 걷기·이동 반복 속도 | 12 | 8 | 8 | 8 |
 | Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 | 6 | 6 |
@@ -208,6 +208,30 @@ walk_shoot는 기본1행 걷기를 Anim_fps로 반복하고 공포 정지는1번
 
 원본 규격: sd_player282×191(칸141×191),sd_igris782×287(칸391×287),sd_bear237×222. 모두 투명. import는 밉맵 생성,표시는 선형 밉맵 필터다.
 
+
+### ART-10 SD 전환2단계(현재 설정)
+
+베르·벨리온·아이스 엘프도1행2열 pose로 전환한다. 기존 판정·피해 시점·이동·생성 규칙은 유지한다.
+
+| 열 | charger_test(베르) 예시 | belion 예시 | enemy_test_ranged(엘프) 예시 |
+|---|---|---|---|
+| Sprite_path | res://assets/art/sd/sd_beru.png | res://assets/art/sd/sd_belion.png | res://assets/art/sd/sd_elf.png |
+| Sprite_layout / Sprite_cols / Sprite_rows | pose / 2 / 1 | pose / 2 / 1 | pose / 2 / 1 |
+| Sprite_cell_height | 144 | 158 | 118 |
+| Sprite_baseline / Sprite_anchor_x | 269 / 89 | 297 / 105 | 233 / 75 |
+| Sprite_foot_y | 8(유지) | 8(유지) | 8(유지) |
+| Shadow_w / Shadow_h | 48 / 16 | 56 / 18 | 34 / 12 |
+| Bob_px / Step_hz | 4 / 3.5 | 4 / 3 | 3 / 3.5 |
+| Squash / Tilt_deg / Breath | 0.05 / 4 / 0.02 | 0.05 / 3 / 0.02 | 0.05 / 3 / 0.02 |
+| Sprite_tint | 기존 기본 흰색 | 기존 기본 흰색 | #ffffff |
+| Chain_hand_x / Chain_hand_y | 빈칸 | 8 / -62 | 해당 없음 |
+
+곰 enemy_01은 Shadow_w64·Shadow_h20만 변경한다. 다른 열은 유지한다. 원본은 베르536×289(칸268×289),벨리온566×315(칸283×315),엘프394×237(칸197×237)이며 모두 투명·밉맵 import·선형 밉맵 표시다.
+
+베르는 dash_through_active 시작부터 후딜 종료(cast_active 종료)까지2열,나머지1열이다. 반전은 돌진 방향으로 고정하고 돌진 잔상도0행2열을 복제한다. 벨리온은 준비+쓸기 cast_active 전체2열,종료 즉시1열이다. 손은 발 기준8/-62이고 왼쪽은x만 반전한다. 엘프는 발사0.3초 전부터 실제 발사 후0.15초 미만까지2열,그 외1열이다. 사거리 이탈·은신·공포는 즉시1열로 복귀하며 발사 타이머와 실제 투사체는 유지한다. 기존 walk_shoot 배치의4칸·0.1초+0.1초 연출은 레거시 지원으로 유지한다.
+
+옛 시트는 레거시 배치 검사에서 참조 중이므로 사용자 조건에 따라 삭제하지 않는다. 실제 게임 CSV와 scripts의 옛 시트 파일 참조는 제거했으며,dir3·state3·walk1·walk_shoot 코드와 검사는 유지한다. 검사 준비에서 기존 시트를 명시적으로 사용하고 실제 SD 동작은 별도 검사한다.
+
 ## 승인·변경 이력
 
 - 2026-11-11 FX-IMPL-01: 사용자 요청으로 불꽃 히트 FX1종과 켬/끔 성능 비교를 진행한다. 적용 범위·시작값·단일 일괄 노드/오래된 슬롯 재사용은 제안이며 시스템 10 전체 확정이 아니다. 2.5D 항목은 후보만 추가한다.
@@ -236,3 +260,5 @@ walk_shoot는 기본1행 걷기를 Anim_fps로 반복하고 공포 정지는1번
 - 2026-11-15 ART-08: 정식 일반 적2종을 아이스 베어(근접)·아이스 엘프(원거리)로 기록하고 elf_sheet walk_shoot 표시를 연결한다. 기존 발사·판정·이동·생성 규칙과 내부Id는 유지한다. 직접 플레이 확인 전이다.
 
 - 2026-11-15 ART-09: 사용자 결정으로 SD·카툰2D와 포즈+코드 움직임으로 전환한다. 1단계 플레이어·이그리트·곰만 pose로 교체하고 새5열·피격 표시·잔상 변형 복제를 적용한다. 전투·생성 규칙 및 다른3개 캐릭터는 유지한다. 직접 플레이 확인 전이다.
+
+- 2026-11-15 ART-10: 베르·벨리온·아이스 엘프를SD pose로 전환하고 곰 타원64×20,벨리온 손8/-62를 적용한다. 베르 돌진~후딜·벨리온 cast·엘프 발사 전0.3초~후0.15초 포즈를 사용하며 전투 규칙은 유지한다. 옛 시트는 레거시 검사 참조가 남아 사용자 조건대로 보존한다. 직접 플레이 확인 전이다.

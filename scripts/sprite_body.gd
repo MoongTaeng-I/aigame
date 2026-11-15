@@ -211,6 +211,11 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 	queue_redraw()
 
 func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void:
+	if layout=="pose":
+		frame_row = 0
+		frame_column = 1 if enabled and columns>1 and (release_age<0.15-0.000000001 or remaining<=0.3+0.000000001) else 0
+		queue_redraw()
+		return
 	frame_row = 0
 	frame_column = _walk_frame_column
 	if enabled:
