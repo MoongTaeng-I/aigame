@@ -93,15 +93,33 @@ func run(tree: SceneTree) -> void:
 	manager.set_physics_process(false)
 	scene.queue_free()
 	await t.process_frame
-	# Match the existing data-error probe pattern: intentional push_error stays
-	# in captured child output, while production UI/paused state is verified.
-	var output: Array = []
-	var exit_code := OS.execute(OS.get_executable_path(),PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","res://tests/shadow_icon_error_probe.gd","--log-file",ProjectSettings.globalize_path("res://.local/godot_logs/s8-impl-01-b-icon-error.log")]),output,true)
-	var raw := FileAccess.open("res://.local/s8-impl-01-b-icon-error.out",FileAccess.WRITE)
-	raw.store_string("\n".join(output))
+	var icon_store: CsvDataStore = t._store()
+	var loaded: String = icon_store.load_all()
+	icon_store.get_row("shadow.csv","igrit").Icon = "res://missing-shadow-icon.png"
+	var icon_error: String = ShadowData.validate(icon_store)
+	var icon_scene: Node = load("res://main.tscn").instantiate()
+	t.root.add_child(icon_scene)
+	# Only the intentional synchronous push_error is muted. Startup and checks
+	# retain normal error reporting; production error UI is called unchanged.
+	var printing: bool = Engine.print_error_messages
+	Engine.print_error_messages = false
+	icon_scene._show_data_error(icon_error)
+	Engine.print_error_messages = printing
+	var label_matches := false
+	for error_label in icon_scene.find_children("*","Label",true,false):
+		if error_label.text=="데이터 오류\n\n"+icon_error: label_matches = true
+	var state := {"loaded":loaded.is_empty(),"message":icon_error,"paused":t.paused,"label_matches":label_matches}
+	t.check(state.loaded,"S8-B Icon same-process real data load succeeds")
+	t.check(state.message.contains("열 Icon"),"S8-B Icon same-process field error message")
+	t.check(state.paused,"S8-B Icon same-process error UI pauses tree")
+	t.check(state.label_matches,"S8-B Icon same-process real error label matches")
+	var raw := FileAccess.open("res://.local/art-06-icon-state.json",FileAccess.WRITE)
+	raw.store_string(JSON.stringify(state))
 	raw.close()
-	var state: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://.local/s8-impl-01-b-icon-error-state.json"))
-	t.check(exit_code==0 and state is Dictionary and state.message.contains("열 Icon") and state.loaded and state.paused and state.label_matches,"S8-B Icon field error uses real existing paused data-error screen")
+	t.paused = false
+	t.root.remove_child(icon_scene)
+	icon_scene.free()
+	for frame in range(4): await t.process_frame
 	print("S8-B NEW RESULT: %d checks, %d failures" % [t.checks-before,t.failures-failed])
 
 func contains_bar(node: Node) -> bool:

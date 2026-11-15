@@ -26,7 +26,7 @@ func sync_pose() -> void:
 		hide()
 		return
 	global_transform = actor.global_transform
-	if actor.get("sprite_body")!=null:
+	if actor.get("sprite_body")!=null and actor.sprite_body.visible:
 		var offset := Vector2(0,actor.sprite_body.foot_y)
 		global_position = actor.to_global(offset)
 		actor.sprite_body.position = -offset

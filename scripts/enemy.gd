@@ -11,6 +11,8 @@ enum AttackRangeType { MELEE, RANGED }
 
 var enemy_id: String = ""
 var character_view: Node2D
+var sprite_body: Node2D
+var visual_record: Dictionary = {}
 var move_speed: float = 0.0
 var attack_range_type: AttackRangeType = AttackRangeType.MELEE
 var body_radius: float = 16.0
@@ -47,11 +49,13 @@ func is_feared() -> bool:
 func apply_fear(duration: float) -> void:
 	if is_active and not is_logically_dead:
 		fear_remaining = duration
+		update_sprite_tint()
 		queue_redraw()
 
 @onready var collision_shape := $CollisionShape2D as CollisionShape2D
 
 func configure(record: Dictionary) -> void:
+	visual_record = record.duplicate()
 	enemy_id = String(record["Id"])
 	move_speed = float(record["Move_speed"])
 	attack_range_type = int(record["Attack_range_type"])
@@ -67,10 +71,12 @@ func configure(record: Dictionary) -> void:
 	shot_range = float(record.get("Shot_range", 0.0)) if record.get("Shot_range") != null else 0.0
 	projectile_id = String(record.get("Projectile_id", "")) if record.get("Projectile_id") != null else ""
 	if is_node_ready():
+		configure_visual()
 		(collision_shape.shape as CircleShape2D).set_deferred("radius", body_radius)
 		queue_redraw()
 
 func activate_at(world_position: Vector2, order: int = 0) -> void:
+	configure_visual()
 	global_position = world_position
 	offscreen_seconds = 0.0
 	is_active = true
@@ -87,6 +93,7 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	collision_layer = 2
 	collision_mask = 1
 	modulate.a = 1.0
+	update_sprite_tint()
 	visible = true
 	if is_node_ready():
 		collision_shape.set_deferred("disabled", false)
@@ -138,6 +145,8 @@ func start_knockback(source_position: Vector2, distance: float, duration: float)
 	knockback_elapsed = 0.0
 
 func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at_target: bool = false) -> void:
+	var visual_origin := global_position
+	var visual_knockback := knockback_elapsed<knockback_duration
 	map_bounds = bounds
 	if is_logically_dead:
 		_fade_elapsed += delta
@@ -164,6 +173,7 @@ func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at
 	if motion != Vector2.ZERO:
 		move_and_collide(motion)
 	global_position = clamp_position_to_map(global_position, bounds)
+	update_walk_visual(player_position,global_position.distance_squared_to(visual_origin)>0.000001,action_delta,visual_knockback)
 
 func get_knockback_velocity() -> Vector2:
 	if is_logically_dead or knockback_duration <= 0.0 or knockback_elapsed >= knockback_duration:
@@ -191,11 +201,37 @@ func move_toward_player(player_position: Vector2, delta: float) -> void:
 
 func _ready() -> void:
 	character_view = preload("res://scripts/character_presentation.gd").attach(self)
+	configure_visual()
 	collision_shape.shape = collision_shape.shape.duplicate()
 	(collision_shape.shape as CircleShape2D).radius = body_radius
 	collision_shape.disabled = not is_active
 	queue_redraw()
 
 func draw_body(canvas: Node2D) -> void:
+	if sprite_body!=null and sprite_body.visible: return
 	canvas.draw_circle(Vector2.ZERO, body_radius, SkillUI.FEAR_COLOR if is_feared() else ENEMY_COLOR)
 	canvas.draw_arc(Vector2.ZERO, body_radius, 0.0, TAU, 48, OUTLINE_COLOR, 2.0)
+
+func configure_visual() -> void:
+	if visual_record.get("Sprite_path")==null or String(visual_record.get("Sprite_path","")).is_empty():
+		if sprite_body!=null: sprite_body.hide()
+		return
+	if sprite_body==null:
+		sprite_body = preload("res://scripts/sprite_body.gd").new()
+		sprite_body.name = "SpriteBody"
+		add_child(sprite_body)
+		if is_instance_valid(character_view): sprite_body.reparent(character_view,false)
+	sprite_body.configure(visual_record,body_radius,ENEMY_COLOR,OUTLINE_COLOR)
+	sprite_body.show()
+	update_sprite_tint()
+
+func update_sprite_tint() -> void:
+	if sprite_body==null: return
+	var color := Color(String(visual_record.Sprite_tint)) if visual_record.get("Sprite_tint")!=null else Color.WHITE
+	sprite_body.sprite_tint = color.lerp(SkillUI.FEAR_COLOR,0.5) if is_feared() else color
+	sprite_body.queue_redraw()
+
+func update_walk_visual(player_position: Vector2, moved: bool, delta: float, keep_facing: bool) -> void:
+	if sprite_body==null or not sprite_body.visible: return
+	sprite_body.advance_walk_pose(global_position.direction_to(player_position),moved and not is_feared(),delta,keep_facing)
+	update_sprite_tint()

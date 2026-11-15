@@ -11,6 +11,8 @@ var columns := 1
 var rows := 1
 var cell_height := 0.0
 var baseline := 0.0
+var anchor_x: Variant = null
+var sprite_tint := Color.WHITE
 var foot_y := 0.0
 var animation_fps := 1.0
 var idle_fps := 1.0
@@ -30,6 +32,16 @@ var _pose_moving := false
 var _using_idle := false
 
 func configure(record: Dictionary, radius: float, color: Color, outline: Color) -> void:
+	idle_texture = null
+	_using_idle = false
+	_animation_elapsed = 0.0
+	_animation_row = -1
+	_pose_moving = false
+	frame_column = 0
+	frame_row = 0
+	flip_h = false
+	anchor_x = record.get("Sprite_anchor_x")
+	sprite_tint = Color(String(record.Sprite_tint)) if record.get("Sprite_tint")!=null else Color.WHITE
 	shadow_size = Vector2(float(record.Shadow_w) if record.get("Shadow_w")!=null else SHADOW_SIZE.x,float(record.Shadow_h) if record.get("Shadow_h")!=null else SHADOW_SIZE.y)
 	fallback_radius = radius
 	fallback_color = color
@@ -50,8 +62,8 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	if not ResourceLoader.exists(path,"Texture2D"):
 		_use_fallback("Sprite_path 파일이 없어 원형 표시를 사용합니다: "+path)
 		return
-	var loaded := ResourceLoader.load(path,"Texture2D")
-	if not (loaded is Texture2D) or not (layout in ["dir3","state3"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
+	var loaded: Resource = texture if texture!=null and texture.resource_path==path else ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_REUSE)
+	if not (loaded is Texture2D) or not (layout in ["dir3","state3","walk1"]) or columns<1 or rows<1 or cell_height<=0 or animation_fps<=0 or idle_fps<=0 or attack_after_frame_sec<=0:
 		_use_fallback("스프라이트 설정을 읽을 수 없어 원형 표시를 사용합니다: "+path)
 		return
 	texture = loaded
@@ -71,6 +83,8 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	queue_redraw()
 
 func configure_snapshot(snapshot: Dictionary) -> void:
+	anchor_x = snapshot.get("anchor_x")
+	sprite_tint = snapshot.get("sprite_tint",Color.WHITE)
 	shadow_size = snapshot.get("shadow_size",SHADOW_SIZE)
 	texture = snapshot.get("texture") as Texture2D
 	layout = String(snapshot.get("layout","dir3"))
@@ -97,6 +111,7 @@ func pose_snapshot() -> Dictionary:
 	return {
 		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
+		"anchor_x":anchor_x,"sprite_tint":sprite_tint,
 		"idle_fps":idle_fps,"attack_after_frame_sec":attack_after_frame_sec,
 		"frame_row":frame_row,"frame_column":frame_column,"flip_h":flip_h,
 		"using_fallback":using_fallback,"fallback_radius":fallback_radius,
@@ -151,6 +166,15 @@ func set_attack_pose(direction: Vector2, column: int) -> void:
 	frame_column = clampi(column,0,maxi(0,columns-1))
 	queue_redraw()
 
+func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_facing: bool = false) -> void:
+	if not keep_facing:
+		if direction.x<0.0: flip_h = true
+		elif direction.x>0.0: flip_h = false
+	frame_row = 0
+	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
+	frame_column = floori(_animation_elapsed*animation_fps)%maxi(columns,1) if moving else 0
+	queue_redraw()
+
 func source_rect() -> Rect2:
 	var shown := current_texture()
 	if shown==null:
@@ -169,7 +193,8 @@ func display_rect() -> Rect2:
 		return Rect2()
 	var scale_factor := cell_height/source.size.y
 	var size := source.size*scale_factor
-	return Rect2(Vector2(-size.x*0.5,foot_y-baseline*scale_factor),size)
+	var horizontal := float(anchor_x) if anchor_x!=null else source.size.x*0.5
+	return Rect2(Vector2(-horizontal*scale_factor,foot_y-baseline*scale_factor),size)
 
 func _use_fallback(message: String) -> void:
 	texture = null
@@ -184,12 +209,12 @@ func _draw() -> void:
 		draw_arc(Vector2.ZERO,fallback_radius,0.0,TAU,48,fallback_outline,2.0)
 		return
 	var destination := display_rect()
-	if flip_h:
-		draw_set_transform(Vector2.ZERO,0.0,Vector2(-1.0,1.0))
-		destination.position.x = -destination.end.x
-	draw_texture_rect_region(current_texture(),destination,source_rect(),Color.WHITE,false,true)
-	if flip_h:
-		draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+	draw_set_transform_matrix(image_transform())
+	draw_texture_rect_region(current_texture(),destination,source_rect(),sprite_tint,false,true)
+	draw_set_transform_matrix(Transform2D.IDENTITY)
+
+func image_transform() -> Transform2D:
+	return Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
 
 static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
 	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,size.y/size.x))

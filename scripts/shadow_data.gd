@@ -11,7 +11,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.schemas["shadow.csv"]["Icon"] = {"type":"Optional","inner":"Path"}
 	for column in ["Shadow_w","Shadow_h"]:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
-	for column in ["Chain_hand_x","Chain_hand_y"]:
+	for column in ["Chain_hand_x","Chain_hand_y","Sprite_anchor_x"]:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 
 static func validate(store: CsvDataStore) -> String:
@@ -25,6 +25,7 @@ static func validate(store: CsvDataStore) -> String:
 		return error(store,"shadow.csv","igrit","Id","이그리트 행이 필요합니다.")
 	for id in store.get_table("shadow.csv"):
 		var row := store.get_row("shadow.csv",id)
+		if row.get("Sprite_anchor_x")!=null and (not is_finite(float(row.Sprite_anchor_x)) or float(row.Sprite_anchor_x)<0): return error(store,"shadow.csv",id,"Sprite_anchor_x","유한한 비음수여야 합니다.")
 		for column in ["Chain_hand_x","Chain_hand_y"]:
 			if row.get(column)!=null and not is_finite(float(row[column])): return error(store,"shadow.csv",id,column,"유한한 좌표여야 합니다.")
 		if (row.get("Chain_hand_x")==null)!=(row.get("Chain_hand_y")==null):

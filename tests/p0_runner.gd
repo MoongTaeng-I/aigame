@@ -58,6 +58,7 @@ func _run() -> void:
 	await preload("res://tests/belion_chain_p0.gd").new().run(self)
 	await preload("res://tests/shadow_sprite_p0.gd").new().run(self)
 	await preload("res://tests/beru_sprite_p0.gd").new().run(self)
+	await preload("res://tests/art06_p0.gd").new().run(self)
 	await preload("res://tests/art04_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)
@@ -128,6 +129,17 @@ func _store() -> CsvDataStore:
 	Data.register_schemas(store)
 	return store
 
+func with_art_columns(file: String, text: String) -> String:
+	var fields: Array = ["Sprite_anchor_x"] if file=="player.csv" else (["Sprite_path","Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_anchor_x","Sprite_foot_y","Anim_fps","Shadow_w","Shadow_h","Sprite_tint"] if file=="enemy.csv" else [])
+	if fields.is_empty(): return text
+	var lines := text.split("\n",false)
+	var headers := lines[0].split(",")
+	for field in fields:
+		if headers.has(field): continue
+		lines[0] += ","+field
+		for index in range(1,lines.size()): lines[index] += ","
+	return "\n".join(lines)+"\n"
+
 # All non-P0-01 data is synthetic, independent of editable CSV values and IDs.
 func _csv_error(projectile_values: Array, enemy_values: Array) -> String:
 	var store := _store()
@@ -136,7 +148,7 @@ func _csv_error(projectile_values: Array, enemy_values: Array) -> String:
 	var error := store.load_text("projectile.csv", projectile_header + ",".join(projectile_values) + "\n")
 	if not error.is_empty():
 		return error
-	error = store.load_text("enemy.csv", enemy_header + ",".join(enemy_values) + ",0\n")
+	error = store.load_text("enemy.csv", with_art_columns("enemy.csv",enemy_header + ",".join(enemy_values) + ",0\n"))
 	if not error.is_empty():
 		return error
 	return Data.validate(store)
@@ -558,7 +570,7 @@ func _xp_csv_error(enemy_xp: String="1", levels: String="level_1,1,5,test\nlevel
 		"xp_rule.csv":"Id,Pull_start_speed,Pull_accel,Orb_radius,Max_ground_orbs,Skill_point_every_levels,Note\n"+rule_id+","+pull_start+","+acceleration+","+radius+","+cap+","+point_every+",test\n",
 	}
 	for name in sources:
-		var error := store.load_text(name,sources[name])
+		var error := store.load_text(name,with_art_columns(name,sources[name]))
 		if not error.is_empty():
 			return error
 	return ExperienceData.validate(store)

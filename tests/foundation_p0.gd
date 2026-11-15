@@ -224,7 +224,7 @@ func test_csv_errors() -> void:
 		var store := Store.new()
 		Data.register_schemas(store)
 		var header := "Id,Name_ko,Move_speed,Attack_range_type,Body_radius,Push_weight,Note,Max_hp,Contact_damage,Contact_rehit_sec,Death_fade_sec,Shot_interval_sec,Shot_range,Projectile_id,Xp_value\n"
-		error = store.load_text("enemy.csv",header+"test,test,0,"+kind+",10,1,test,80,0,1,1,,,,0\n")
+		error = store.load_text("enemy.csv",tree.with_art_columns("enemy.csv",header+"test,test,0,"+kind+",10,1,test,80,0,1,1,,,,0\n"))
 		expect(error.is_empty() if kind in ["melee","ranged"] else not error.is_empty(), "S2-12", "Attack_range_type whitelist: "+kind, S2+" Enum exception", "accepted" if kind in ["melee","ranged"] else "CSV error", error)
 
 func screen_rect(f: Dictionary) -> Rect2:

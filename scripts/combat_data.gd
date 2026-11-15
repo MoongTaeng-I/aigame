@@ -32,6 +32,10 @@ static func register_schemas(store: CsvDataStore) -> void:
 		"Id": "String", "Time_start": "Float", "Time_end": "Float", "Enemy_id": "String",
 		"Spawn_interval": "Float", "Spawn_count": "Int", "Note": "String",
 	})
+	store.schemas["player.csv"]["Sprite_anchor_x"] = {"type":"Optional","inner":"Float"}
+	for field in ["Sprite_path","Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_anchor_x","Sprite_foot_y","Anim_fps","Shadow_w","Shadow_h","Sprite_tint"]:
+		var type := "String" if field in ["Sprite_layout","Sprite_tint"] else ("Path" if field=="Sprite_path" else ("Int" if field in ["Sprite_cols","Sprite_rows"] else "Float"))
+		store.schemas["enemy.csv"][field] = {"type":"Optional","inner":type}
 	store.register_schema("spawn_rule.csv", {"Id": "String", "Max_alive": "Int", "Offscreen_relocate_sec": "Float", "Note": "String", "Separation_gap":"Float", "Push_iterations":"Int"})
 	store.register_schema("projectile.csv", {
 		"Id": "String", "Speed": "Float", "Damage": "Int", "Body_radius": "Float",
@@ -66,6 +70,7 @@ static func validate(store: CsvDataStore) -> String:
 					return _field_error(store,"enemy_scaling.csv",row.Id,column,"배율은 유한한 양수여야 합니다.")
 		if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
 	for row in store.get_table("player.csv").values():
+		if row.get("Sprite_anchor_x")!=null and (not is_finite(float(row.Sprite_anchor_x)) or float(row.Sprite_anchor_x)<0): return _field_error(store,"player.csv",row.Id,"Sprite_anchor_x","유한한 비음수여야 합니다.")
 		for column in ["Shadow_w","Shadow_h"]:
 			if row.get(column)!=null and (not is_finite(float(row[column])) or float(row[column])<=0): return _field_error(store,"player.csv",row.Id,column,"유한한 양수여야 합니다.")
 		if String(row.Sprite_layout)!="dir3": return _field_error(store,"player.csv",row.Id,"Sprite_layout","플레이어는 dir3이어야 합니다.")
@@ -76,6 +81,16 @@ static func validate(store: CsvDataStore) -> String:
 		if not is_finite(float(row.Sprite_baseline)) or float(row.Sprite_baseline)<0: return _field_error(store,"player.csv",row.Id,"Sprite_baseline","유한한 비음수여야 합니다.")
 		if not is_finite(float(row.Sprite_foot_y)): return _field_error(store,"player.csv",row.Id,"Sprite_foot_y","유한한 값이어야 합니다.")
 	var projectiles: Dictionary = store.get_table("projectile.csv")
+	for row in store.get_table("enemy.csv").values():
+		if row.get("Sprite_anchor_x")!=null and (not is_finite(float(row.Sprite_anchor_x)) or float(row.Sprite_anchor_x)<0): return _field_error(store,"enemy.csv",row.Id,"Sprite_anchor_x","유한한 비음수여야 합니다.")
+		if row.get("Sprite_path")==null: continue
+		if not ResourceLoader.exists(row.Sprite_path,"Texture2D") or not (ResourceLoader.load(row.Sprite_path,"Texture2D") is Texture2D): return _field_error(store,"enemy.csv",row.Id,"Sprite_path","사용 가능한 이미지가 필요합니다.")
+		if row.get("Sprite_layout")!="walk1" or row.get("Sprite_rows")!=1 or row.get("Sprite_cols")==null or int(row.Sprite_cols)<1: return _field_error(store,"enemy.csv",row.Id,"Sprite_layout","walk1 한 행과 양수 칸 수가 필요합니다.")
+		for column in ["Sprite_cell_height","Anim_fps","Shadow_w","Shadow_h"]:
+			if row.get(column)==null or not is_finite(float(row[column])) or float(row[column])<=0: return _field_error(store,"enemy.csv",row.Id,column,"유한한 양수가 필요합니다.")
+		if row.get("Sprite_baseline")==null or not is_finite(float(row.Sprite_baseline)) or float(row.Sprite_baseline)<0: return _field_error(store,"enemy.csv",row.Id,"Sprite_baseline","유한한 비음수가 필요합니다.")
+		if row.get("Sprite_foot_y")==null or not is_finite(float(row.Sprite_foot_y)): return _field_error(store,"enemy.csv",row.Id,"Sprite_foot_y","유한한 좌표가 필요합니다.")
+		if row.get("Sprite_tint")!=null and not Color.html_is_valid(String(row.Sprite_tint)): return _field_error(store,"enemy.csv",row.Id,"Sprite_tint","HTML 색이 필요합니다.")
 	for projectile_id in projectiles:
 		var row: Dictionary = projectiles[projectile_id]
 		var expires_by_distance := int(row["Expire_rule"]) == 0
