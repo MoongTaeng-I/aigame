@@ -262,7 +262,8 @@ func cancellations() -> void:
 	s.tick(0.0)
 	s.angle_picker = func() -> float: return 0.0
 	s.teleport()
-	t.check(not s.cast_active and not s.dash_through_active and s.target==null and helper.images(f).size()==1,"S7-I3-TELEPORT cancels dash and keeps original afterimage/clear behavior")
+	var teleport_images: Array = helper.images(f).filter(func(copy: Node) -> bool: return not copy.has_meta("beru_dash_trail"))
+	t.check(not s.cast_active and not s.dash_through_active and s.target==null and teleport_images.size()==1,"S7-I3-TELEPORT cancels dash and keeps original teleport afterimage/clear behavior")
 	var old_hp: int = target.hp
 	f.manager.recycle_enemy(target)
 	s.tick(1.0)

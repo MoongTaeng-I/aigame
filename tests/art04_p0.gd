@@ -31,7 +31,7 @@ func run(t: SceneTree) -> void:
 	t.check(ber_view.shadow_size==Vector2(32,12),"ART-04 omitted ground dimensions default32x12")
 	ber_view.free()
 	var ber: Dictionary = store.get_row("shadow.csv","charger_test")
-	t.check(ber.Shadow_w==null and ber.Shadow_h==null,"ART-04 Ber optional ground dimensions empty")
+	t.check(ber.Shadow_w==52.0 and ber.Shadow_h==18.0,"ART-05 Ber ground dimensions52x18")
 	var copy := preload("res://scripts/shadow_afterimage.gd").new()
 	copy.configure({"sprite_pose":p.sprite_body.pose_snapshot()},1)
 	n.map.add_child(copy)

@@ -92,9 +92,9 @@ func follow_slot(actor: Node2D, distance: float) -> Vector2:
 	var angle := TAU*(actors.find(actor)+0.5)/actors.size()
 	return player.global_position+Vector2.RIGHT.rotated(angle)*distance
 
-func leave_afterimage(point: Vector2, pose: Dictionary, seconds: float) -> Node2D:
+func leave_afterimage(point: Vector2, pose: Dictionary, seconds: float, alpha: float = 0.45) -> Node2D:
 	var copy := Afterimage.new()
-	copy.configure(pose,seconds)
+	copy.configure(pose,seconds,alpha)
 	add_child(copy)
 	copy.global_position = point
 	return copy

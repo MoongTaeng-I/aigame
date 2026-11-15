@@ -40,6 +40,8 @@ var dash_through_active: bool = false
 var sprite_body: Node2D
 var character_view: Node2D
 var sprite_hit_at := -INF
+var dash_trail_cast_at := -INF
+var dash_trail_next_age := 0.0
 var sweep_forward := true
 var sweep_sign := 1.0
 var sweep_previous_angle := 0.0
@@ -119,6 +121,7 @@ func choose_in_stage(living: Array, radius: float, screen_only: bool, excluded: 
 
 func tick(delta: float) -> void:
 	var visual_origin := global_position
+	var dash_visual_was_active := dash_through_active
 	clock += delta
 	advance_belion_effects(delta)
 	var player: Node2D = manager.player
@@ -140,6 +143,7 @@ func tick(delta: float) -> void:
 			act_on_target(player,delta)
 	global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
 	update_sprite_visual(global_position-visual_origin,delta)
+	update_dash_trail(visual_origin,delta,dash_visual_was_active)
 	queue_redraw()
 
 func act_on_target(player: Node2D, delta: float) -> void:
@@ -461,8 +465,11 @@ func teleport() -> void:
 
 func snapshot() -> Dictionary:
 	if is_dash_through():
-		var recovery_phase := clampf((clock-dash_hit_at)/float(motions[motion_index].Motion_sec),0,1) if cast_active and hit_done else 0.0
-		return {"radius":body_radius,"facing":facing,"motion":-1,"phase":recovery_phase,"kind":"charger_test"}
+		var recovery_sec := float(motions[motion_index].Motion_sec) if motion_index>=0 else 0.0
+		var recovery_phase := clampf((clock-dash_hit_at)/recovery_sec,0,1) if cast_active and hit_done and recovery_sec>0 else 0.0
+		var result := {"radius":body_radius,"facing":facing,"motion":-1,"phase":recovery_phase,"kind":"charger_test"}
+		if sprite_body!=null: result.sprite_pose = sprite_body.pose_snapshot()
+		return result
 	if is_sweep():
 		var sweep_result := {"radius":body_radius,"facing":facing,"motion":-1,"phase":sweep_progress(),"kind":"belion"}
 		if sprite_body!=null: sweep_result.sprite_pose = sprite_body.pose_snapshot()
@@ -475,6 +482,21 @@ func snapshot() -> Dictionary:
 
 func update_sprite_visual(movement: Vector2, delta: float) -> void:
 	if sprite_body==null: return
+	if is_dash_through():
+		var after := float(config.Attack_after_frame_sec)
+		if dash_through_active:
+			sprite_body.flip_h = dash_direction.x<0.0
+			sprite_body.set_attack_pose(dash_direction,1 if clock-cast_started_at<after-0.000000001 else 2)
+			return
+		if hit_done and motion_index>=0:
+			var recovery := float(motions[motion_index].Motion_sec)
+			var hold := recovery if recovery>0.0 else after
+			if clock-dash_hit_at<hold-0.000000001:
+				sprite_body.flip_h = dash_direction.x<0.0
+				sprite_body.set_attack_pose(dash_direction,3)
+				return
+		sprite_body.advance_state_pose(movement,movement.length_squared()>0.000001,delta)
+		return
 	if is_sweep():
 		if cast_active:
 			var age := clock-cast_started_at
@@ -510,6 +532,31 @@ func update_sprite_visual(movement: Vector2, delta: float) -> void:
 		sprite_body.set_attack_pose(facing,0)
 		return
 	sprite_body.advance_state_pose(movement,movement.length_squared()>0.000001,delta)
+
+func update_dash_trail(previous: Vector2, delta: float, was_active: bool) -> void:
+	if not is_dash_through() or sprite_body==null or sprite_body.using_fallback: return
+	if not dash_through_active and not (was_active and hit_done): return
+	if dash_trail_cast_at!=cast_started_at or (not was_active and dash_through_active):
+		dash_trail_cast_at = cast_started_at
+		dash_trail_next_age = 0.0
+	var life := float(presentation.Trail_life_sec)
+	var interval := float(presentation.Trail_interval_sec)
+	if life<=0.0 or interval<=0.0: return
+	var start_age := maxf(0.0,clock-delta-cast_started_at) if was_active else 0.0
+	var end_age := minf(clock-cast_started_at,start_age+previous.distance_to(global_position)/float(attack.Dash_speed)) if was_active else 0.0
+	var departure := previous if was_active else dash_origin
+	while dash_trail_next_age<=end_age+0.000000001:
+		var age := maxf(0.0,clock-cast_started_at-dash_trail_next_age)
+		if age<life:
+			var fraction := clampf((dash_trail_next_age-start_age)/maxf(end_age-start_age,0.000000001),0,1)
+			var pose := snapshot()
+			pose.sprite_pose.frame_row = 2
+			pose.sprite_pose.frame_column = 1 if dash_trail_next_age<float(config.Attack_after_frame_sec)-0.000000001 else 2
+			pose.sprite_pose.flip_h = dash_direction.x<0.0
+			var copy: Node2D = manager.leave_afterimage(departure.lerp(global_position,fraction),pose,life,float(presentation.Trail_alpha))
+			copy.set_meta("beru_dash_trail",true)
+			copy._physics_process(age)
+		dash_trail_next_age += interval
 
 func _draw() -> void:
 	if is_dash_through():

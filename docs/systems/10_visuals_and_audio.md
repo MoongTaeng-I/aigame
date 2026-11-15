@@ -94,24 +94,26 @@ ART-03에서 플레이어 `dir3` 표시는 이동·대기 시트를 분리한다
 
 #### SpriteBody 표시 열
 
+ART-05 베르는 `state3`1928×1170(4×3, 칸482×390) 시트와52×18 발밑 타원을 사용한다. 사용자 추가 답변에 따라 기존 즉시 돌진을 유지하고 준비1번은 생략한다. 공격2번은 돌진 처음0.1초,3번은 나머지 돌진,4번은 기존 후딜0.3초 동안 표시한다. 후딜 없는 표시 조건에서는4번을0.1초 유지한다. 돌진x<0이면 반전하고 진행 중 바꾸지 않는다. 새 돌진 잔상은 공용 Trail_life_sec0.3/Trail_interval_sec0.045/Trail_alpha0.45를 사용하며 그 순간 칸·반전을 복제한다. 텔레포트는 기존 수명1초·불투명도0.45를 유지한다. 이미지 없는 경우 도형 대체를 유지한다.
+
 `player.csv`와 `shadow.csv`가 공용으로 쓰는 표시 열이다. 그림자 전용 상태 시간 열은 플레이어에는 없으며, `shadow.csv`에서 `Sprite_path`가 빈 행은 나머지 이미지 열도 비운다. `Shadow_w`·`Shadow_h`는 이미지 유무와 독립이며 각각 빈칸이면32·12px를 쓴다. 유한한 양수만 허용하고 잘못된 값은 데이터 오류 화면으로 처리한다. 자세한 그림자 자료형·검증 규칙은 시스템7 표가 소유한다.
 
-| 열 | 의미 | player_01 예시 | igrit 예시 | belion 예시 |
-|---|---|---|---|---|
-| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | res://assets/art/shadow/igris_sheet.png | res://assets/art/shadow/belion_sheet.png |
-| Idle_sprite_path | dir3 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | 해당 없음 | 해당 없음 |
-| Sprite_layout | 행 배치 종류 | dir3 | state3 | state3 |
-| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 4 / 3 | 4 / 3 | 4 / 3 |
-| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 87 | 211 | 195 |
-| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 368 | 410 | 363 |
-| Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 | 8 |
-| Anim_fps | 걷기·이동 반복 속도 | 12 | 8 | 8 |
-| Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 | 6 |
-| Attack_after_frame_sec | 공격 뒤 칸 유지 시간(초) | 해당 없음 | 0.1 | 0.1 |
-| Shadow_w | 검정 발밑 타원 전체 너비(px), Optional Float | 32 | 56 | 60 |
-| Shadow_h | 검정 발밑 타원 전체 높이(px), Optional Float | 12 | 20 | 22 |
-| Chain_hand_x | 오른쪽 기준 발→사슬 손 x(px), Optional Float | 해당 없음 | 빈칸 | 15 |
-| Chain_hand_y | 발→사슬 손 y(px), Optional Float | 해당 없음 | 빈칸 | -95 |
+| 열 | 의미 | player_01 예시 | igrit 예시 | belion 예시 | charger_test(베르) 예시 |
+|---|---|---|---|---|---|
+| Sprite_path | 이동·상태 시트 리소스 경로 | res://assets/art/player/player_move_sheet.png | res://assets/art/shadow/igris_sheet.png | res://assets/art/shadow/belion_sheet.png | res://assets/art/shadow/beru_sheet.png |
+| Idle_sprite_path | dir3 대기 시트 리소스 경로 | res://assets/art/player/player_idle_sheet.png | 해당 없음 | 해당 없음 | 해당 없음 |
+| Sprite_layout | 행 배치 종류 | dir3 | state3 | state3 | state3 |
+| Sprite_cols / Sprite_rows | 가로·세로 칸 수 | 4 / 3 | 4 / 3 | 4 / 3 | 4 / 3 |
+| Sprite_cell_height | 한 칸의 화면 표시 높이(px) | 87 | 211 | 195 | 180 |
+| Sprite_baseline | 원본 칸의 발 기준선 y(px) | 368 | 410 | 363 | 376 |
+| Sprite_foot_y | 판정 원 중심 아래 발 위치(px) | 8 | 8 | 8 | 8 |
+| Anim_fps | 걷기·이동 반복 속도 | 12 | 8 | 8 | 8 |
+| Idle_fps | dir3/state3 대기 반복 속도 | 6 | 6 | 6 | 6 |
+| Attack_after_frame_sec | 이미지 공격 칸 유지 시간(초) | 해당 없음 | 0.1 | 0.1 | 0.1(돌진2번/후딜 없는 착지) |
+| Shadow_w | 검정 발밑 타원 전체 너비(px), Optional Float | 32 | 56 | 60 | 52 |
+| Shadow_h | 검정 발밑 타원 전체 높이(px), Optional Float | 12 | 20 | 22 | 18 |
+| Chain_hand_x | 오른쪽 기준 발→사슬 손 x(px), Optional Float | 해당 없음 | 빈칸 | 15 | 빈칸 |
+| Chain_hand_y | 발→사슬 손 y(px), Optional Float | 해당 없음 | 빈칸 | -95 | 빈칸 |
 
 `Chain_hand_x`·`Chain_hand_y`는 shadow.csv 전용이며 유한한 좌표 쌍으로 함께 지정하거나 함께 비운다. 음수·0도 허용하고 왼쪽 반전 시 x 부호만 바꾼다. 이미지 없는 도형에는 새 손 좌표 표시를 적용하지 않는다.
 
@@ -162,3 +164,4 @@ CSV Value는 String으로 읽고 각 연출 사용처에서 숫자/색으로 변
 - 2026-11-15 ART-04: 그림자 확대·벨리온1816×1131 시트·발밑 타원 데이터·플레이어/그림자/일반 적/보스 본체 y 정렬을 연결한다. 공격 표시·사슬 검·UI와 투사체 경로는 유지하고 질주/텔레포트 잔상은 포즈 크기를 복제한다. 직접 플레이 확인 전이다.
 - 2026-11-15 S7-FIX-04: 손 좌표15/-95 기준 준비 빛·높이가 내려오는 곡선 사슬·8px 마름모 조각과 공격1/2/3/4 칸 시간을 맞춘다. 사용자 추가 답변에 따라 고정 방향은 적용하지 않고 기존 피해 결과·시점·번갈아 방향을 보존한다. 궤적·파편 값은 유지하며 직접 플레이 확인 전이다.
 - 2026-11-15 S7-FIX-05: 사용자 확정으로 사거리450·사슬 두께24px(기존 대비1.5배·3배)를 적용한다. 두께를 Belion_chain_width CSV 행으로 읽고 마름모·빛·테두리를 비례 확대한다. 손·칸·방향·나머지 전투 수치는 유지하며 직접 플레이 확인 전이다.
+- 2026-11-15 ART-05: 베르1928×1170 state3·높이180·기준선376·타원52×18을 연결한다. 사용자 추가 결정에 따라 준비1번 없이 즉시 돌진2→3·후딜4로 표시하며 포즈/반전 잔상을 연결한다. 기존 전투·돌진·타이밍·공용 잔상 값은 유지한다. 직접 플레이 확인 전이다.

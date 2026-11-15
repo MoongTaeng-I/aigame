@@ -58,10 +58,10 @@ func run(tree: SceneTree) -> void:
 	var copy = f.summons.leave_afterimage(igris.global_position,igris.snapshot(),float(igris.config.Afterimage_sec))
 	t.check(copy.sprite_body!=null and copy.sprite_body.frame_row==2 and copy.sprite_body.frame_column==3 and copy.sprite_body.flip_h and not copy.sprite_body.show_shadow,"ART-02 Igris departure afterimage preserves frame and flip without ground shadow")
 	var charger = f.summons.summon("charger_test")
-	t.check(charger!=null and charger.sprite_body==null and charger.snapshot().kind=="charger_test","ART-02 image-empty Ber keeps existing procedural pose")
+	t.check(charger!=null and charger.sprite_body!=null and charger.snapshot().kind=="charger_test","ART-05 Ber uses connected sprite with unchanged internal kind")
 	var charger_copy = f.summons.leave_afterimage(charger.global_position,charger.snapshot(),float(charger.config.Afterimage_sec))
 	charger.queue_redraw()
 	charger_copy.queue_redraw()
 	await t.process_frame
-	t.check(charger_copy.sprite_body==null,"ART-02 image-empty Ber afterimage keeps existing procedural pose")
+	t.check(charger_copy.sprite_body!=null,"ART-05 Ber afterimage uses captured sprite pose")
 	await helper.close(f)

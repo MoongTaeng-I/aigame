@@ -32,6 +32,8 @@
 - fan 공격 시작부터 실제 `Hit_time_sec` 타격 전까지 공격 행1번 칸을 유지하고, 기존 피해가 발생한 프레임에2번 칸을 표시한다. 그 뒤3·4번 칸을 각각 `Attack_after_frame_sec` 동안 표시한 뒤 대기/이동 표시로 돌아간다. 타격 시점·판정·모션 길이·공격 간격은 바꾸지 않는다. 공격 중 반전은 실제 공격 방향을 따른다.
 - 시트 한 칸은 원본 비율을 유지하며 화면 높이 `Sprite_cell_height`로 표시하고, 원본 `Sprite_baseline`을 판정 원 중심 아래 `Sprite_foot_y`에 맞춘다. 발밑 검정 타원의 전체 너비·높이는 `Shadow_w`·`Shadow_h`이며 알파0.35다. 빈칸은 각각32·12px를 쓴다. 본체 그림만 플레이어·일반 적·보스와 공통 y 정렬을 적용하며 공격 표시·사슬 검은 그 위에 둔다. 물리·피해·밀기·이동 수치는 표시 크기와 독립이다.
 - 텔레포트 출발 잔상은 생성 순간의 칸·좌우 반전을 복제하고 기존 `Afterimage_sec`와 투명도를 유지한다. 잔상에는 발밑 그림자·판정이 없다. `Sprite_path`가 빈 베르는 기존 코드 도형과 도형 잔상을 그대로 사용한다.
+- ART-05 베르는1928×1170 투명 `state3`4×3 시트(칸482×390)를 사용한다. 높이180·기준선376·발8·이동8fps·대기6fps·타원52×18이다. 현재 즉시 돌진 판정을 보존하므로 사용자 추가 답변에 따라 공격1번 준비 칸은 생략한다. 돌진 시작부터 `Attack_after_frame_sec` 동안2번, 나머지 돌진은3번, 종료 뒤 기존 `Motion_sec` 후딜 동안4번을 표시한다. 후딜 없는 표시 준비 조건에서는 `Attack_after_frame_sec` 동안4번을 유지하고 대기/이동으로 돌아간다. `Motion_sec`의 후딜 의미·실제 시전 시각은 바꾸지 않는다. 돌진 방향x<0일 때만 반전하고 돌진/착지 중 방향을 바꾸지 않는다.
+- 베르의 새 돌진 잔상은 공용 `Trail_life_sec`0.3초·`Trail_interval_sec`0.045초·`Trail_alpha`0.45로 생성 순간의 칸·반전을 복제한다. 텔레포트 잔상은 기존 수명1초·불투명도0.45를 유지한다. 이미지 없는 베르는 도형 대체 경로를 유지한다.
 
 ### 적-그림자 분배와 그림자 간 조향 (S7-FIX-01)
 
@@ -414,7 +416,7 @@ flowchart TD
 
 ### shadow.csv
 
-예시는 ART-04 기준 CSV의 `igrit` 행이다. 벨리온은 `Id=belion`, `Search_radius=360`, `Attack_id=belion_attack`, `Name_ko=벨리온`, `Sprite_path=res://assets/art/shadow/belion_sheet.png`, `Sprite_cell_height=195`, `Sprite_baseline=363`, `Shadow_w=60`, `Shadow_h=22`이며 나머지 표시 예시는 이그리트와 같다. 수치는 최종 밸런스 값이 아니다.
+예시는 CSV의 `igrit` 행이다. 벨리온은 `Id=belion`, `Search_radius=360`, `Attack_id=belion_attack`, `Name_ko=벨리온`, `Sprite_path=res://assets/art/shadow/belion_sheet.png`, `Sprite_cell_height=195`, `Sprite_baseline=363`, `Shadow_w=60`, `Shadow_h=22`다. ART-05 베르는 `Id=charger_test`, `Name_ko=베르`, `Attack_id=charger_attack`, `Sprite_path=res://assets/art/shadow/beru_sheet.png`, `Sprite_cell_height=180`, `Sprite_baseline=376`, `Shadow_w=52`, `Shadow_h=18`이며 state3·4×3·발8·이동8fps·대기6fps·공격 뒤0.1초는 공통이다. 내부Id·기존 전투 수치는 유지하며 최종 밸런스 값으로 확대 해석하지 않는다.
 
 | 컬럼 | 설명(무엇을 정하는 값인가) | 예시 | 자료형 | 단위 | 허용 범위·허용값 | 빈칸 허용 | 참조(다른 테이블·컬럼) | 잘못된 값일 때 | 비고 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -438,11 +440,11 @@ flowchart TD
 | Sprite_foot_y | 판정 원 중심 아래 발 기준선 위치 | 8 | Optional Float | 화면 px | 이미지 사용 시 유한한 값 | 이미지 미사용 시 허용 | Sprite_baseline | 자료형/조건 위반: 데이터 오류 화면 | 아래 방향이 양수 |
 | Anim_fps | 이동4칸 반복 속도 | 8 | Optional Float | 칸/초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
 | Idle_fps | 대기4칸 반복 속도 | 6 | Optional Float | 칸/초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | Sprite_path | 자료형/조건 위반: 데이터 오류 화면 | 없음 |
-| Attack_after_frame_sec | 타격 뒤 공격3·4번 칸 각각의 표시 시간 | 0.1 | Optional Float | 초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | shadow_motion.csv.Hit_time_sec | 자료형/조건 위반: 데이터 오류 화면 | 타격 전1번, 타격 순간2번 칸은 실제 공격 시점에 종속 |
+| Attack_after_frame_sec | 이미지 공격 칸의 표시 시간 | 0.1 | Optional Float | 초 | 이미지 사용 시 유한한 양수 | 이미지 미사용 시 허용 | shadow_attack.csv.Shape | 자료형/조건 위반: 데이터 오류 화면 | fan 후속3/4·sweep 종료3/4·베르 돌진2/후딜 없는 착지4; 실제 판정 시점은 유지 |
 | Name_ko | 보유 그림자 HUD에 표시할 이름 | 이그리트 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | Name_ko로 표시, Id를 표시 이름으로 하드코딩하지 않음 |
 | Icon | 보유 그림자 HUD의 이미지 경로 | (빈칸) | Optional Path | 해당 없음 | res:// 경로·역슬래시 없음·리소스 존재·Texture2D 이미지 | 허용 | 이미지 리소스 | 자료형/경로/이미지 오류: 데이터 오류 화면 | 빈칸은 shadow_visual 임시 모양으로 대체 |
-| Shadow_w | 발밑 타원의 전체 너비 | 56 | Optional Float | 화면 px | 유한한 양수 | 허용:32 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온60; 판정과 독립 |
-| Shadow_h | 발밑 타원의 전체 높이 | 20 | Optional Float | 화면 px | 유한한 양수 | 허용:12 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온22; 베르는 두 열 빈칸 |
+| Shadow_w | 발밑 타원의 전체 너비 | 56 | Optional Float | 화면 px | 유한한 양수 | 허용:32 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온60·베르52; 판정과 독립 |
+| Shadow_h | 발밑 타원의 전체 높이 | 20 | Optional Float | 화면 px | 유한한 양수 | 허용:12 | 없음 | 자료형/조건 위반: 데이터 오류 화면 | 벨리온22·베르18 |
 | Chain_hand_x | 오른쪽을 볼 때 발 기준 사슬 손 x | (빈칸); 벨리온15 | Optional Float | 화면 px | 유한한 좌표; x/y 함께 지정 | 허용 | Sprite_foot_y·Chain_hand_y | 자료형/조건 위반: 데이터 오류 화면 | 왼쪽 반전 시 부호 반대; 다른 그림자 빈칸 |
 | Chain_hand_y | 발 기준 사슬 손 높이 | (빈칸); 벨리온-95 | Optional Float | 화면 px | 유한한 좌표; x/y 함께 지정 | 허용 | Sprite_foot_y·Chain_hand_x | 자료형/조건 위반: 데이터 오류 화면 | 위쪽 음수; 좌우 반전해도 유지 |
 
@@ -527,3 +529,4 @@ flowchart TD
 - 2026-11-15 ART-04 사용자 지정: 이그리트 표시 높이211·벨리온195와 state3 시트, Shadow_w/Shadow_h 및 본체 공통 y 정렬을 적용한다. 잔상은 새 표시 크기를 복제하고 판정·밀기·이동은 유지한다. 직접 플레이 확인 전이다.
 - 2026-11-15 S7-FIX-04 사용자 추가 결정: 고정 방향 요청은 기존 피해 결과·시점 보존과 충돌하므로 사용자가 "기존 판정 결과·시점 보존: 방향 번갈아 유지, 사슬·손 위치·칸만 수정"을 선택했다. 번갈아 방향·실제 대상 방향·판정 수치는 유지하며 손 좌표15/-95·곡선 마름모 검·준비1/쓸기2/종료3→4 표시를 적용한다. 직접 플레이 확인 전이다.
 - 2026-11-15 S7-FIX-05 사용자 확정: 벨리온 Range300→450으로 판정 길이를1.5배 늘리고 접근 거리 Range×0.8=360 규칙은 유지한다. 사슬 두께8→24px는 combat_presentation.csv의 Belion_chain_width로 옮겨 마름모·빛 테두리를 비례 확대한다. Search_radius360·Arc180·시전/간격/피해·손 좌표·번갈아 방향·이미지 칸은 유지한다. 직접 플레이 확인 전이다.
+- 2026-11-15 ART-05 사용자 추가 결정: "기존 판정 유지: 준비 1번 생략, 돌진 2→3·후딜 4번"을 선택했다. 베르 state3 시트1928×1170·높이180·기준선376·발8·타원52×18을 연결하고 고정 돌진 방향의2/3/4번 칸과 포즈 잔상을 표시한다. Motion_sec0.3은 기존 후딜이며 준비 지연을 추가하지 않는다. 내부charger_test·전투/이동/돌진 값은 유지한다. 직접 플레이 확인 전이다.
