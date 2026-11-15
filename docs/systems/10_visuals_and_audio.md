@@ -201,6 +201,11 @@ walk_shoot는 기본1행 걷기를 Anim_fps로 반복하고 공포 정지는1번
 | Squash | Optional Float,출렁임 비례 가로확대/세로축소 비율;빈칸0 | 0.06 | 0.05 | 0.05 |
 | Tilt_deg | Optional Float,좌우 sin 기울기 도;빈칸0 | 4 | 3 | 3 |
 | Breath | Optional Float,정지 세로 ±비율;빈칸0 | 0.02 | 0.02 | 0 |
+| Walk_cols | Optional String,pose 앞 걷기 칸의 0기준 시작-끝(양끝 포함);빈칸은 기존 동작 | 5-12 | 빈칸 | 빈칸 |
+| Walk_back_cols | Optional String,pose 뒤 걷기 범위;빈칸은 Walk_cols 사용 | 13-20 | 빈칸 | 빈칸 |
+| Walk_fps | Optional Float,걷기 초당 칸 수;범위 사용 시 유한한 양수 | 12 | 빈칸 | 빈칸 |
+
+ART-13(2026-11-16): 위 걷기3열은 player.csv·shadow.csv·enemy.csv 공통이다. pose 이동 시 반복하고 앞/뒤 전환은 시간을 유지,정지 시 기존 대기 칸과 시간0으로 돌아간다. 공격·스킬 포즈가 우선하며 잘못된 범위 형식/순서/칸 초과 또는 fps는 경고 후 기존 포즈로 대체한다. 플레이어 최신 시트는4641×221·21열1행,0~4는 기존 포즈,5~12 앞 걷기,13~20 뒤 걷기다. Sprite_cols21,Bob_px2,Step_hz1.5,Squash0.03,Tilt_deg1이며 Breath는 유지한다. 이전 표의 값은 ART-09 시점 기록이다.
 
 새5열은 유한한 비음수이고 Squash·Breath는1 미만이다. 모두 빈칸이면 변형이 없다. 플레이어 Idle_sprite_path는 빈칸이며 pose에서 별도 대기 시트를 사용하지 않는다. 위쪽 이동(y<0,절댓값y>절댓값x,정규화 y가 Flip_deadband 문턱 초과) 중 뒷모습2열,그 외 앞모습1열이다. 좌우는 정규화 x의 기존 Flip_deadband를 적용한다. 그림자는 cast_active 시작부터 종료까지2열,그 외1열이며 기존 공격 방향 규칙을 따른다. 적은1열이다.
 

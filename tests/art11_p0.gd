@@ -6,11 +6,15 @@ func run(t: SceneTree) -> void:
 	var row: Dictionary = store.get_row("player.csv","player_01")
 	var view := SpriteBody.new()
 	view.configure(row,16,Color.WHITE,Color.WHITE)
-	t.check(view.texture.get_size()==Vector2(1105,221) and view.columns==5 and view.rows==1 and view.source_rect().size==Vector2(221,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-11 five player poses approved dimensions")
+	t.check(view.texture.get_size()==Vector2(4641,221) and view.columns==21 and view.rows==1 and view.source_rect().size==Vector2(221,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-13 player21 columns retains original five poses")
 	t.check(view.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and view.texture.get_image().has_mipmaps(),"ART-11 player alpha and mipmaps")
 	var dragon: Texture2D = load("res://assets/art/fx/fx_dragon_head.png")
 	t.check(dragon.get_size()==Vector2(496,640) and dragon.get_image().detect_alpha()!=Image.ALPHA_NONE and dragon.get_image().has_mipmaps(),"ART-11 dragon496x640 alpha mipmaps")
 	var settings: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+	var legacy: Dictionary = row.duplicate()
+	legacy.Walk_cols = null
+	legacy.Walk_back_cols = null
+	view.configure(legacy,16,Color.WHITE,Color.WHITE)
 	for item in [[true,true,true,4],[false,true,true,2],[false,false,true,3],[false,false,false,1]]:
 		view.advance_player_skill_pose(Vector2.UP,true,0.02,item[0],item[1],item[2],Vector2.LEFT,settings)
 		t.check(view.frame_column==item[3],"ART-11 fear dash slash normal priority "+str(item))

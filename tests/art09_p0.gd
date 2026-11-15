@@ -3,14 +3,17 @@ extends RefCounted
 func run(t: SceneTree) -> void:
 	var store: CsvDataStore = t._store()
 	t.check(store.load_all().is_empty(),"ART-09 pose data loads")
-	for entry in [["player.csv","player_01",Vector2(1105,221),Vector2(221,221),110],["shadow.csv","igrit",Vector2(782,287),Vector2(391,287),143],["enemy.csv","enemy_01",Vector2(237,222),Vector2(237,222),111]]:
+	for entry in [["player.csv","player_01",Vector2(4641,221),Vector2(221,221),110],["shadow.csv","igrit",Vector2(782,287),Vector2(391,287),143],["enemy.csv","enemy_01",Vector2(237,222),Vector2(237,222),111]]:
 		var view := SpriteBody.new()
 		view.configure(store.get_row(entry[0],entry[1]),16,Color.WHITE,Color.WHITE)
 		t.check(view.layout=="pose" and view.texture.get_size()==entry[2] and view.source_rect().size==entry[3] and view.texture.get_image().detect_alpha()!=Image.ALPHA_NONE,"ART-09 transparent SD sheet "+entry[1])
 		t.check(absf(view.display_rect().size.y-float(entry[4]))<=1 and view.texture.get_image().has_mipmaps() and view.texture_filter==CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS,"ART-09 height mipmaps linear filter "+entry[1])
 		view.free()
 	var player := SpriteBody.new()
-	player.configure(store.get_row("player.csv","player_01"),16,Color.WHITE,Color.WHITE)
+	var legacy: Dictionary = store.get_row("player.csv","player_01").duplicate()
+	legacy.Walk_cols = null
+	legacy.Walk_back_cols = null
+	player.configure(legacy,16,Color.WHITE,Color.WHITE)
 	for entry in [[Vector2.UP,true,1],[Vector2(0.2,-1),true,1],[Vector2(-1,-1),true,0],[Vector2.DOWN,true,0],[Vector2.UP,false,0]]:
 		player.advance_pose(entry[0],entry[1],0.05)
 		t.check(player.frame_row==0 and player.frame_column==entry[2],"ART-09 player front/back pose "+str(entry))

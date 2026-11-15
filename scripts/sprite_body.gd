@@ -32,6 +32,10 @@ var _animation_row := -1
 var _pose_moving := false
 var _using_idle := false
 var _walk_frame_column := 0
+var walk_cols := Vector2i(-1,-1)
+var walk_back_cols := Vector2i(-1,-1)
+var walk_fps := 0.0
+var _pose_walk_elapsed := 0.0
 var motion_values: Dictionary = {}
 var motion_transform := Transform2D.IDENTITY
 var _motion_clock := 0.0
@@ -71,6 +75,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	layout = String(record.get("Sprite_layout","dir3"))
 	columns = int(record.get("Sprite_cols",1))
 	rows = int(record.get("Sprite_rows",1))
+	configure_walk(record)
 	cell_height = float(record.get("Sprite_cell_height",0.0))
 	baseline = float(record.get("Sprite_baseline",0.0))
 	foot_y = float(record.get("Sprite_foot_y",0.0))
@@ -150,7 +155,8 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 		update_movement_flip(direction)
 		var normalized := direction.normalized()
 		frame_row = 0
-		frame_column = 1 if moving and columns>1 and normalized.y < -flip_deadband and absf(normalized.y)>absf(normalized.x) else 0
+		var idle_column := 1 if moving and columns>1 and normalized.y < -flip_deadband and absf(normalized.y)>absf(normalized.x) else 0
+		frame_column = pose_walk_column(idle_column,moving,delta)
 		advance_pose_motion(moving,delta)
 		return
 	if direction!=Vector2.ZERO:
@@ -206,7 +212,8 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 		update_movement_flip(direction)
 	frame_row = 0
 	if layout=="pose":
-		frame_column = 0
+		frame_column = pose_walk_column(0,moving,delta)
+		_walk_frame_column = frame_column
 		advance_pose_motion(moving,delta)
 		return
 	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
@@ -217,7 +224,7 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void:
 	if layout=="pose":
 		frame_row = 0
-		frame_column = 1 if enabled and columns>1 and (release_age<0.15-0.000000001 or remaining<=0.3+0.000000001) else 0
+		frame_column = 1 if enabled and columns>1 and (release_age<0.15-0.000000001 or remaining<=0.3+0.000000001) else _walk_frame_column
 		queue_redraw()
 		return
 	frame_row = 0
@@ -237,8 +244,48 @@ func advance_shadow_pose(direction: Vector2, moving: bool, delta: float, attacki
 		elif attack_direction.x>0: flip_h = false
 	else: update_movement_flip(direction)
 	frame_row = 0
-	frame_column = 1 if attacking and columns>1 else 0
+	var walking_column := pose_walk_column(0,moving,delta)
+	frame_column = 1 if attacking and columns>1 else walking_column
 	advance_pose_motion(moving,delta,attacking,attack_direction)
+
+func configure_walk(record: Dictionary) -> void:
+	walk_cols = Vector2i(-1,-1)
+	walk_back_cols = Vector2i(-1,-1)
+	walk_fps = 0.0
+	_pose_walk_elapsed = 0.0
+	if layout!="pose" or record.get("Walk_cols")==null or String(record.Walk_cols).strip_edges().is_empty(): return
+	var pattern := RegEx.new()
+	pattern.compile("^[0-9]+-[0-9]+$")
+	var parsed: Array[Vector2i] = []
+	for key in ["Walk_cols","Walk_back_cols"]:
+		var text := String(record[key]).strip_edges() if record.get(key)!=null else ""
+		if text.is_empty():
+			parsed.append(Vector2i(-1,-1))
+			continue
+		if pattern.search(text)==null:
+			print("ART-13 warning: invalid ",key,"=",text,"; using existing pose")
+			return
+		var parts := text.split("-")
+		var first := int(parts[0])
+		var last := int(parts[1])
+		if first<0 or first>last or last>=columns:
+			print("ART-13 warning: out-of-bounds ",key,"=",text,"; using existing pose")
+			return
+		parsed.append(Vector2i(first,last))
+	var fps := float(record.get("Walk_fps",0.0)) if record.get("Walk_fps")!=null else 0.0
+	if not is_finite(fps) or fps<=0:
+		print("ART-13 warning: invalid Walk_fps; using existing pose")
+		return
+	walk_cols = parsed[0]
+	walk_back_cols = parsed[1]
+	walk_fps = fps
+
+func pose_walk_column(idle_column: int, moving: bool, delta: float) -> int:
+	if not moving: _pose_walk_elapsed = 0.0
+	if layout!="pose" or walk_cols.x<0 or not moving: return idle_column
+	_pose_walk_elapsed += maxf(0,delta)
+	var span := walk_back_cols if idle_column==1 and walk_back_cols.x>=0 else walk_cols
+	return span.x+floori((_pose_walk_elapsed+0.000000001)*walk_fps)%(span.y-span.x+1)
 
 # Boss-only explicit pose path; existing player/shadow/enemy selection is unchanged.
 func advance_explicit_pose(column: int, direction: Vector2, moving: bool, delta: float, locked_facing: bool) -> void:

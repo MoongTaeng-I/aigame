@@ -53,6 +53,8 @@ static func register_schemas(store: CsvDataStore) -> void:
 	ChoiceData.register_schemas(store)
 	ShadowData.register_schemas(store)
 	for file in ["player.csv","enemy.csv","shadow.csv"]:
+		for key in ["Walk_cols","Walk_back_cols","Walk_fps"]:
+			store.schemas[file][key] = {"type":"Optional","inner":"Float" if key=="Walk_fps" else "String"}
 		for key in ["Bob_px","Step_hz","Squash","Tilt_deg","Breath"]:
 			store.schemas[file][key] = {"type":"Optional","inner":"Float"}
 	HitFxData.register_schemas(store)

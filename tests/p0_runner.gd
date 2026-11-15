@@ -66,6 +66,7 @@ func _run() -> void:
 	await preload("res://tests/look01_p0.gd").new().run(self)
 	await preload("res://tests/art11_p0.gd").new().run(self)
 	await preload("res://tests/art12_p0.gd").new().run(self)
+	await preload("res://tests/art13_p0.gd").new().run(self)
 	await preload("res://tests/art04_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)
@@ -138,7 +139,7 @@ func _store() -> CsvDataStore:
 
 func with_art_columns(file: String, text: String) -> String:
 	var fields: Array = ["Sprite_anchor_x"] if file=="player.csv" else (["Sprite_path","Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_anchor_x","Sprite_foot_y","Anim_fps","Shadow_w","Shadow_h","Sprite_tint"] if file=="enemy.csv" else [])
-	if file in ["player.csv","enemy.csv","shadow.csv"]: fields += ["Bob_px","Step_hz","Squash","Tilt_deg","Breath"]
+	if file in ["player.csv","enemy.csv","shadow.csv"]: fields += ["Bob_px","Step_hz","Squash","Tilt_deg","Breath","Walk_cols","Walk_back_cols","Walk_fps"]
 	if fields.is_empty(): return text
 	var lines := text.split("\n",false)
 	var headers := lines[0].split(",")
