@@ -1,0 +1,147 @@
+[gd_resource type="Theme" load_steps=21 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/ui_window.png" id="ui_window"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_button_normal.png" id="ui_button_normal"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_button_hover.png" id="ui_button_hover"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_button_pressed.png" id="ui_button_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_button_disabled.png" id="ui_button_disabled"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_bar_bg.png" id="ui_bar_bg"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_bar_fill.png" id="ui_bar_fill"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_frame_overlay.png" id="ui_frame_overlay"]
+[ext_resource type="Texture2D" path="res://assets/ui/ui_icon_frame.png" id="ui_icon_frame"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansKR-Bold-subset.otf" id="bold"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansKR-Black-subset.otf" id="black"]
+
+[sub_resource type="StyleBoxTexture" id="ui_window"]
+texture = ExtResource("ui_window")
+texture_margin_left = 40.0
+content_margin_left = 32.0
+texture_margin_top = 40.0
+content_margin_top = 40.0
+texture_margin_right = 40.0
+content_margin_right = 32.0
+texture_margin_bottom = 40.0
+content_margin_bottom = 24.0
+axis_stretch_horizontal = 1
+axis_stretch_vertical = 1
+
+[sub_resource type="StyleBoxTexture" id="ui_button_normal"]
+texture = ExtResource("ui_button_normal")
+texture_margin_left = 24.0
+content_margin_left = 12.0
+texture_margin_top = 24.0
+content_margin_top = 12.0
+texture_margin_right = 24.0
+content_margin_right = 12.0
+texture_margin_bottom = 24.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxTexture" id="ui_button_hover"]
+texture = ExtResource("ui_button_hover")
+texture_margin_left = 24.0
+content_margin_left = 12.0
+texture_margin_top = 24.0
+content_margin_top = 12.0
+texture_margin_right = 24.0
+content_margin_right = 12.0
+texture_margin_bottom = 24.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxTexture" id="ui_button_pressed"]
+texture = ExtResource("ui_button_pressed")
+texture_margin_left = 24.0
+content_margin_left = 12.0
+texture_margin_top = 24.0
+content_margin_top = 12.0
+texture_margin_right = 24.0
+content_margin_right = 12.0
+texture_margin_bottom = 24.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxTexture" id="ui_button_disabled"]
+texture = ExtResource("ui_button_disabled")
+texture_margin_left = 24.0
+content_margin_left = 12.0
+texture_margin_top = 24.0
+content_margin_top = 12.0
+texture_margin_right = 24.0
+content_margin_right = 12.0
+texture_margin_bottom = 24.0
+content_margin_bottom = 12.0
+
+[sub_resource type="StyleBoxTexture" id="ui_bar_bg"]
+texture = ExtResource("ui_bar_bg")
+texture_margin_left = 6.0
+content_margin_left = 0.0
+texture_margin_top = 6.0
+content_margin_top = 0.0
+texture_margin_right = 6.0
+content_margin_right = 0.0
+texture_margin_bottom = 6.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxTexture" id="ui_bar_fill"]
+texture = ExtResource("ui_bar_fill")
+texture_margin_left = 6.0
+content_margin_left = 0.0
+texture_margin_top = 6.0
+content_margin_top = 0.0
+texture_margin_right = 6.0
+content_margin_right = 0.0
+texture_margin_bottom = 6.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxTexture" id="ui_frame_overlay"]
+texture = ExtResource("ui_frame_overlay")
+texture_margin_left = 40.0
+content_margin_left = 0.0
+texture_margin_top = 40.0
+content_margin_top = 0.0
+texture_margin_right = 40.0
+content_margin_right = 0.0
+texture_margin_bottom = 40.0
+content_margin_bottom = 0.0
+
+[sub_resource type="StyleBoxTexture" id="ui_icon_frame"]
+texture = ExtResource("ui_icon_frame")
+texture_margin_left = 20.0
+content_margin_left = 0.0
+texture_margin_top = 20.0
+content_margin_top = 0.0
+texture_margin_right = 20.0
+content_margin_right = 0.0
+texture_margin_bottom = 20.0
+content_margin_bottom = 0.0
+
+[resource]
+default_font = ExtResource("bold")
+default_font_size = 20
+Label/colors/font_color = Color(0.9216, 0.9725, 1, 1)
+Label/colors/font_outline_color = Color(0.5882, 0.8431, 1, 0.3)
+Label/constants/outline_size = 2
+Button/colors/font_color = Color(0.9216, 0.9725, 1, 1)
+Button/colors/font_hover_color = Color(0.9216, 0.9725, 1, 1)
+Button/colors/font_pressed_color = Color(0.9216, 0.9725, 1, 1)
+Button/colors/font_focus_color = Color(0.9216, 0.9725, 1, 1)
+Button/colors/font_outline_color = Color(0.5882, 0.8431, 1, 0.3)
+Button/constants/outline_size = 2
+RichTextLabel/colors/font_color = Color(0.9216, 0.9725, 1, 1)
+RichTextLabel/colors/font_outline_color = Color(0.5882, 0.8431, 1, 0.3)
+RichTextLabel/constants/outline_size = 2
+Label/colors/font_shadow_color = Color(0.5882, 0.8431, 1, 0.25)
+Label/constants/shadow_offset_x = 0
+Label/constants/shadow_offset_y = 1
+Title/base_type = &"Label"
+Title/fonts/font = ExtResource("black")
+Title/font_sizes/font_size = 30
+Panel/styles/panel = SubResource("ui_window")
+PanelContainer/styles/panel = SubResource("ui_window")
+ProgressBar/styles/background = SubResource("ui_bar_bg")
+ProgressBar/styles/fill = SubResource("ui_bar_fill")
+Button/styles/normal = SubResource("ui_button_normal")
+Button/styles/hover = SubResource("ui_button_hover")
+Button/styles/pressed = SubResource("ui_button_pressed")
+Button/styles/disabled = SubResource("ui_button_disabled")
+Button/colors/font_disabled_color = Color(0.52, 0.61, 0.7, 1)
+SystemUI/styles/icon = SubResource("ui_icon_frame")
+SystemUI/styles/frame = SubResource("ui_frame_overlay")

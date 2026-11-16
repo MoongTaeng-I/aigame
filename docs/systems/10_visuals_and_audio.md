@@ -773,3 +773,67 @@ F3에는 FPS·Performance RENDER_TOTAL_DRAW_CALLS_IN_FRAME·오브젝트 수·�
 | Level_ring_delay | 0.06 | 레벨업 빛 고리 · 초 |
 | Shake_max_px | 8 | 겹친 흔들림 최대 화면px · 화면px |
 | Fx05_core_ratio | 0.4 | 고정 풀 및 공통 카툰 도형 · 비율 |
+
+
+## 2026-11-16 UI-01 — 시스템 창과 타이틀·지역 선택
+
+프로젝트 공통 Theme는 assets/ui/ui_theme.tres 하나를 사용한다. 기본 글꼴은 NotoSansKR-Bold-subset.otf, 제목/강조는 Black이며 원본 OTF와 OFL.txt를 그대로 보존한다. 밝은 글씨 #ebf8ff, 하늘색 #96d7ff 외곽/그림자, 보조 #c8e1ff를 사용한다. 텍스처는 밉맵·선형 밉맵 필터이고 창 가운데는 Tile이다.
+
+| UI 자료 | 크기 | 패치/용도 예시 |
+|---|---|---|
+| ui_window.png | 192×192 | 사방40, 창 가운데 Tile |
+| ui_button_normal/hover/pressed/disabled.png | 160×64 | 사방24, 버튼 상태4종 |
+| ui_frame_overlay.png | 192×192 | 사방40, 지역 카드 투명 가운데 테두리 |
+| ui_icon_frame.png | 96×96 | 사방20, 아이콘 투명 가운데 테두리 |
+| ui_bar_bg.png / ui_bar_fill.png | 64×20 | 사방6, 로딩 바/경험치 바 |
+| ui_window_crest.png | 96×34 | 늘리지 않음; 큰 창 중앙 상단, 아래 끝이 창 위24px |
+| ui_lock.png | 64×64 | 잠금 그림 |
+| title_bg.png / logo.png / region_ice.png | 1672×941 / 1394×734 / 960×540 | 배경 비율 유지 가운데 자름 / 가로640·y380 / 중앙560×315 |
+| icon_dash / rapid_slash / stealth / dragon_fear | 256×256 | skill_ 접두 Id로 연결 |
+| icon_shadow_igris / beru / belion | 256×256 | igrit / charger_test / belion, Icon 빈칸도 Id로 연결 |
+| NotoSansKR-Bold/Black-subset.otf, OFL.txt | 사용자 원본 | 기본/제목과 라이선스 동봉 |
+
+로딩 시간·지역 이동 범위/잠금·시작/결과/재시작·선택 카드·쿨타임은 기존 상태값을 표시한다. 옆 카드는60%·알파0.7이며 범위 밖이면 비우고 잠긴 카드는 흑백+잠금 그림이다. 지역 변경은 즉시 확정하되 그림만0.2초 이동한다. 선택 카드의 회복·능력치는 글자만, 스킬/그림자는 Id 아이콘을 사용한다. 기존 도형 타이틀·자물쇠·생성 아이콘을 제거했으며 경고/쿨타임/레벨/+ 등 상태 표시는 유지한다.
+
+논리적 닫힘과 입력 해제/일시정지 해제는 즉시 유지하고, 입력을 받지 않는 표시 사본만0.1초 접고 정리한다. 창 열림0.15초·깜빡임2회·가로 흔들림3px, 버튼 hover1.04/0.08초·press0.97을 사용한다. 활성 UI 전환/광택/먼지/쿨타임만 갱신하고 정지한 UI는 다시 그리지 않는다. 지역 그림의 블러/흑백 재질은 같은 유형 카드끼리 공유하고 UI는 화면 읽기 셰이더를 추가하지 않는다. 전투/생성 RNG를 사용하지 않는다.
+
+팬 공지는 타이틀 하단과 설정 창에 표시한다. 제공한 두 부분집합 글꼴에 「 」가 없어 사용자 승인으로 그 두 글자만 U+2018·U+2019로 바꿨다(시스템 글꼴 대체 없음):
+
+> 본 게임은 웹툰 ‘나 혼자만 레벨업’의 비상업적 팬 게임(포트폴리오)입니다. 원작의 저작권은 각 권리자에게 있습니다. 글꼴: Noto Sans CJK(SIL OFL 1.1)
+
+| combat_presentation.csv 키 | 예시 | 설명 |
+|---|---|---|
+| Ui_fx_enabled | 1 | 0이면 창/버튼 확대·먼지·광택·카드 이동 연출 없이 즉시 표시 |
+| Ui_open_sec | 0.15 | 창 열림 초 |
+| Ui_close_sec | 0.1 | 입력/흐름 처리가 끝난 뒤 표시 사본이 접히는 초 |
+| Ui_open_scale_y | 0.2 | 열림 시작 세로 배율 |
+| Ui_flicker_count | 2 | 열림 중 알파 깜빡임 횟수 |
+| Ui_jitter_px | 3 | 열림 가로 흔들림 화면px |
+| Ui_hover_scale | 1.04 | 버튼/선택 카드 마우스 진입 배율 |
+| Ui_press_scale | 0.97 | 누르는 동안 배율 |
+| Ui_hover_sec | 0.08 | 버튼 배율 전환 초 |
+| Ui_card_slide_sec | 0.2 | 지역 카드 표시 이동 초; 지역 인덱스/잠금 판단은 즉시 유지 |
+| Ui_dust_count | 30 | 타이틀/메뉴 고정 배열 빛 가루 수 |
+| Ui_dust_speed | 12 | 가루 상승 px/초 |
+| Ui_dust_min_px | 1 | 최소 가루 반경px |
+| Ui_dust_max_px | 2 | 최대 가루 반경px |
+| Ui_logo_sheen_interval_sec | 3 | 로고 광택 반복 주기초 |
+| Ui_logo_sheen_sec | 0.7 | 광택이 왼쪽→오른쪽 이동하는 초 |
+| Ui_logo_sheen_width | 0.12 | 광택 UV 폭 |
+| Ui_logo_sheen_strength | 0.6 | 알파 마스크 내부 광택 강도 |
+| Ui_menu_brightness | 0.35 | 지역 선택 배경 밝기 배율 |
+| Ui_menu_blur_px | 4 | 배경/미리보기 텍스처 블러px; 화면 텍스처를 읽지 않음 |
+| Ui_side_alpha | 0.7 | 옆 카드 알파 |
+| Ui_side_scale | 0.6 | 옆 카드 배율 |
+| Ui_color | #ebf8ff | 그린 UI 기본 글씨색; Theme 기본색도 같은 시작값 |
+| Ui_glow_color | #96d7ff | 글씨 외곽 번짐색 |
+| Ui_secondary_color | #c8e1ff | 보조·팬 공지 색 |
+| Ui_notice_alpha | 0.8 | 팬 공지 알파 |
+| Ui_dust_color | #96d7ff | 하늘색 빛 가루색(흰색과 교대) |
+| Ui_flicker_alpha | 0.45 | 깜빡임 때 최소 알파 |
+| Ui_card_slide_px | 200 | 지역 전환 시 표시 이동 시작 거리px |
+| Ui_side_brightness | 0.6 | 옆 카드 그림 밝기 |
+| Ui_locked_brightness | 0.3 | 잠금 카드 흑백 그림 밝기 |
+| Ui_title_dim_alpha | 0.95 | 하단 어두운 그라데이션 끝 알파 |
+| Ui_dust_alpha | 0.65 | 하늘색 가루 알파 |
+| Ui_logo_tilt | 0.15 | 광택 줄기 기울기 |

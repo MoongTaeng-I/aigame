@@ -1,4 +1,5 @@
 extends Control
+const UI = preload("res://scripts/system_ui.gd")
 
 var owner_flow: Node
 var screen := "loading"
@@ -16,6 +17,25 @@ var result_text: Label
 var hint: Label
 var hint_remaining := 0.0
 var locked := false
+var values: Dictionary
+var backdrop: TextureRect
+var backdrop_shade: TextureRect
+var logo: TextureRect
+var loading_caption: Label
+var notice: Label
+var cards: Array[Control] = []
+var card_rows: Array = []
+var card_index := -1
+var slide_remaining := 0.0
+var slide_direction := 0.0
+var visual_clock := 0.0
+var dust: PackedVector2Array
+var dust_view: Control
+var art_menu: ShaderMaterial
+var art_side: ShaderMaterial
+var art_locked: ShaderMaterial
+var logo_material: ShaderMaterial
+var closing_modals: Array[Control] = []
 
 func configure(flow: Node) -> void:
 	owner_flow = flow
@@ -23,41 +43,103 @@ func configure(flow: Node) -> void:
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var title := text("나 혼자만\n서바이벌",Rect2(96,218,660,180),58)
-	loading_nodes.append(title)
+	theme = UI.THEME
+	values = UI.settings()
+	art_menu = art_material(float(values.Ui_menu_blur_px),float(values.Ui_menu_brightness),0)
+	art_side = art_material(float(values.Ui_menu_blur_px),float(values.Ui_side_brightness),0)
+	art_locked = art_material(float(values.Ui_menu_blur_px),float(values.Ui_locked_brightness),1)
+	backdrop = picture(preload("res://assets/ui/title_bg.png"),Rect2(0,0,1280,720))
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var gradient := Gradient.new()
+	gradient.set_color(0,Color(0,0,0,0)); gradient.set_color(1,Color(0.01,0.02,0.06,float(values.Ui_title_dim_alpha)))
+	var gradient_texture := GradientTexture2D.new()
+	gradient_texture.gradient = gradient
+	gradient_texture.fill_from = Vector2(0,0); gradient_texture.fill_to = Vector2(0,1)
+	backdrop_shade = picture(gradient_texture,Rect2(0,360,1280,360))
+	logo = picture(preload("res://assets/ui/logo.png"),Rect2(320,380,640,640.0*734/1394))
+	logo_material = ShaderMaterial.new()
+	logo_material.shader = preload("res://scripts/ui_logo.gdshader")
+	logo_material.set_shader_parameter("width",float(values.Ui_logo_sheen_width))
+	logo_material.set_shader_parameter("strength",float(values.Ui_logo_sheen_strength))
+	logo_material.set_shader_parameter("tilt",float(values.Ui_logo_tilt))
+	logo.material = logo_material
+	loading_nodes.append(logo)
+	dust_view = Control.new()
+	dust_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(dust_view)
+	dust_view.draw.connect(draw_dust)
+	var random := RandomNumberGenerator.new()
+	random.seed = 7101
+	for i in range(int(values.Ui_dust_count)): dust.append(Vector2(random.randf()*1280,random.randf()*720))
 	progress = ProgressBar.new()
-	progress.position = Vector2(100,622)
-	progress.size = Vector2(1080,8)
+	progress.position = Vector2(260,650)
+	progress.size = Vector2(760,20)
 	progress.max_value = 1
 	progress.show_percentage = false
 	add_child(progress)
 	loading_nodes.append(progress)
-	loading_nodes.append(text("로딩 중…",Rect2(100,647,1080,30),20))
-	region_title = text("",Rect2(350,80,580,55),34,true)
-	best_label = text("",Rect2(390,470,500,42),24,true)
-	locked_label = text("",Rect2(390,424,500,36),22,true)
-	start_button = button("게임 시작",Rect2(440,551,400,68),owner_flow.start_region)
+	loading_caption = text("던전 입장 준비 중… 0%",Rect2(100,674,1080,26),18,true)
+	loading_nodes.append(loading_caption)
+	notice = text(UI.NOTICE,Rect2(50,704,1180,16),11,true)
+	notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
+	var header := Panel.new()
+	header.position = Vector2(440,26); header.size = Vector2(400,70)
+	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(header); UI.crest(header)
+	var header_label := text("지역 선택",Rect2(440,50,400,40),28,true)
+	header_label.add_theme_font_override("font",UI.BLACK)
+	menu_nodes.append(header); menu_nodes.append(header_label)
+	for i in range(3):
+		var card := Control.new()
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(card)
+		var image := picture(preload("res://assets/ui/region_ice.png"),Rect2(0,0,560,315),card)
+		image.name = "Art"
+		var frame := NinePatchRect.new()
+		frame.texture = preload("res://assets/ui/ui_frame_overlay.png")
+		frame.patch_margin_left = 40; frame.patch_margin_right = 40; frame.patch_margin_top = 40; frame.patch_margin_bottom = 40
+		frame.size = Vector2(560,315); frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(frame)
+		var lock_image := picture(preload("res://assets/ui/ui_lock.png"),Rect2(248,125,64,64),card)
+		lock_image.name = "Lock"
+		cards.append(card); menu_nodes.append(card)
+	region_title = text("",Rect2(350,454,580,50),34,true)
+	best_label = text("",Rect2(390,501,500,34),24,true)
+	locked_label = text("",Rect2(390,535,500,30),22,true)
+	start_button = button("게임 시작",Rect2(440,583,400,68),owner_flow.start_region)
 	locked_click = Control.new()
 	locked_click.position = start_button.position
 	locked_click.size = start_button.size
 	locked_click.mouse_filter = Control.MOUSE_FILTER_STOP
 	locked_click.gui_input.connect(_locked_input)
 	add_child(locked_click)
-	var left := button("‹",Rect2(275,265,68,68),owner_flow.change_region.bind(-1))
-	var right := button("›",Rect2(937,265,68,68),owner_flow.change_region.bind(1))
-	var gear := button("⚙",Rect2(1196,24,56,48),toggle_settings)
+	var left := button("‹",Rect2(300,267,64,64),owner_flow.change_region.bind(-1))
+	var right := button("›",Rect2(916,267,64,64),owner_flow.change_region.bind(1))
+	var gear := button("설정",Rect2(1196,24,56,48),toggle_settings)
 	settings = PanelContainer.new()
-	settings.position = Vector2(1052,82)
-	settings.size = Vector2(200,72)
+	settings.z_index = 5
+	settings.position = Vector2(810,82)
+	settings.size = Vector2(442,230)
 	add_child(settings)
 	var quit := Button.new()
 	quit.text = "게임 종료"
 	quit.pressed.connect(func() -> void: get_tree().quit())
-	settings.add_child(quit)
+	var settings_column := VBoxContainer.new()
+	settings.add_child(settings_column)
+	var settings_notice := Label.new()
+	settings_notice.text = UI.NOTICE
+	settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	settings_notice.custom_minimum_size.x = 400
+	settings_notice.add_theme_font_size_override("font_size",14)
+	settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
+	settings_column.add_child(settings_notice)
+	settings_column.add_child(quit)
+	UI.animate_button(quit)
+	UI.animate_window(settings)
 	settings.hide()
-	menu_nodes.assign([region_title,best_label,locked_label,start_button,locked_click,left,right,gear])
+	menu_nodes.append_array([region_title,best_label,locked_label,start_button,locked_click,left,right,gear])
 	hint = text("",Rect2(340,645,600,42),22,true)
-	hint.add_theme_color_override("font_color",Color("#cdb4ff"))
+	hint.add_theme_color_override("font_color",Color("#c8e1ff"))
 	hint.hide()
 	show_screen("loading")
 
@@ -67,7 +149,7 @@ func text(value: String, box: Rect2, font_size: int, centered: bool = false) -> 
 	label.position = box.position
 	label.size = box.size
 	label.add_theme_font_size_override("font_size",font_size)
-	label.add_theme_color_override("font_color",Color("#eee7ff"))
+	label.add_theme_color_override("font_color",Color("#ebf8ff"))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if centered: label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -80,17 +162,9 @@ func button(value: String, box: Rect2, action: Callable) -> Button:
 	view.position = box.position
 	view.size = box.size
 	view.add_theme_font_size_override("font_size",26)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#493578")
-	style.border_color = Color("#9778d4")
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(12)
-	view.add_theme_stylebox_override("normal",style)
-	var hover := style.duplicate() as StyleBoxFlat
-	hover.bg_color = Color("#614895")
-	view.add_theme_stylebox_override("hover",hover)
 	view.pressed.connect(action)
 	add_child(view)
+	UI.animate_button(view)
 	return view
 
 func show_screen(value: String) -> void:
@@ -100,6 +174,12 @@ func show_screen(value: String) -> void:
 	if value!="menu": settings.hide()
 	locked_click.visible = value=="menu" and locked
 	if value!="menu": hint.hide()
+	backdrop.visible = value in ["loading","menu"]
+	backdrop_shade.visible = backdrop.visible
+	dust_view.queue_redraw()
+	notice.visible = value in ["loading","menu"]
+	backdrop.material = art_menu if value=="menu" else null
+	set_process(true)
 	queue_redraw()
 
 func show_region(row: Dictionary, best: float) -> void:
@@ -109,10 +189,28 @@ func show_region(row: Dictionary, best: float) -> void:
 	best_label.text = "최장 생존 시간  "+("-" if best<0 else preload("res://scripts/temporary_hud.gd").format_elapsed(best))
 	start_button.disabled = locked
 	locked_click.visible = locked and screen=="menu"
+	region_title.add_theme_font_override("font",UI.BLACK)
+	var previous := card_index
+	card_index = owner_flow.region_index
+	card_rows = owner_flow.regions
+	if previous>=0 and previous!=card_index and int(values.Ui_fx_enabled)!=0:
+		slide_remaining = float(values.Ui_card_slide_sec)
+		slide_direction = signf(card_index-previous)
+	layout_cards()
 	queue_redraw()
 
 func toggle_settings() -> void:
-	settings.visible = not settings.visible
+	if not settings.visible:
+		settings.show()
+		return
+	if int(values.Ui_fx_enabled)!=0:
+		var copy := settings.duplicate(0) as PanelContainer
+		add_child(copy)
+		copy.show()
+		copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for node in copy.find_children("*","Button",true,false): node.disabled = true; node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		UI.animate_window(copy).close()
+	settings.hide()
 
 func _locked_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
@@ -125,36 +223,48 @@ func notify(message: String) -> void:
 	hint.show()
 
 func _process(delta: float) -> void:
+	if screen=="loading": loading_caption.text = "던전 입장 준비 중… %d%%" % roundi(progress.value*100)
+	if screen in ["loading","menu"] and int(values.Ui_fx_enabled)!=0:
+		visual_clock+=delta
+		if screen=="loading":
+			var phase := fposmod(visual_clock,float(values.Ui_logo_sheen_interval_sec))
+			logo_material.set_shader_parameter("sweep",lerpf(-0.3,1.3,phase/float(values.Ui_logo_sheen_sec)) if phase<float(values.Ui_logo_sheen_sec) else -1.0)
+		dust_view.queue_redraw()
+	if slide_remaining>0:
+		slide_remaining = maxf(0,slide_remaining-delta)
+		layout_cards()
 	if hint_remaining>0:
 		hint_remaining = maxf(0,hint_remaining-delta)
 		hint.modulate.a = minf(1,hint_remaining/0.2)
 		if hint_remaining==0: hint.hide()
 
 func close_modal() -> void:
-	if is_instance_valid(modal): modal.free()
+	if is_instance_valid(modal):
+		var old := modal
+		old.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for node in old.find_children("*","Button",true,false): node.disabled = true; node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if int(values.Ui_fx_enabled)==0: old.free()
+		else:
+			var motion := UI.animate_window(old)
+			motion.close()
+			closing_modals.append(old)
 	modal = null
 
 func show_modal(title: String, details: String, actions: Array) -> void:
 	close_modal()
 	modal = PanelContainer.new()
+	modal.z_index = 10
 	modal.position = Vector2(350,180)
 	modal.size = Vector2(580,390)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.07,0.05,0.12,0.98)
-	style.border_color = Color("#9870dc")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(18)
-	style.content_margin_left = 32
-	style.content_margin_right = 32
-	style.content_margin_top = 24
-	style.content_margin_bottom = 24
-	modal.add_theme_stylebox_override("panel",style)
 	add_child(modal)
+	UI.crest(modal)
+	UI.animate_window(modal)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",18)
 	modal.add_child(column)
 	var heading := Label.new()
 	heading.text = title
+	heading.add_theme_font_override("font",UI.BLACK)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.add_theme_font_size_override("font_size",36)
 	column.add_child(heading)
@@ -171,38 +281,51 @@ func show_modal(title: String, details: String, actions: Array) -> void:
 		view.add_theme_font_size_override("font_size",23)
 		view.pressed.connect(action["call"],CONNECT_DEFERRED)
 		column.add_child(view)
+		UI.animate_button(view)
 	queue_redraw()
 
-func _draw() -> void:
-	if screen in ["loading","menu"]:
-		for y in range(0,720,8):
-			draw_rect(Rect2(0,y,1280,8),Color("#101528").lerp(Color("#31204d"),float(y)/720.0))
-		for i in range(72):
-			var at := Vector2(fposmod(i*173.3+37,1280),fposmod(i*97.7+19,720))
-			draw_circle(at,1.0 if i%4 else 1.8,Color(0.65,0.72,1,0.3 if i%3 else 0.65))
-	if screen=="loading":
-		for radius in range(160,105,-4): draw_circle(Vector2(978,342),radius,Color(0.12,0.43,1,0.018))
-		draw_arc(Vector2(978,342),127,0,TAU,96,Color("#648dff"),2)
-		draw_circle(Vector2(978,283),28,Color("#090d1e"))
-		draw_colored_polygon(PackedVector2Array([Vector2(955,313),Vector2(1000,313),Vector2(1026,424),Vector2(989,411),Vector2(976,466),Vector2(950,418),Vector2(923,428)]),Color("#090d1e"))
-	elif screen=="menu":
-		draw_style_box(art_style(),Rect2(400,155,480,260))
-		var ice := Color("#203044") if locked else Color("#739eb8")
-		for i in range(6):
-			var x := 420+i*77
-			draw_colored_polygon(PackedVector2Array([Vector2(x,397),Vector2(x+32,184+i%3*45),Vector2(x+68,397)]),ice)
-		if locked:
-			draw_rect(Rect2(400,155,480,260),Color(0,0,0,0.55))
-			draw_arc(Vector2(640,274),25,PI,TAU,32,Color("#c2b4dc"),6)
-			draw_rect(Rect2(611,274,58,48),Color("#c2b4dc"))
-			draw_circle(Vector2(640,291),5,Color("#201a30"))
-	elif is_instance_valid(modal):
-		draw_rect(Rect2(0,0,1280,720),Color(0.015,0.01,0.03,0.78))
+func picture(texture: Texture2D, box: Rect2, parent: Control = null) -> TextureRect:
+	var image := TextureRect.new()
+	image.texture = texture
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_SCALE
+	image.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	image.position = box.position; image.size = box.size
+	image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if parent==null: parent = self
+	parent.add_child(image)
+	return image
 
-func art_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#18233c")
-	style.border_color = Color("#6c5e98")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(16)
-	return style
+func art_material(blur: float, brightness: float, gray: float) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://scripts/ui_art.gdshader")
+	material.set_shader_parameter("blur_px",blur)
+	material.set_shader_parameter("brightness",brightness)
+	material.set_shader_parameter("grayscale",gray)
+	return material
+
+func layout_cards() -> void:
+	for i in range(cards.size()):
+		var index := card_index+i-1
+		var card := cards[i]
+		card.visible = screen=="menu" and index>=0 and index<card_rows.size()
+		if not card.visible: continue
+		var is_locked: bool = card_rows[index].Locked
+		card.get_node("Art").material = art_locked if is_locked else (art_side if i!=1 else null)
+		card.get_node("Lock").visible = is_locked
+		var factor := 1.0 if i==1 else float(values.Ui_side_scale)
+		card.scale = Vector2.ONE*factor
+		card.modulate.a = 1 if i==1 else float(values.Ui_side_alpha)
+		var slide := slide_direction*float(values.Ui_card_slide_px)*pow(slide_remaining/maxf(float(values.Ui_card_slide_sec),0.000001),2)
+		card.position = Vector2(640+(i-1)*490-280*factor+slide,300-157.5*factor)
+	# Keep the selected card above the small previews.
+	cards[0].z_index = 0; cards[2].z_index = 0; cards[1].z_index = 1
+
+func draw_dust() -> void:
+	if screen in ["loading","menu"] and int(values.Ui_fx_enabled)!=0:
+		for i in range(dust.size()):
+			var point := Vector2(dust[i].x,fposmod(dust[i].y-visual_clock*float(values.Ui_dust_speed),720))
+			dust_view.draw_circle(point,lerpf(float(values.Ui_dust_min_px),float(values.Ui_dust_max_px),float(i%3)/2),Color.WHITE if i%2 else Color(values.Ui_dust_color,float(values.Ui_dust_alpha)))
+
+func _draw() -> void:
+	if screen not in ["loading","menu"] and is_instance_valid(modal): draw_rect(Rect2(0,0,1280,720),Color(0.015,0.01,0.03,0.78))

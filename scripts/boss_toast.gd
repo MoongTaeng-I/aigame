@@ -1,4 +1,5 @@
 extends Control
+const UI = preload("res://scripts/system_ui.gd")
 
 const PANEL_SIZE := Vector2(533,88)
 const TOP_MARGIN := 22.0
@@ -8,7 +9,7 @@ const CONTENT_MARGIN := 18.0
 const FONT_SIZE := 20
 const BACKGROUND := Color(0.055,0.035,0.09,0.92)
 const BORDER := Color("#9870dc")
-const TEXT_COLOR := Color("#f0e5ff")
+const TEXT_COLOR := Color("#ebf8ff")
 const FADE_IN_SEC := 0.16
 const FADE_OUT_SEC := 0.2
 var panel: PanelContainer
@@ -34,6 +35,7 @@ static func notify(source: Node, text: String) -> void:
 			return
 
 func _ready() -> void:
+	theme = UI.THEME
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	add_to_group("combat_toasts")
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -48,16 +50,12 @@ func _ready() -> void:
 	panel.offset_bottom = TOP_MARGIN+PANEL_SIZE.y
 	panel.custom_minimum_size = PANEL_SIZE
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(presentation.get("Hud_background","#101d35dd"))
-	style.border_color = Color(presentation.get("Hud_border","#ffffff"))
-	style.set_border_width_all(BORDER_WIDTH)
-	style.set_corner_radius_all(CORNER_RADIUS)
-	style.content_margin_left = CONTENT_MARGIN
-	style.content_margin_right = CONTENT_MARGIN
-	style.content_margin_top = CONTENT_MARGIN
-	style.content_margin_bottom = CONTENT_MARGIN
-	panel.add_theme_stylebox_override("panel",style)
+	var body_style := UI.THEME.get_stylebox("panel","PanelContainer").duplicate() as StyleBoxTexture
+	body_style.content_margin_left = CONTENT_MARGIN
+	body_style.content_margin_right = CONTENT_MARGIN
+	body_style.content_margin_top = CONTENT_MARGIN
+	body_style.content_margin_bottom = CONTENT_MARGIN
+	panel.add_theme_stylebox_override("panel",body_style)
 	label = Label.new()
 	label.name = "BossToastText"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -67,6 +65,7 @@ func _ready() -> void:
 	label.add_theme_font_size_override("font_size",FONT_SIZE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(label)
+	label.add_theme_constant_override("outline_size",1)
 	panel.hide()
 	hide()
 
@@ -80,6 +79,7 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	var copy := panel.duplicate() as PanelContainer
 	add_child(copy)
 	copy.show()
+	copy.draw.connect(draw_heading.bind(copy))
 	var content := copy.get_child(0) as Label
 	content.text = text
 	# Let the actual Label shape and measure its wrapped text, including fallback fonts.
@@ -123,6 +123,16 @@ func _refresh() -> void:
 			view.offset_bottom = top+height
 			top = view.offset_bottom+float(presentation.Toast_gap_px)
 		view.modulate.a = minf(clampf(float(entry.age)/FADE_IN_SEC,0,1),clampf(float(entry.remaining)/FADE_OUT_SEC,0,1))
+		if int(presentation.Ui_fx_enabled)!=0:
+			var open := clampf(float(entry.age)/float(presentation.Ui_open_sec),0,1)
+			var close := clampf(float(entry.remaining)/float(presentation.Ui_close_sec),0,1)
+			view.pivot_offset = view.size/2
+			view.scale.y = minf(lerpf(float(presentation.Ui_open_scale_y),1,open),close)
+			view.position.x = (size.x-PANEL_SIZE.x)/2+sin(open*TAU*int(presentation.Ui_flicker_count))*float(presentation.Ui_jitter_px)*(1-open)
+			if open<1 and sin(open*TAU*int(presentation.Ui_flicker_count))<0: view.modulate.a*=float(presentation.Ui_flicker_alpha)
+		else:
+			view.scale = Vector2.ONE
+			view.modulate.a = 1
 	visible = not entries.is_empty() or is_instance_valid(completion_label)
 
 func show_completion(text: String) -> void:
@@ -134,3 +144,8 @@ func show_completion(text: String) -> void:
 	completion_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	completion_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	show()
+
+func draw_heading(view: Control) -> void:
+	var title := "! 알림 !"
+	var width := UI.BLACK.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
+	view.draw_string(UI.BLACK,Vector2((view.size.x-width)/2,25),title,HORIZONTAL_ALIGNMENT_LEFT,-1,16,TEXT_COLOR)

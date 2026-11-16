@@ -1,4 +1,5 @@
 extends Control
+const UI = preload("res://scripts/system_ui.gd")
 
 # Temporary layout and presentation constants; all progression values come from CSV.
 const LAYER := 100
@@ -44,14 +45,24 @@ const DISABLED := Color("#302839")
 
 var manager: Node
 var hovered: int = -1
+var values: Dictionary
+var cached_states: Array = []
+var signature: Array = []
+var open_age := 0.0
+var hover_scales := [1.0,1.0,1.0,1.0]
+var reroll_hover := false
+var was_visible := false
+var closing_copy: Control
 
-func configure(choice_manager: Node) -> void:
-	manager = choice_manager
+func configure(choice_manager: Node) -> void: manager = choice_manager
 
 func _ready() -> void:
+	theme = UI.THEME
+	values = UI.settings()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	mouse_exited.connect(func(): hovered=-1; queue_redraw())
+	mouse_exited.connect(func() -> void: hovered=-1; queue_redraw())
+	visibility_changed.connect(on_visibility)
 
 func card_rect(index: int) -> Rect2:
 	var width := CARD_SIZE.x*3.0+CARD_GAP*2.0
@@ -60,13 +71,55 @@ func card_rect(index: int) -> Rect2:
 func reroll_rect() -> Rect2:
 	return Rect2(Vector2((size.x-REROLL_SIZE.x)/2.0,REROLL_TOP),REROLL_SIZE)
 
-func _process(_delta: float) -> void:
-	if visible: queue_redraw()
+func on_visibility() -> void:
+	if visible:
+		open_age = 0.0
+		self_modulate.a = 1.0
+		was_visible = true
+		if is_instance_valid(closing_copy): closing_copy.queue_free()
+	elif was_visible and not cached_states.is_empty() and int(values.Ui_fx_enabled)!=0:
+		was_visible = false
+		closing_copy = Control.new()
+		closing_copy.size = size
+		closing_copy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		get_parent().add_child(closing_copy)
+		var copy := closing_copy
+		var states := cached_states.duplicate(true)
+		var caption := reroll_caption()
+		var allowed: bool = manager.can_reroll()
+		copy.draw.connect(func() -> void: paint(copy,states,caption,allowed,false))
+		UI.animate_window(copy).close()
+
+func reroll_caption() -> String:
+	return "다시 뽑기 (%d/%d 남음)" % [manager.rerolls,manager.total_rerolls]
+
+func _process(delta: float) -> void:
+	if not visible or manager==null or not manager.active: return
+	var states: Array = []
+	for i in range(manager.cards.size()): states.append(manager.card_state(i))
+	var next: Array = [states,manager.rerolls,hovered,reroll_hover,size]
+	var animating := false
+	if int(values.Ui_fx_enabled)!=0:
+		if open_age<float(values.Ui_open_sec): open_age+=delta; animating = true
+		var progress := clampf(open_age/float(values.Ui_open_sec),0,1)
+		self_modulate.a = float(values.Ui_flicker_alpha) if progress<1 and sin(progress*TAU*int(values.Ui_flicker_count))<0 else 1.0
+		for i in range(4):
+			var selected := hovered==i if i<3 else reroll_hover
+			var target := float(values.Ui_hover_scale) if selected else 1.0
+			if selected and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT): target = float(values.Ui_press_scale)
+			if not is_equal_approx(hover_scales[i],target):
+				hover_scales[i] = move_toward(hover_scales[i],target,delta*0.04/float(values.Ui_hover_sec))
+				animating = true
+	if next!=signature or animating:
+		signature = next.duplicate(true)
+		cached_states = states
+		queue_redraw()
 
 func _gui_input(event: InputEvent) -> void:
 	if not manager.active or manager.player.is_dead: return
 	if event is InputEventMouseMotion:
 		hovered = -1
+		reroll_hover = reroll_rect().has_point(event.position)
 		for index in range(manager.cards.size()):
 			if card_rect(index).has_point(event.position): hovered=index
 		queue_redraw()
@@ -81,62 +134,60 @@ func _gui_input(event: InputEvent) -> void:
 
 func _draw() -> void:
 	if manager==null or not manager.active: return
-	var font := ThemeDB.fallback_font
-	draw_rect(Rect2(Vector2.ZERO,size),DIM)
-	var title := Rect2(Vector2((size.x-TITLE_SIZE.x)/2.0,TITLE_TOP),TITLE_SIZE)
-	var p := title.position
-	var s := title.size
-	draw_colored_polygon(PackedVector2Array([p+Vector2(RIBBON_CUT,0),p+Vector2(s.x-RIBBON_CUT,0),p+s*Vector2(1,0.5),p+Vector2(s.x-RIBBON_CUT,s.y),p+Vector2(RIBBON_CUT,s.y),p+s*Vector2(0,0.5)]),GROWTH_STRIP)
-	_centered("레벨업! 능력 선택",title,TITLE_FONT_SIZE,INK)
-	for index in range(manager.cards.size()):
-		var state: Dictionary = manager.card_state(index)
-		var box := card_rect(index)
-		draw_rect(box,CARD_BG)
-		if hovered==index:
-			for layer in range(1,GLOW_LAYERS+1):
-				draw_rect(box.grow(layer*HOVER_WIDTH),Color(GLOW,GLOW_ALPHA),false,HOVER_WIDTH)
-		draw_rect(box,GLOW if hovered==index else BORDER,false,HOVER_WIDTH if hovered==index else BORDER_WIDTH)
-		_centered(state.name,Rect2(box.position,Vector2(CARD_SIZE.x,NAME_HEIGHT)),FONT_SIZE,INK,true,HEAL_STRIP if state.heal else GROWTH_STRIP)
-		var icon := Rect2(box.position+ICON_BOX.position,ICON_BOX.size)
-		draw_rect(icon,PANEL_BG)
-		var center := icon.get_center()
+	var states: Array = []
+	for i in range(manager.cards.size()): states.append(manager.card_state(i))
+	cached_states = states
+	paint(self,states,reroll_caption(),manager.can_reroll(),true)
+
+func paint(node: Control, states: Array, caption: String, can_reroll: bool, animate: bool) -> void:
+	node.draw_rect(Rect2(Vector2.ZERO,size),DIM)
+	if animate and int(values.Ui_fx_enabled)!=0:
+		var p := clampf(open_age/float(values.Ui_open_sec),0,1)
+		var scale_y := lerpf(float(values.Ui_open_scale_y),1,p)
+		var x := sin(p*TAU*int(values.Ui_flicker_count))*float(values.Ui_jitter_px)*(1-p)
+		node.draw_set_transform(Vector2(x,size.y*(1-scale_y)/2),0,Vector2(1,scale_y))
+	UI.panel(node,Rect2((size.x-1000)/2,62,1000,612),true)
+	centered(node,"! 레벨 업 !",Rect2((size.x-TITLE_SIZE.x)/2,TITLE_TOP,TITLE_SIZE.x,TITLE_SIZE.y),TITLE_FONT_SIZE,UI.BLACK)
+	for i in range(states.size()):
+		var state: Dictionary = states[i]
+		var box := card_rect(i)
+		var factor := float(hover_scales[i]) if animate else 1.0
+		box = Rect2(box.get_center()-box.size*factor/2,box.size*factor)
+		UI.panel(node,box)
+		centered(node,state.name,Rect2(box.position+Vector2(0,20),Vector2(box.size.x,NAME_HEIGHT)),FONT_SIZE,UI.BLACK)
+		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+ICON_BOX.position,ICON_BOX.size))
+		wrapped(node,state.description,Rect2(box.position+DESCRIPTION_BOX.position,DESCRIPTION_BOX.size).grow(-PADDING))
+		var level_box := Rect2(box.position+LEVEL_BOX.position-Vector2(0,12),LEVEL_BOX.size)
 		if state.heal:
-			draw_line(center-Vector2(ICON_RADIUS,0),center+Vector2(ICON_RADIUS,0),HEAL_STRIP,HOVER_WIDTH*2.0,true)
-			draw_line(center-Vector2(0,ICON_RADIUS),center+Vector2(0,ICON_RADIUS),HEAL_STRIP,HOVER_WIDTH*2.0,true)
-		else:
-			draw_arc(center,ICON_RADIUS,0,TAU,ARC_SEGMENTS,GLOW,HOVER_WIDTH,true)
-			draw_line(center,center+Vector2(ICON_RADIUS,0).rotated(-PI/4),GLOW,BORDER_WIDTH,true)
-		var desc := Rect2(box.position+DESCRIPTION_BOX.position,DESCRIPTION_BOX.size)
-		draw_rect(desc,PANEL_BG)
-		_wrapped(state.description,desc.grow(-PADDING),font)
-		var level_box := Rect2(box.position+LEVEL_BOX.position,LEVEL_BOX.size)
-		if state.heal:
-			_centered("체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE,INK)
+			centered(node,"체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE)
 		elif state.get("summon",false):
-			_centered("소환 %d → %d / %d" % [state.level,state.next,state.max],level_box,SMALL_FONT_SIZE,INK)
+			centered(node,"소환 %d → %d / %d" % [state.level,state.next,state.max],level_box,SMALL_FONT_SIZE)
 		else:
 			var max_level: int = state.max
-			var square_width := minf(BOX_SIZE.x,(level_box.size.x-BOX_GAP*(max_level-1))/max_level)
+			var width := minf(BOX_SIZE.x,(level_box.size.x-BOX_GAP*(max_level-1))/max_level)
 			for level in range(max_level):
-				var square := Rect2(level_box.position+Vector2(level*(square_width+BOX_GAP),0),Vector2(square_width,BOX_SIZE.y))
-				draw_rect(square,FILLED if level<int(state.level) else PANEL_BG)
-				draw_rect(square,NEXT if level==int(state.level) else BORDER,false,HOVER_WIDTH if level==int(state.level) else BORDER_WIDTH)
-			draw_string(font,level_box.position+Vector2(0,BOX_TEXT_Y),"Lv %d → %d" % [state.level,state.next],HORIZONTAL_ALIGNMENT_LEFT,level_box.size.x,SMALL_FONT_SIZE,INK)
-	_centered("다시 뽑기 (%d/%d 남음)" % [manager.rerolls,manager.total_rerolls],reroll_rect(),FONT_SIZE,INK if manager.can_reroll() else MUTED,true,BUTTON if manager.can_reroll() else DISABLED)
+				var square := Rect2(level_box.position+Vector2(level*(width+BOX_GAP),0),Vector2(width,BOX_SIZE.y))
+				node.draw_rect(square,FILLED if level<int(state.level) else PANEL_BG)
+				node.draw_rect(square,NEXT if level==int(state.level) else BORDER,false,2)
+			node.draw_string(UI.BOLD,level_box.position+Vector2(0,BOX_TEXT_Y),"Lv %d → %d" % [state.level,state.next],HORIZONTAL_ALIGNMENT_LEFT,level_box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))
+	var button := reroll_rect()
+	if animate and int(values.Ui_fx_enabled)!=0: button = Rect2(button.get_center()-button.size*hover_scales[3]/2,button.size*hover_scales[3])
+	var style := "disabled" if not can_reroll else ("pressed" if reroll_hover and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) else ("hover" if reroll_hover else "normal"))
+	node.draw_style_box(UI.THEME.get_stylebox(style,"Button"),button)
+	centered(node,caption,button,FONT_SIZE)
+	node.draw_set_transform(Vector2.ZERO)
 
-func _centered(text: String, box: Rect2, font_size: int, color: Color, filled: bool = false, background: Color = CARD_BG) -> void:
-	if filled: draw_rect(box,background)
-	var font := ThemeDB.fallback_font
-	var width := font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
-	draw_string(font,Vector2(box.get_center().x-width/2.0,box.get_center().y+font.get_ascent(font_size)/2.0),text,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,font_size,color)
+func centered(node: Control, value: String, box: Rect2, font_size: int, font: Font = UI.BOLD) -> void:
+	var width := font.get_string_size(value,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	node.draw_string_outline(font,Vector2(box.get_center().x-width/2,box.get_center().y+font.get_ascent(font_size)/2),value,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,font_size,2,Color(values.Ui_glow_color,0.3))
+	node.draw_string(font,Vector2(box.get_center().x-width/2,box.get_center().y+font.get_ascent(font_size)/2),value,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,font_size,Color(values.Ui_color))
 
-func _wrapped(text: String, box: Rect2, font: Font) -> void:
+func wrapped(node: Control, value: String, box: Rect2) -> void:
 	var line := ""
-	var y := box.position.y+font.get_ascent(SMALL_FONT_SIZE)
-	for character in text:
-		if character=="\n" or font.get_string_size(line+character,HORIZONTAL_ALIGNMENT_LEFT,-1,SMALL_FONT_SIZE).x>box.size.x:
-			draw_string(font,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,INK)
-			y += SMALL_FONT_SIZE+LINE_GAP
-			line = ""
-		if character!="\n": line += character
-	draw_string(font,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,INK)
+	var y := box.position.y+UI.BOLD.get_ascent(SMALL_FONT_SIZE)
+	for character in value:
+		if character=="\n" or UI.BOLD.get_string_size(line+character,HORIZONTAL_ALIGNMENT_LEFT,-1,SMALL_FONT_SIZE).x>box.size.x:
+			node.draw_string(UI.BOLD,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))
+			y+=SMALL_FONT_SIZE+LINE_GAP; line = ""
+		if character!="\n": line+=character
+	node.draw_string(UI.BOLD,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))

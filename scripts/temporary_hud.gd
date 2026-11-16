@@ -1,5 +1,6 @@
 extends CanvasLayer
 
+const UI = preload("res://scripts/system_ui.gd")
 const Portrait = preload("res://scripts/shadow_portrait.gd")
 const COMBAT_UI_SCALE := 0.75
 const TIMER_MARGIN := Vector2(24,16)
@@ -15,7 +16,7 @@ const NAME_SIZE := Vector2(86,40)
 const FONT_SIZE := 16
 const BACKGROUND := Color("#211c30")
 const BORDER := Color("#5d4a7f")
-const TEXT_COLOR := Color("#eee5ff")
+const TEXT_COLOR := Color("#ebf8ff")
 var manager: EnemyManager
 var summons: Node2D
 var skill_ui: Control
@@ -47,6 +48,7 @@ func configure(owner_manager: EnemyManager, shadow_manager: Node2D, skills: Cont
 
 func _ready() -> void:
 	root_control = Control.new()
+	root_control.theme = UI.THEME
 	root_control.name = "TemporaryHudRoot"
 	add_child(root_control)
 	root_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -55,7 +57,7 @@ func _ready() -> void:
 	performance_label.name = "DebugPerformance"
 	performance_label.position = Vector2(20,172)
 	performance_label.add_theme_font_size_override("font_size",16)
-	performance_label.add_theme_color_override("font_color",Color("#182238"))
+	performance_label.add_theme_color_override("font_color",Color("#ebf8ff"))
 	performance_label.hide()
 	root_control.add_child(performance_label)
 	if player!=null:
@@ -66,16 +68,11 @@ func _ready() -> void:
 		root_control.add_child(xp_bar)
 		xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
 		xp_bar.offset_bottom = 8
-		var background := StyleBoxFlat.new()
-		background.bg_color = Color("#182238")
-		var fill := StyleBoxFlat.new()
-		fill.bg_color = Color(load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate().get("Xp_color","#a68cff"))
-		xp_bar.add_theme_stylebox_override("background",background)
-		xp_bar.add_theme_stylebox_override("fill",fill)
+		xp_bar.theme = UI.THEME
 		level_label = Label.new()
 		level_label.name = "PlayerLevel"
 		level_label.position = Vector2(20,16)
-		level_label.add_theme_color_override("font_color",Color("#182238"))
+		level_label.add_theme_color_override("font_color",Color("#ebf8ff"))
 		level_label.add_theme_font_size_override("font_size",22)
 		root_control.add_child(level_label)
 		var hp_bar := preload("res://scripts/player_hp_bar.gd").new()
@@ -136,16 +133,13 @@ func rebuild_roster() -> void:
 	entries.clear()
 	for actor in summons.actors:
 		var record: Dictionary = actor.config
+		var mapped: Texture2D = UI.icon(String(record.Id))
 		var path := String(record.Icon) if record.get("Icon")!=null else ""
+		if path.is_empty() and mapped!=null: path = mapped.resource_path
 		var card := Panel.new()
 		card.custom_minimum_size = ROSTER_CARD
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var style := StyleBoxFlat.new()
-		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
-		style.bg_color = Color(palette.get("Hud_background","#101d35dd"))
-		style.border_color = Color(palette.get("Hud_border","#ffffff"))
-		style.set_border_width_all(1)
-		card.add_theme_stylebox_override("panel",style)
+		card.theme = UI.THEME
 		roster.add_child(card)
 		var icon: Control
 		if path.is_empty():
@@ -161,6 +155,12 @@ func rebuild_roster() -> void:
 		icon.size = ICON_SIZE
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(icon)
+		var frame := NinePatchRect.new()
+		frame.texture = UI.FRAME
+		frame.patch_margin_left = 20; frame.patch_margin_right = 20; frame.patch_margin_top = 20; frame.patch_margin_bottom = 20
+		frame.position = ICON_MARGIN-Vector2(4,4); frame.size = ICON_SIZE+Vector2(8,8)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card.add_child(frame)
 		var label := Label.new()
 		label.text = String(record.get("Name_ko",""))
 		label.position = NAME_MARGIN

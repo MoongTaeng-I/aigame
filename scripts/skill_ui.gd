@@ -1,4 +1,5 @@
 extends Control
+const UI = preload("res://scripts/system_ui.gd")
 var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 
 # All temporary skill presentation values live here; gameplay values come from CSV.
@@ -23,7 +24,7 @@ const LOCK_SIZE := Vector2(14,12)
 const LOCK_SHACKLE_RADIUS := 5.0
 const BG := Color("#211c30")
 const BORDER := Color("#5d4a7f")
-const INK := Color("#eee5ff")
+const INK := Color("#ebf8ff")
 const GLYPH := Color("#c5a3ff")
 const PLUS_COLOR := Color("#b2ffb0")
 const ACTIVE := Color("#ff405e")
@@ -61,18 +62,22 @@ void fragment() {
 var manager: Node2D
 var glyphs: Array[TextureRect] = []
 var overlay: Control
+var last_ui_state: Array = []
 
 func configure(skill_manager: Node2D) -> void:
 	manager = skill_manager
 
 func _ready() -> void:
+	theme = UI.THEME
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	var shader := Shader.new()
 	shader.code = BLUR_SHADER
 	for index in range(manager.SkillData.IDS.size()):
 		var glyph := TextureRect.new()
-		glyph.texture = _texture(index)
+		glyph.texture = UI.icon(manager.SkillData.IDS[index])
+		glyph.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		glyph.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		glyph.size = ICON_SIZE
 		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if not manager.skills[manager.SkillData.IDS[index]].implemented:
@@ -102,10 +107,13 @@ func _process(_delta: float) -> void:
 	var alpha := float(presentation.get("Stealth_alpha",STEALTH_ALPHA)) if manager.player.is_stealthed() else 1.0
 	var weight := float(presentation.get("Stealth_wave_strength",0.15))*(0.5+0.5*sin(manager.clock*TAU*float(presentation.get("Stealth_wave_hz",0.6)))) if manager.player.is_stealthed() else 0.0
 	manager.player.modulate = Color(Color.WHITE.lerp(Color(presentation.get("Fear_color","#a34dff")),weight),alpha)
-	_layout()
-	queue_redraw()
-	if overlay!=null:
-		overlay.queue_redraw()
+	var state: Array = [size]
+	for id in manager.SkillData.IDS: state.append(manager.icon_state(id))
+	if state!=last_ui_state:
+		last_ui_state = state.duplicate(true)
+		_layout()
+		queue_redraw()
+		if overlay!=null: overlay.queue_redraw()
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.pressed:
@@ -118,21 +126,21 @@ func _gui_input(event: InputEvent) -> void:
 func _draw() -> void:
 	if manager==null:
 		return
-	var font := ThemeDB.fallback_font
+	var font := UI.BOLD
 	for index in range(manager.SkillData.IDS.size()):
 		var state: Dictionary = manager.icon_state(manager.SkillData.IDS[index])
 		var box := card_rect(index)
-		draw_rect(box,Color(palette.get("Hud_background","#101d35dd")))
-		draw_rect(box,Color(palette.get("Hud_border","#ffffff")),false,BORDER_WIDTH)
+		UI.panel(self,box)
 		draw_string(font,box.position+NAME_OFFSET,state.name,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,FONT_SIZE,INK)
 		draw_string(font,box.position+KEY_OFFSET,state.key,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,SMALL_FONT_SIZE,INK)
 
 func _draw_overlays() -> void:
-	var font := ThemeDB.fallback_font
+	var font := UI.BOLD
 	for index in range(manager.SkillData.IDS.size()):
 		var state: Dictionary = manager.icon_state(manager.SkillData.IDS[index])
 		var box := card_rect(index)
 		var center := box.position+ICON_OFFSET+ICON_SIZE/2.0
+		overlay.draw_style_box(UI.THEME.get_stylebox("icon","SystemUI"),Rect2(box.position+ICON_OFFSET-Vector2(5,5),ICON_SIZE+Vector2(10,10)))
 		if state.phase in ["unimplemented","locked"]:
 			var pos := box.position+LOCK_OFFSET
 			overlay.draw_rect(Rect2(pos,LOCK_SIZE),INK)
@@ -150,20 +158,6 @@ func _draw_overlays() -> void:
 			if float(state.progress)>0:
 				overlay.draw_arc(center,GAUGE_RADIUS,-PI/2.0,-PI/2.0+TAU*float(state.progress),ARC_SEGMENTS,GAUGE,GAUGE_WIDTH,true)
 			overlay.draw_string(font,box.position+TIME_OFFSET,state.cooldown_text,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,FONT_SIZE,INK)
-
-func _texture(index: int) -> ImageTexture:
-	var image := Image.create(ICON_PIXELS,ICON_PIXELS,false,Image.FORMAT_RGBA8)
-	for y in range(ICON_PIXELS):
-		for x in range(ICON_PIXELS):
-			var v := (Vector2(x,y)/float(ICON_PIXELS)-Vector2.ONE/2.0)*2.0
-			var ink := false
-			match index:
-				0: ink = absf(v.y)<SHAPE_WIDTH and absf(v.x)<SHAPE_EXTENT or absf(v.x+absf(v.y)-SHAPE_EXTENT)<SHAPE_WIDTH
-				1: ink = (absf(v.x+v.y)<SHAPE_WIDTH or absf(v.x+v.y-SHAPE_EXTENT)<SHAPE_WIDTH) and v.length()<SHAPE_EXTENT
-				2: ink = absf(v.x)+absf(v.y)<SHAPE_EXTENT and absf(v.x)+absf(v.y)>SHAPE_EXTENT-SHAPE_WIDTH or v.length()<SHAPE_WIDTH*2.0
-				3: ink = absf(v.x*v.y)<SHAPE_WIDTH and v.length()<SHAPE_EXTENT
-			image.set_pixel(x,y,GLYPH if ink else Color.TRANSPARENT)
-	return ImageTexture.create_from_image(image)
 
 static func draw_ranges(node: Node2D, effects: Array) -> void:
 	for effect in effects:
