@@ -37,6 +37,7 @@ static func animate_window(target: Control) -> Node:
 	return motion
 
 static func animate_button(target: Button) -> void:
+	preload("res://scripts/audio_events.gd").button(target)
 	var values := settings()
 	if int(values.Ui_fx_enabled)==0: return
 	var tween: Array = [null]

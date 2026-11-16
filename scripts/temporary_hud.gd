@@ -3,7 +3,7 @@ extends CanvasLayer
 const UI = preload("res://scripts/system_ui.gd")
 const Portrait = preload("res://scripts/shadow_portrait.gd")
 const COMBAT_UI_SCALE := 0.75
-const TIMER_MARGIN := Vector2(24,16)
+const TIMER_MARGIN := Vector2(24,60)
 const TIMER_SIZE := Vector2(160,36)
 const TIMER_FONT_SIZE := 22
 const ROSTER_CARD := Vector2(144,64)
@@ -67,14 +67,32 @@ func _ready() -> void:
 		xp_bar.show_percentage = false
 		root_control.add_child(xp_bar)
 		xp_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-		xp_bar.offset_bottom = 8
+		xp_bar.offset_bottom = float(UI.settings().Xp_bar_height)
 		xp_bar.theme = UI.THEME
 		level_label = Label.new()
 		level_label.name = "PlayerLevel"
 		level_label.position = Vector2(20,16)
 		level_label.add_theme_color_override("font_color",Color("#ebf8ff"))
-		level_label.add_theme_font_size_override("font_size",22)
+		level_label.add_theme_font_size_override("font_size",24)
+		level_label.add_theme_font_override("font",UI.BLACK)
+		level_label.add_theme_color_override("font_outline_color",Color("#16265a"))
+		level_label.add_theme_constant_override("outline_size",3)
 		root_control.add_child(level_label)
+		var xp_text := Label.new()
+		xp_text.name = "ExperienceAmount"
+		xp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		xp_text.add_theme_font_override("font",UI.BLACK)
+		xp_text.add_theme_font_size_override("font_size",20)
+		xp_text.add_theme_color_override("font_outline_color",Color("#16265a"))
+		xp_text.add_theme_constant_override("outline_size",3)
+		root_control.add_child(xp_text)
+		xp_text.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		xp_text.offset_left = -260; xp_text.offset_right = -24; xp_text.offset_top = 18; xp_text.offset_bottom = 52
+		var xp_fx := preload("res://scripts/xp_bar_presentation.gd").new()
+		xp_fx.hud = self
+		xp_fx.actor = player
+		xp_fx.settings = UI.settings()
+		xp_bar.add_child(xp_fx)
 		var hp_bar := preload("res://scripts/player_hp_bar.gd").new()
 		hp_bar.name = "FootHpBar"
 		hp_bar.player = player
@@ -91,6 +109,8 @@ func _ready() -> void:
 	timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	timer_label.add_theme_font_size_override("font_size",TIMER_FONT_SIZE)
 	timer_label.add_theme_color_override("font_color",TEXT_COLOR)
+	timer_label.add_theme_color_override("font_outline_color",Color("#16265a"))
+	timer_label.add_theme_constant_override("outline_size",3)
 	timer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	roster = HBoxContainer.new()
 	roster.name = "OwnedShadows"
@@ -120,6 +140,7 @@ func refresh() -> void:
 		xp_bar.max_value = maxi(1,player.get_xp_to_next())
 		xp_bar.value = player.experience
 		level_label.text = "Lv %d" % player.level
+		root_control.get_node("ExperienceAmount").text = "%d / %d" % [player.experience,player.get_xp_to_next()]
 	skill_ui.pivot_offset = skill_ui.size
 	skill_ui.scale = Vector2.ONE*COMBAT_UI_SCALE
 	timer_label.text = format_elapsed(manager._elapsed_seconds)

@@ -45,6 +45,7 @@ func summon(id: String = "igrit", from_selection: bool = false) -> Node2D:
 	add_child(actor)
 	actor.global_position = enemies._clamp_body_to_map(player.global_position,float(record.Body_radius))
 	actors.append(actor)
+	preload("res://scripts/audio_events.gd").sfx(self,"shadow_summon")
 	enemies.register_shadow_body(actor)
 	actor.tree_exiting.connect(_remove_actor.bind(actor),CONNECT_ONE_SHOT)
 	actor.setup_visual_aura()

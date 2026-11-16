@@ -28,7 +28,7 @@ func run(tree: SceneTree) -> void:
 	t.check(d.toast_view.panel is PanelContainer and d.toast_view.panel.anchor_left==0.5 and d.toast_view.panel.anchor_right==0.5,"S8-B toast is top-center anchored panel")
 	var panel_style: StyleBoxTexture = d.toast_view.panel.get_theme_stylebox("panel")
 	t.check(panel_style.texture.resource_path=="res://assets/ui/ui_window.png" and panel_style.texture_margin_left==40,"S8-B toast uses system window texture and40px patches")
-	t.check(d.toast.horizontal_alignment==HORIZONTAL_ALIGNMENT_CENTER and d.toast.vertical_alignment==VERTICAL_ALIGNMENT_CENTER,"S8-B centered toast text")
+	t.check(d.toast.horizontal_alignment==HORIZONTAL_ALIGNMENT_CENTER and d.toast.vertical_alignment==VERTICAL_ALIGNMENT_BOTTOM,"S8-B centered one-line toast body below title")
 	t.check(not contains_bar(d.toast_view),"S8-B toast contains no old bar/ProgressBar node")
 	t.check(absf(d.toast_view.panel.get_global_rect().get_center().x-d.toast_view.get_viewport_rect().size.x/2)<1,"S8-B toast panel centered in viewport")
 	d.timeline = [{"Id":"hud_event","Time_mmss":0,"Boss_id":"boss_middle"}]

@@ -79,6 +79,7 @@ func try_use(id: String) -> bool:
 	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
 		return false
 	var started: bool = skills[id].start(clock)
+	if started: preload("res://scripts/audio_events.gd").sfx(self,id.trim_prefix("skill_"))
 	if started: Toast.notify(self,"[스킬 : %s 사용합니다]" % Toast.particle(String(records[id].Name_ko),"을","를"))
 	return started
 

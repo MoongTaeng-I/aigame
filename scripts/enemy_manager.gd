@@ -242,6 +242,8 @@ func _update_dying_enemies(delta: float) -> void:
 			_dying_enemies.erase(enemy)
 
 func _on_enemy_died(enemy: EnemyActor) -> void:
+	if enemy.has_method("configure_boss"): preload("res://scripts/audio_events.gd").music(self,"bgm_stage01")
+	else: preload("res://scripts/audio_events.gd").sfx(self,"enemy_die")
 	if is_instance_valid(boss_fx): boss_fx.died(enemy)
 	if _active_enemies.has(enemy):
 		_active_enemies.erase(enemy)
@@ -568,6 +570,7 @@ func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyA
 func activate_boss(boss: EnemyActor) -> void:
 	_spawn_order_counter += 1
 	boss.activate_at(boss.global_position,_spawn_order_counter)
+	preload("res://scripts/audio_events.gd").music(self,"bgm_boss")
 	if is_instance_valid(boss_fx): boss_fx.emerge(boss)
 	boss.collision_mask = 0
 	_active_enemies.append(boss)
@@ -576,5 +579,6 @@ func activate_boss(boss: EnemyActor) -> void:
 
 func _on_damage_presented(enemy: Node2D, amount: int, source: String, owner: Node, killed: bool) -> void:
 	if amount<=0: return
+	preload("res://scripts/audio_events.gd").sfx(self,"enemy_hit")
 	if is_instance_valid(damage_numbers): damage_numbers.show_damage(enemy,amount,source,killed)
 	if is_instance_valid(owner) and owner.has_method("record_visual_hit"): owner.record_visual_hit(enemy.global_position)

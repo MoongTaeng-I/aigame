@@ -192,6 +192,7 @@ func advance_action() -> void:
 			if is_instance_valid(manager.boss_fx): manager.boss_fx.dash_start(origin,facing,dash_length)
 			collision_layer = 0
 		else:
+			if int(current.Kind)==2: preload("res://scripts/audio_events.gd").sfx(self,"boss_slam")
 			if is_instance_valid(manager.boss_fx): manager.boss_fx.strike(self,current,origin,facing)
 			var hit := Geometry.in_sector(origin,facing,float(current.Range),float(current.Arc_deg),target.global_position) if int(current.Kind)==0 else origin.distance_to(target.global_position)<=float(current.Slam_radius)
 			if hit:

@@ -157,6 +157,7 @@ func _count_kill(_enemy: EnemyActor) -> void:
 func _end_round(cleared: bool) -> void:
 	if round_finished: return
 	round_finished = true
+	preload("res://scripts/audio_events.gd").music(self,"")
 	var player: Node2D = round_nodes.player
 	var names: Array[String] = []
 	for actor in round_nodes.shadows.actors: names.append(String(actor.config.Name_ko))

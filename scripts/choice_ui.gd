@@ -57,6 +57,7 @@ var closing_copy: Control
 func configure(choice_manager: Node) -> void: manager = choice_manager
 
 func _ready() -> void:
+	add_to_group("audio_choice_ui")
 	theme = UI.THEME
 	values = UI.settings()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -126,10 +127,13 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and event.pressed:
 		for index in range(manager.cards.size()):
 			if card_rect(index).has_point(event.position):
+				preload("res://scripts/audio_events.gd").sfx(self,"ui_click")
 				manager.select(index)
 				accept_event()
 				return
-		if reroll_rect().has_point(event.position): manager.reroll()
+		if reroll_rect().has_point(event.position):
+			preload("res://scripts/audio_events.gd").sfx(self,"ui_click")
+			manager.reroll()
 		accept_event()
 
 func _draw() -> void:

@@ -53,14 +53,16 @@ func _ready() -> void:
 	var body_style := UI.THEME.get_stylebox("panel","PanelContainer").duplicate() as StyleBoxTexture
 	body_style.content_margin_left = CONTENT_MARGIN
 	body_style.content_margin_right = CONTENT_MARGIN
-	body_style.content_margin_top = CONTENT_MARGIN
+	body_style.content_margin_top = 30
 	body_style.content_margin_bottom = CONTENT_MARGIN
 	panel.add_theme_stylebox_override("panel",body_style)
 	label = Label.new()
 	label.name = "BossToastText"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.add_theme_color_override("font_color",TEXT_COLOR)
 	label.add_theme_font_size_override("font_size",FONT_SIZE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -76,16 +78,23 @@ func present(text: String, age: float, remaining: float, showing: bool) -> void:
 		_refresh()
 
 func push_message(text: String, duration: float = -1.0, is_warning: bool = false) -> void:
+	preload("res://scripts/audio_events.gd").sfx(self,"boss_warning" if is_warning else "system_notify")
 	var copy := panel.duplicate() as PanelContainer
 	add_child(copy)
 	copy.show()
 	copy.draw.connect(draw_heading.bind(copy))
 	var content := copy.get_child(0) as Label
-	content.text = text
-	# Let the actual Label shape and measure its wrapped text, including fallback fonts.
-	content.size.x = PANEL_SIZE.x-CONTENT_MARGIN*2
-	var height := maxf(PANEL_SIZE.y,content.get_minimum_size().y+CONTENT_MARGIN*2)
-	copy.custom_minimum_size = Vector2(PANEL_SIZE.x,height)
+	content.text = text.replace("\n"," ")
+	var maximum := maxf(float(presentation.Toast_min_width),size.x-float(presentation.Toast_screen_margin))
+	var font_size := FONT_SIZE
+	var measured := UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x+CONTENT_MARGIN*2
+	if measured>maximum: font_size = maxi(int(presentation.Toast_min_font_size),floori(font_size*(maximum-CONTENT_MARGIN*2)/(measured-CONTENT_MARGIN*2)))
+	content.add_theme_font_size_override("font_size",font_size)
+	measured = UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x+CONTENT_MARGIN*2
+	var width := clampf(measured,float(presentation.Toast_min_width),maximum)
+	copy.custom_minimum_size = Vector2(width,PANEL_SIZE.y)
+	copy.size = copy.custom_minimum_size
+	copy.offset_left = -width/2; copy.offset_right = width/2
 	var entry := {"panel":copy,"text":text,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
 	entries.push_front(entry)
 	if is_warning:
@@ -128,7 +137,7 @@ func _refresh() -> void:
 			var close := clampf(float(entry.remaining)/float(presentation.Ui_close_sec),0,1)
 			view.pivot_offset = view.size/2
 			view.scale.y = minf(lerpf(float(presentation.Ui_open_scale_y),1,open),close)
-			view.position.x = (size.x-PANEL_SIZE.x)/2+sin(open*TAU*int(presentation.Ui_flicker_count))*float(presentation.Ui_jitter_px)*(1-open)
+			view.position.x = (size.x-view.size.x)/2+sin(open*TAU*int(presentation.Ui_flicker_count))*float(presentation.Ui_jitter_px)*(1-open)
 			if open<1 and sin(open*TAU*int(presentation.Ui_flicker_count))<0: view.modulate.a*=float(presentation.Ui_flicker_alpha)
 		else:
 			view.scale = Vector2.ONE
@@ -148,4 +157,4 @@ func show_completion(text: String) -> void:
 func draw_heading(view: Control) -> void:
 	var title := "! 알림 !"
 	var width := UI.BLACK.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
-	view.draw_string(UI.BLACK,Vector2((view.size.x-width)/2,25),title,HORIZONTAL_ALIGNMENT_LEFT,-1,16,TEXT_COLOR)
+	view.draw_string(UI.BLACK,Vector2((view.size.x-width)/2,36),title,HORIZONTAL_ALIGNMENT_LEFT,-1,16,TEXT_COLOR)

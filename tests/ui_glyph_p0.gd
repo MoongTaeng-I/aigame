@@ -23,6 +23,7 @@ func run(t: SceneTree) -> void:
 				if headers[i].ends_with("_ko") or headers[i] in ["Locked_text","Text","Description"]: collect(sources,row[i],source)
 		file.close()
 	var missing: Array = []
+	collect(sources,FileAccess.get_file_as_string("res://assets/audio/CREDITS.txt"),"res://assets/audio/CREDITS.txt")
 	for code in sources:
 		if not preload("res://scripts/system_ui.gd").BOLD.has_char(code) or not preload("res://scripts/system_ui.gd").BLACK.has_char(code):
 			missing.append({"char":String.chr(code),"unicode":"U+%04X" % code,"source":sources[code]})

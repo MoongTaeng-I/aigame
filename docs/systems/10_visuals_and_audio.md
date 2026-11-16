@@ -851,3 +851,78 @@ ui_window·ui_frame_overlay·ui_button_*·ui_icon_frame의 양쪽 axis_stretch�
 벨리온의 폭발은 기존 파편7·돌5·별1을 사용한다. 활성 쓸기에는 그 종료 폭발13개 몫을 공통 표시 예산에서 확보해 두고, 종료 시 사용한다. 다른 타격 표시는 남은 몫을 사용하므로 프레임 합계는40 이하다. 기존 활성 피해 숫자 합치기는 신규 생성이 아니므로 계속 합산하며, 새 숫자 생성을 생략한 피해량은 전투 HP에서 정상 적용된다. 생성 상한은 피해 신호 이후의 표시 풀과 난도 타격 별에 적용하며 게임 피해 처리/대상 순서는 바꾸지 않는다.
 
 줄무늬 띠의 교대색·조각별 페이드는 정점 색으로 유지하고, 띠·외곽을 삼각형 배열1회로 제출한다. 칼끝 흰 선은 폴리라인1회다. 별도 재질이나 타격별 노드를 추가하지 않는다. 글리프 P0는 Unicode 범위 제한 없이 게임 스크립트 문자열(동적 UI 형식/공지/토스트 포함)과 CSV 표시 열(Name_ko/Desc_ko 등)을 두 제공 글꼴에 대조하며 누락 시 문자·U+코드·출처를 출력한다.
+
+
+## 2026-11-16 SND-01 — 오디오와 인게임 UI 가시성
+
+GameAudio Autoload 하나와 Master/BGM/SFX 버스를 사용한다. AudioStreamPlayer는 총16개로 고정한다(크로스페이드 BGM2개 예약·SFX14개). 스트림/수치/색은 시작 시 캐시하며 오디오 피치는 전투와 별도 RNG로 ±5% 범위만 사용한다. 같은 소리의 동시/간격 제한 또는 풀 포화 시 그 재생만 생략한다. 게임 이벤트의 성공·피해·시간·RNG는 소리 재생 결과를 읽지 않는다.
+
+로딩/메뉴 title→라운드 stage01→보스 활성 boss→처치 stage01, 결과·사망은1초 페이드아웃한다. BGM 교체는1초 선형 크로스페이드이며 세 곡은 loop한다. 모든 일시정지는 BGM 선형 음량50%·게임SFX 정지다. 사용자 승인으로 레벨업 선택 창의 level_up/ui_click만 예외로 끝까지 재생하며 ESC에서는 이 소리도 멈춘다. 설정의 두 dB 슬라이더는 세션 중 유지하며 저장 파일을 만들지 않는다. CREDITS.txt 원문은 설정 스크롤에 그대로 표시하고 WAV/OGG/원문 바이트를 보존한다.
+
+| data/sound.csv 열 | 형식 | 예시 | 설명 |
+|---|---|---|---|
+| Id | String | enemy_hit | 아래 이벤트 ID |
+| Path | Path | res://assets/audio/sfx/sfx_enemy_hit.wav | 재생 스트림 |
+| Volume_db | Float | 0 | 가공된 원본에 더하는 소리별dB |
+| Max_concurrent | Int | 4 | 같은 SFX 최대 동시 수 |
+| Min_interval_sec | Float | 0.04 | 같은 SFX 실제 재생 사이 최소초 |
+| Pitch_random | Float | 0.05 | 1±이 값 피치 범위, BGM0 |
+
+| 소리 Id | 이벤트 | Volume_db 예시 | 동시 | 간격초 | Pitch_random |
+|---|---|---:|---:|---:|---:|
+| ui_click | 버튼/카드 누름 | 0 | 3 | 0 | 0.05 |
+| system_notify | 일반 토스트 | 0 | 3 | 0 | 0.05 |
+| level_up | 레벨 업 | 0 | 3 | 0 | 0.05 |
+| xp_pickup | XP 획득 | 0 | 3 | 0.05 | 0.05 |
+| slash | 일반 공격 홀수 타격 | 0 | 3 | 0 | 0.05 |
+| thrust | 일반 공격 짝수 타격 | 0 | 3 | 0 | 0.05 |
+| rapid_slash | 난도 시작1회 | 0 | 3 | 0 | 0.05 |
+| dash | 질주 시작 | 0 | 3 | 0 | 0.05 |
+| stealth | 은신 시작 | 0 | 3 | 0 | 0.05 |
+| dragon_fear | 피어 시작 | 0 | 3 | 0 | 0.05 |
+| enemy_hit | 적/보스 수락된 양수 피해 | 0 | 4 | 0.04 | 0.05 |
+| enemy_die | 일반 적 처치 | 0 | 3 | 0.05 | 0.05 |
+| player_hurt | 플레이어 수락된 양수 피해 | 0 | 3 | 0.15 | 0.05 |
+| arrow_shot | 엘프3종 투사체 발사 | 0 | 3 | 0.08 | 0.05 |
+| shadow_summon | 그림자 소환 | 0 | 3 | 0 | 0.05 |
+| igris_slash | 이그리트 피해 시점 | 0 | 2 | 0 | 0.05 |
+| beru_claw | 베르 돌진 시작 | 0 | 2 | 0 | 0.05 |
+| belion_chain | 벨리온 쓸기 시작 | 0 | 2 | 0 | 0.05 |
+| boss_warning | 보스 경고 토스트 | 0 | 3 | 0 | 0.05 |
+| gate_open | 게이트 열림 | 0 | 3 | 0 | 0.05 |
+| boss_slam | 곰slam/바루카ice_zone 실행 | 0 | 3 | 0 | 0.05 |
+| bgm_title | 로딩/메뉴 | 0 | 1 | 0 | 0 |
+| bgm_stage01 | 라운드/보스 처치 후 | 0 | 1 | 0 | 0 |
+| bgm_boss | 보스 활성 중 | 0 | 1 | 0 | 0 |
+
+
+스킬 아이콘은1.35배, 쿨타임 덮개 비율은 남은 시간/쿨타임이다. 시계 방향으로 걷히며 가운데 Black 초·모서리 키·아래 레벨 점·사용 가능 순간 흰 테두리·금색 깜빡이는 강화 배지와 강화 포인트N을 사용한다. 정지한 바탕/이름은 다시 그리지 않고 필요한 덮개/배지만 갱신한다. 상단 경험치 바는14px·공유 그라데이션 텍스처+기존 바 그림·빛을 쓰며 좌측Lv24px/우측현재·필요를 표시한다(시간은 우측 아래로 이동). XP 획득/레벨업 번쩍임은 표시 전용이다.
+
+토스트는 최소533~화면폭-80px의 한 줄이다. 초과할 때만 글씨를 줄이며 최소16px에서도 넘는 극단적 문구는 말줄임한다(이벤트 원문은 보관). 알림 제목 아래에 본문 한 줄을 두고 기존88px·개수·쌓기·시간 규칙을 유지한다.
+
+| combat_presentation.csv 키 | 예시 | 설명 |
+|---|---|---|
+| Sound_bgm_db | -6 | 시작 BGM 버스dB |
+| Sound_sfx_db | 0 | 시작 SFX 버스dB |
+| Sound_bgm_fade_sec | 1 | BGM 교체/결과·사망 페이드초 |
+| Sound_pause_bgm_ratio | 0.5 | 일시정지 BGM 선형 음량 배율 |
+| Sound_slider_min_db | -40 | 설정 슬라이더 최소dB |
+| Sound_slider_max_db | 6 | 설정 슬라이더 최대dB |
+| Skill_icon_scale | 1.35 | 기존56px 아이콘 배율 |
+| Skill_cooldown_alpha | 0.6 | 남은 쿨타임 부채꼴 덮개 알파 |
+| Skill_ready_flash_sec | 0.25 | 사용 가능 전환 흰 테두리초 |
+| Skill_plus_color | #ffd84a | 강화 가능 배지 금색 |
+| Skill_plus_blink_hz | 0.6 | 강화 배지 깜빡임Hz |
+| Skill_plus_min_alpha | 0.45 | 강화 배지 최소알파 |
+| Skill_plus_radius | 15 | 강화 원형 배지 반경px |
+| Skill_cooldown_font_size | 28 | 쿨타임 Black 글씨px |
+| Skill_level_dot_px | 4 | 레벨 점 반경px |
+| Xp_bar_height | 14 | 상단 바 높이px |
+| Xp_fill_start | #a68cff | 채움 시작색 |
+| Xp_fill_end | #e0d4ff | 채움 끝색 |
+| Xp_gain_flash_sec | 0.15 | 획득 시 채움 끝 번쩍임초 |
+| Xp_level_flash_sec | 0.3 | 레벨업 전체 바 번쩍임초 |
+| Toast_min_width | 533 | 토스트 최소너비px |
+| Toast_screen_margin | 80 | 최대너비 계산용 화면 여백px |
+| Toast_min_font_size | 16 | 긴 한 줄 토스트 최소글씨px |
+| Xp_bar_glow_alpha | 0.3 | 바 바깥빛 알파(기존 XP 결정 키와 별개) |

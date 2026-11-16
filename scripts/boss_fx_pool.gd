@@ -122,7 +122,9 @@ func emerge(boss: Node2D) -> void:
 		gate = gates[(gate_cursor-1+gates.size())%gates.size()]
 	gate.actor = boss
 	gate.emerge = age
-	if not gate.opened: gate.opened = true; gate.start = age
+	if not gate.opened:
+		gate.opened = true; gate.start = age
+		preload("res://scripts/audio_events.gd").sfx(self,"gate_open")
 	shake(float(settings.Gate_shake_px),float(settings.Gate_shake_sec))
 	flash(float(settings.Gate_flash_alpha),float(settings.Gate_flash_sec))
 
@@ -214,6 +216,7 @@ func advance(delta: float) -> void:
 			if manager._elapsed_seconds<float(gate.scheduled): continue
 			gate.opened = true
 			gate.start = age
+			preload("res://scripts/audio_events.gd").sfx(self,"gate_open")
 		if gate.emerge<0:
 			gate_visible = true
 			continue

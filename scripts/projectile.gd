@@ -34,6 +34,7 @@ func configure(record: Dictionary, origin: Vector2, aim: Vector2, bounds: Rect2,
 	expire_rule = int(record["Expire_rule"])
 	max_distance = float(record["Max_distance"]) if record["Max_distance"] != null else 0.0
 	max_lifetime_sec = float(record["Max_lifetime_sec"]) if record["Max_lifetime_sec"] != null else 0.0
+	if String(record.get("Id","")) in ["proj_test_01","elf_arrow","elf_burst_arrow"]: preload("res://scripts/audio_events.gd").sfx(self,"arrow_shot")
 	map_bounds = bounds
 	player = target
 	visual_settings = preload("res://scripts/shadow_afterimage.gd").compiled_presentation()

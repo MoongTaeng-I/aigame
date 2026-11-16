@@ -128,18 +128,21 @@ func get_xp_to_next() -> int:
 func add_experience(amount: int) -> void:
     if amount <= 0 or is_dead or run_finished or _level_requirements.is_empty():
         return
+    preload("res://scripts/audio_events.gd").sfx(self,"xp_pickup")
     experience += amount
     while experience >= get_xp_to_next():
         experience -= get_xp_to_next()
         level += 1
         if level%_skill_point_every_levels==0:
             enhancement_points += 1
+        preload("res://scripts/audio_events.gd").sfx(self,"level_up")
         leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:
     if is_dead or run_finished or amount <= 0 or is_fear_casting():
         return
     hp = maxi(0, hp - amount)
+    preload("res://scripts/audio_events.gd").sfx(self,"player_hurt")
     damaged.emit(global_position)
     _update_hp_label()
     if hp == 0:
@@ -229,6 +232,7 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var facing: Vector2 = global_position.direction_to(target.global_position)
     if facing==Vector2.ZERO: facing = last_move_direction
     basic_attack_thrust = basic_visual_hit_index%2==0
+    preload("res://scripts/audio_events.gd").sfx(self,"thrust" if basic_attack_thrust else "slash")
     basic_stars_this_hit = 0
     basic_pose_started = true
     basic_pose_remaining = float(presentation.get("Basic_pose_after_sec",0.08))

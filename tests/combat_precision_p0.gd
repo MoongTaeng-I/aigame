@@ -198,7 +198,7 @@ func toast_checks() -> void:
 		var panel: PanelContainer = view.entries[i].panel
 		var label: Label = panel.get_child(0)
 		print("S8-I3-C toast layout ",panel.size," label=",label.position,"/",label.size," min=",label.get_minimum_size()," lines=",label.get_line_count())
-		t.check(panel.size.x==533 and panel.size.y>88 and label.get_line_count()>1,"S8-I3-C toast533 wraps and grows")
+		t.check(panel.size.x<=view.size.x-80 and panel.size.x>=533 and panel.size.y==88 and label.get_line_count()==1 and label.get_theme_font_size("font_size")>=16,"S8-I3-C toast one line auto width and minimum16px")
 		t.check(label.position.y>=18 and label.position.y+label.size.y<=panel.size.y-18+0.01 and label.get_minimum_size().y<=label.size.y+0.01,"S8-I3-C long label fits panel padding")
 		if i>0:
 			t.check(panel.offset_top>=view.entries[i-1].panel.offset_bottom+8,"S8-I3-C actual heights stack without overlap")

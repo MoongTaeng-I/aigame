@@ -19,6 +19,14 @@ config/icon="res://icon.svg"
 
 theme/custom="res://assets/ui/ui_theme.tres"
 
+[autoload]
+
+GameAudio="*res://scripts/game_audio.gd"
+
+[audio]
+
+buses/default_bus_layout="res://assets/audio/default_bus_layout.tres"
+
 [display]
 
 window/size/viewport_width=1280

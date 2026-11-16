@@ -155,6 +155,7 @@ func advance() -> void:
 		if boss.phase=="telegraph":
 			if now()+0.000000001<boss.phase_end: return
 			if kind==10:
+				preload("res://scripts/audio_events.gd").sfx(boss,"boss_slam")
 				for point in preview_zones:
 					zones.append({"center":point,"until":boss.phase_end+float(boss.current.Zone_life_sec),"radius":float(boss.current.Zone_radius),"freeze":float(boss.current.Freeze_sec),"inside":false})
 					if is_instance_valid(boss.manager.boss_fx):

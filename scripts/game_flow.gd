@@ -18,6 +18,7 @@ var data_error := ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	preload("res://scripts/audio_events.gd").music(self,"bgm_title")
 	var window := get_window()
 	window.title = "나 혼자만 서바이벌"
 	window.mode = Window.MODE_WINDOWED
@@ -83,6 +84,7 @@ func fail_loading(message: String) -> void:
 func show_menu() -> void:
 	_dispose_round()
 	state = "menu"
+	preload("res://scripts/audio_events.gd").music(self,"bgm_title")
 	result = {}
 	ui.close_modal()
 	ui.show_screen("menu")
@@ -108,6 +110,7 @@ func start_region() -> void:
 		return
 	_dispose_round()
 	state = "playing"
+	preload("res://scripts/audio_events.gd").music(self,"bgm_stage01")
 	result = {}
 	ui.close_modal()
 	ui.show_screen("playing")

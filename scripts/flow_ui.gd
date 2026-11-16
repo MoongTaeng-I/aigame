@@ -36,6 +36,7 @@ var art_side: ShaderMaterial
 var art_locked: ShaderMaterial
 var logo_material: ShaderMaterial
 var closing_modals: Array[Control] = []
+var sound_sliders: Dictionary = {}
 
 func configure(flow: Node) -> void:
 	owner_flow = flow
@@ -122,8 +123,8 @@ func _ready() -> void:
 	var gear := button("설정",Rect2(1140,24,112,56),toggle_settings)
 	settings = PanelContainer.new()
 	settings.z_index = 5
-	settings.position = Vector2(810,82)
-	settings.size = Vector2(442,230)
+	settings.position = Vector2(760,60)
+	settings.size = Vector2(492,610)
 	add_child(settings)
 	var quit := Button.new()
 	quit.text = "게임 종료"
@@ -137,6 +138,7 @@ func _ready() -> void:
 	settings_notice.add_theme_font_size_override("font_size",14)
 	settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
 	settings_column.add_child(settings_notice)
+	add_sound_settings(settings_column)
 	settings_column.add_child(quit)
 	UI.animate_button(quit)
 	UI.animate_window(settings)
@@ -215,6 +217,37 @@ func toggle_settings() -> void:
 		for node in copy.find_children("*","Button",true,false): node.disabled = true; node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		UI.animate_window(copy).close()
 	settings.hide()
+
+func add_sound_settings(column: VBoxContainer) -> void:
+	var audio := preload("res://scripts/audio_events.gd").manager(self)
+	if audio==null: return
+	for bus in ["BGM","SFX"]:
+		var label := Label.new()
+		label.add_theme_font_size_override("font_size",16)
+		var slider := HSlider.new()
+		slider.min_value = float(values.Sound_slider_min_db)
+		slider.max_value = float(values.Sound_slider_max_db)
+		slider.step = 1
+		slider.value = audio.bgm_db if bus=="BGM" else audio.sfx_db
+		slider.custom_minimum_size = Vector2(400,28)
+		label.text = ("배경음악" if bus=="BGM" else "효과음")+" %d dB" % slider.value
+		slider.value_changed.connect(func(db: float) -> void:
+			audio.set_volume(bus,db)
+			label.text = ("배경음악" if bus=="BGM" else "효과음")+" %d dB" % db)
+		column.add_child(label); column.add_child(slider)
+		sound_sliders[bus] = slider
+	var scroll := ScrollContainer.new()
+	scroll.name = "SoundCredits"
+	scroll.custom_minimum_size = Vector2(400,150)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(scroll)
+	var credit_text := Label.new()
+	credit_text.text = audio.credits
+	credit_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	credit_text.custom_minimum_size.x = 380
+	credit_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	credit_text.add_theme_font_size_override("font_size",14)
+	scroll.add_child(credit_text)
 
 func _locked_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:

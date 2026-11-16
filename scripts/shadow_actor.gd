@@ -277,6 +277,7 @@ func start_attack() -> void:
 		dash_end_reason = plan.end_reason
 		dash_hits.clear()
 		dash_through_active = true
+		preload("res://scripts/audio_events.gd").sfx(self,"beru_claw")
 		dash_updated_at = clock
 	if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_start" if is_dash_through() else "fan_start",{"goal":[dash_goal.x,dash_goal.y]})
 	if is_instance_valid(attack_fx): attack_fx.begin_cast()
@@ -308,6 +309,7 @@ func advance_sweep(living: Array) -> void:
 	var duration := float(attack.Sweep_sec)
 	var age := clock-cast_started_at
 	if age+0.000000001<windup: return
+	preload("res://scripts/audio_events.gd").once(self,"belion_chain",cast_started_at)
 	var progress := 1.0 if age+0.000001>=windup+duration else clampf((age-windup)/duration,0.0,1.0)
 	var half_arc := deg_to_rad(float(attack.Arc_deg))*0.5
 	var start_offset := -half_arc*sweep_sign
@@ -382,6 +384,7 @@ func advance_fan_attack(living: Array) -> void:
 	if not hit_done and age+0.000000001>=float(motion.Hit_time_sec):
 		hit_done = true
 		sprite_hit_at = clock
+		preload("res://scripts/audio_events.gd").sfx(self,"igris_slash")
 		if is_instance_valid(attack_fx): attack_fx.fan_hit()
 		var geometry := attack_geometry()
 		for enemy: EnemyActor in living:
