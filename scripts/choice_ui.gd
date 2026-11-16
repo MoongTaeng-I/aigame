@@ -14,8 +14,8 @@ const ICON_BOX := Rect2(90,66,100,100)
 const ICON_RADIUS := 32.0
 const DESCRIPTION_BOX := Rect2(18,186,244,100)
 const LEVEL_BOX := Rect2(18,306,244,60)
-const REROLL_SIZE := Vector2(440,56)
-const REROLL_TOP := 606.0
+const REROLL_SIZE := Vector2(500,64)
+const REROLL_TOP := 578.0
 const PADDING := 12.0
 const FONT_SIZE := 20
 const TITLE_FONT_SIZE := 28
@@ -154,10 +154,11 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 		var factor := float(hover_scales[i]) if animate else 1.0
 		box = Rect2(box.get_center()-box.size*factor/2,box.size*factor)
 		UI.panel(node,box)
-		centered(node,state.name,Rect2(box.position+Vector2(0,20),Vector2(box.size.x,NAME_HEIGHT)),FONT_SIZE,UI.BLACK)
+		var has_icon := UI.icon(state.id)!=null
+		centered(node,state.name,Rect2(box.position+Vector2(40,32 if has_icon else 110),Vector2(box.size.x-80,NAME_HEIGHT)),FONT_SIZE,UI.BLACK)
 		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+ICON_BOX.position,ICON_BOX.size))
-		wrapped(node,state.description,Rect2(box.position+DESCRIPTION_BOX.position,DESCRIPTION_BOX.size).grow(-PADDING))
-		var level_box := Rect2(box.position+LEVEL_BOX.position-Vector2(0,12),LEVEL_BOX.size)
+		wrapped(node,state.description,Rect2(box.position+Vector2(40,195 if has_icon else 174),Vector2(box.size.x-80,78)))
+		var level_box := Rect2(box.position+Vector2(40,280),Vector2(box.size.x-80,60))
 		if state.heal:
 			centered(node,"체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE)
 		elif state.get("summon",false):
@@ -166,10 +167,11 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 			var max_level: int = state.max
 			var width := minf(BOX_SIZE.x,(level_box.size.x-BOX_GAP*(max_level-1))/max_level)
 			for level in range(max_level):
-				var square := Rect2(level_box.position+Vector2(level*(width+BOX_GAP),0),Vector2(width,BOX_SIZE.y))
+				var total := width*max_level+BOX_GAP*(max_level-1)
+				var square := Rect2(Vector2(box.get_center().x-total/2+level*(width+BOX_GAP),level_box.position.y),Vector2(width,BOX_SIZE.y))
 				node.draw_rect(square,FILLED if level<int(state.level) else PANEL_BG)
 				node.draw_rect(square,NEXT if level==int(state.level) else BORDER,false,2)
-			node.draw_string(UI.BOLD,level_box.position+Vector2(0,BOX_TEXT_Y),"Lv %d → %d" % [state.level,state.next],HORIZONTAL_ALIGNMENT_LEFT,level_box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))
+			centered(node,"Lv %d → %d" % [state.level,state.next],Rect2(level_box.position+Vector2(0,28),Vector2(level_box.size.x,32)),SMALL_FONT_SIZE)
 	var button := reroll_rect()
 	if animate and int(values.Ui_fx_enabled)!=0: button = Rect2(button.get_center()-button.size*hover_scales[3]/2,button.size*hover_scales[3])
 	var style := "disabled" if not can_reroll else ("pressed" if reroll_hover and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) else ("hover" if reroll_hover else "normal"))
@@ -183,11 +185,15 @@ func centered(node: Control, value: String, box: Rect2, font_size: int, font: Fo
 	node.draw_string(font,Vector2(box.get_center().x-width/2,box.get_center().y+font.get_ascent(font_size)/2),value,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,font_size,Color(values.Ui_color))
 
 func wrapped(node: Control, value: String, box: Rect2) -> void:
+	var lines: Array[String] = []
 	var line := ""
-	var y := box.position.y+UI.BOLD.get_ascent(SMALL_FONT_SIZE)
 	for character in value:
 		if character=="\n" or UI.BOLD.get_string_size(line+character,HORIZONTAL_ALIGNMENT_LEFT,-1,SMALL_FONT_SIZE).x>box.size.x:
-			node.draw_string(UI.BOLD,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))
-			y+=SMALL_FONT_SIZE+LINE_GAP; line = ""
+			lines.append(line); line = ""
 		if character!="\n": line+=character
-	node.draw_string(UI.BOLD,Vector2(box.position.x,y),line,HORIZONTAL_ALIGNMENT_LEFT,box.size.x,SMALL_FONT_SIZE,Color(values.Ui_color))
+	lines.append(line)
+	var height := float(SMALL_FONT_SIZE+LINE_GAP)
+	var y := box.get_center().y-lines.size()*height/2
+	for text in lines:
+		centered(node,text,Rect2(box.position.x,y,box.size.x,height),SMALL_FONT_SIZE)
+		y+=height

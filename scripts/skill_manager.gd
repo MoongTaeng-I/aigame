@@ -133,7 +133,8 @@ func _slash_tick(stats: Dictionary, at: float) -> void:
 		var stars: Array = []
 		for candidate in star_candidates:
 			if is_instance_valid(candidate.enemy) and candidate.enemy.hp<int(candidate.hp) and stars.size()<int(presentation.get("Slash_star_max",4)):
-				stars.append(candidate.position)
+				if preload("res://scripts/impact_budget.gd").take(preload("res://scripts/impact_budget.gd").scope(self),int(presentation.Impact_spawn_max_per_frame)):
+					stars.append(candidate.position)
 		var finishing: bool = stats.has("Hits") and skills.skill_rapid_slash.hits_done+1>=int(stats.Hits)
 		if finishing:
 			for angle in [PI/4,-PI/4]:

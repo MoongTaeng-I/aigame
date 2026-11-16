@@ -20,6 +20,7 @@ var claw_to := Vector2.ZERO
 var claw_direction := Vector2.RIGHT
 var claw_ended := 0.0
 var star_hits := 0
+var burst_hits := 0
 var prep_stars: Array[float] = []
 var was_visible := false
 var redraw_frame := -1
@@ -39,9 +40,12 @@ func configure(owner_actor: Node2D, values: Dictionary) -> void:
 
 func begin_cast() -> void:
 	star_hits = 0
+	burst_hits = 0
 	stripe_index = 0
 	pending = -1
 	stripe_start = actor.sweep_current_angle
+	if actor.is_sweep():
+		preload("res://scripts/impact_budget.gd").reserve_endpoint(preload("res://scripts/impact_budget.gd").scope(self),actor,int(settings.Belion_shard_count)+int(settings.Belion_stone_count)+1)
 	for i in range(prep_stars.size()): prep_stars[i] = visual_rng.randf_range(float(settings.get("Belion_prep_star_min",0.15)),float(settings.get("Belion_prep_star_max",0.9)))
 	if actor.is_dash_through():
 		claw_active = true
@@ -64,7 +68,11 @@ func fan_hit() -> void:
 	slot.motion = actor.motions[actor.motion_index].Id
 
 func hit(point: Vector2) -> void:
-	if actor.is_sweep(): impacts.belion_burst(point)
+	if actor.is_sweep():
+		if burst_hits<int(settings.Belion_burst_max):
+			burst_hits+=1
+			impacts.belion_burst(point)
+		else: impacts.spawn("star",point,float(settings.Igris_star_px),float(settings.Igris_star_sec))
 	elif actor.is_dash_through(): impacts.spawn("mark",point,float(settings.get("Beru_mark_length",44)),float(settings.get("Beru_mark_sec",0.2)))
 	elif star_hits<int(settings.get("Igris_star_max",4)):
 		star_hits+=1
@@ -144,21 +152,7 @@ func _draw() -> void:
 		for i in [-1,0,1]:
 			var offset: Vector2 = claw_direction.orthogonal()*float(settings.get("Beru_claw_gap",14))*i
 			Draw.blade(self,to_local(claw_from+offset),to_local(claw_to+offset),float(settings.get("Beru_claw_width",9))*alpha,palette,alpha)
-	for slot in bands:
-		if not slot.active or absf(slot.b-slot.a)<0.000001: continue
-		var alpha := maxf(0,1-(age-float(slot.at))/float(settings.get("Belion_band_sec",0.25)))
-		var points := PackedVector2Array()
-		for edge in [1.0,float(settings.get("Belion_band_inner_ratio",0.78))]:
-			for j in range(5):
-				var fraction := j/4.0 if edge==1.0 else 1-j/4.0
-				var point: Vector2 = Vector2.RIGHT.rotated(lerpf(slot.a,slot.b,fraction))*float(slot.radius)*float(edge)
-				points.append(to_local(slot.center)+Vector2(point.x,point.y*float(settings.get("Shadow_fx_y_scale",0.62))))
-		var fill := Color(settings.get("Belion_band_dark","#3c1470") if int(slot.stripe)%2==0 else settings.get("Belion_band_light","#9646ff"))
-		fill.a = alpha
-		draw_colored_polygon(points,fill)
-		points.append(points[0])
-		draw_polyline(points,Color(Color(settings.get("Belion_band_outline","#1e0832")),alpha),float(settings.get("Belion_band_outline_px",2)),true)
-		Draw.arc(self,to_local(slot.center),slot.radius,slot.a,slot.b,float(settings.get("Belion_tip_width",8)),float(settings.get("Shadow_fx_y_scale",0.62)),[palette[0],Color.WHITE,Color.WHITE],alpha)
+	draw_band_batch()
 	if actor.is_sweep() and actor.cast_active and actor.clock-actor.cast_started_at<float(actor.attack.Windup_sec):
 		var state: Dictionary = actor.sweep_visual_state()
 		var hand: Vector2 = state.get("hand",actor.global_position)
@@ -170,3 +164,42 @@ func _exit_tree() -> void:
 	arcs.clear()
 	bands.clear()
 	prep_stars.clear()
+
+func draw_band_batch() -> void:
+	var vertices: Array[Vector2] = []
+	var colors: Array[Color] = []
+	var indices: Array[int] = []
+	var tips := PackedVector2Array()
+	var tip_colors := PackedColorArray()
+	var active: Array = bands.filter(func(slot: Dictionary) -> bool: return slot.active and absf(slot.b-slot.a)>0.000001)
+	active.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return a.stripe<b.stripe)
+	for slot in active:
+		var alpha := maxf(0,1-(age-float(slot.at))/float(settings.Belion_band_sec))
+		var fill: Color = settings.Belion_band_dark if int(slot.stripe)%2==0 else settings.Belion_band_light
+		fill.a = alpha
+		var outer := PackedVector2Array()
+		var inner := PackedVector2Array()
+		for i in range(5):
+			var vector := Vector2.RIGHT.rotated(lerpf(slot.a,slot.b,i/4.0))*float(slot.radius)
+			var point := Vector2(vector.x,vector.y*float(settings.Shadow_fx_y_scale))
+			outer.append(to_local(slot.center)+point)
+			inner.append(to_local(slot.center)+point*float(settings.Belion_band_inner_ratio))
+			if tips.is_empty() or i>0:
+				tips.append(outer[-1]); tip_colors.append(Color(1,1,1,alpha))
+		for i in range(4): append_quad(vertices,colors,indices,outer[i],outer[i+1],inner[i+1],inner[i],fill)
+		var border: Color = settings.Belion_band_outline
+		border.a = alpha
+		var loop := outer.duplicate()
+		for i in range(4,-1,-1): loop.append(inner[i])
+		loop.append(outer[0])
+		for i in range(loop.size()-1):
+			var side := loop[i].direction_to(loop[i+1]).orthogonal()*float(settings.Belion_band_outline_px)*0.5
+			append_quad(vertices,colors,indices,loop[i]+side,loop[i+1]+side,loop[i+1]-side,loop[i]-side,border)
+	if not indices.is_empty(): RenderingServer.canvas_item_add_triangle_array(get_canvas_item(),PackedInt32Array(indices),PackedVector2Array(vertices),PackedColorArray(colors))
+	if tips.size()>1: draw_polyline_colors(tips,tip_colors,float(settings.Belion_tip_width),true)
+
+func append_quad(vertices: Array[Vector2], colors: Array[Color], indices: Array[int], a: Vector2,b: Vector2,c: Vector2,d: Vector2,color: Color) -> void:
+	var start := vertices.size()
+	vertices.append_array(PackedVector2Array([a,b,c,d]))
+	for i in range(4): colors.append(color)
+	indices.append_array(PackedInt32Array([start,start+1,start+2,start,start+2,start+3]))

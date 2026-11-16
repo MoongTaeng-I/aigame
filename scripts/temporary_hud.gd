@@ -157,6 +157,8 @@ func rebuild_roster() -> void:
 		card.add_child(icon)
 		var frame := NinePatchRect.new()
 		frame.texture = UI.FRAME
+		frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+		frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
 		frame.patch_margin_left = 20; frame.patch_margin_right = 20; frame.patch_margin_top = 20; frame.patch_margin_bottom = 20
 		frame.position = ICON_MARGIN-Vector2(4,4); frame.size = ICON_SIZE+Vector2(8,8)
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE

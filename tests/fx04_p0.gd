@@ -72,6 +72,7 @@ func player_and_numbers(t: SceneTree) -> void:
 	enemy.apply_damage(12)
 	t.check(active(numbers.slots).back().value==3 and active(numbers.slots).back().color==Color("#ffd84a") and active(numbers.slots).back().killed,"FX04 kill color and actual HP loss rather than overkill")
 	var row_count: int = numbers.slots.size()
+	numbers.spawn_max = 1000 # Isolate the original slot/overwrite test from FIX-01's new shared visual budget.
 	for i in range(65): numbers.show_damage(enemy,i+1,"player",false)
 	t.check(row_count==60 and numbers.slots.size()==60 and active(numbers.slots).size()==60 and active(numbers.slots).all(func(s: Dictionary) -> bool: return int(s.serial)>=numbers.sequence-60),"FX04 sixty fixed slots oldest overwritten")
 	var at: Vector2 = numbers.slots[0].point

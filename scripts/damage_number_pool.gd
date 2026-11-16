@@ -1,4 +1,7 @@
 extends Node2D
+const Budget = preload("res://scripts/impact_budget.gd")
+var budget_key := 0
+var spawn_max := 40
 
 var settings: Dictionary
 var slots: Array = []
@@ -11,6 +14,7 @@ var by_enemy := {}
 
 func configure(values: Dictionary) -> void:
 	settings = values
+	spawn_max = int(settings.Impact_spawn_max_per_frame)
 	font = ThemeDB.fallback_font
 	z_index = 60
 	process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -32,6 +36,8 @@ func show_damage(enemy: Node2D, amount: int, source: String, killed: bool) -> vo
 			current.color = number_color(source,current.killed)
 			queue_redraw()
 			return
+	if budget_key==0: budget_key = Budget.scope(self)
+	if not Budget.take(budget_key,spawn_max): return
 	var index := 0
 	for i in range(slots.size()):
 		if not slots[i].active:

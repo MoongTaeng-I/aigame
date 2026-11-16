@@ -1,4 +1,7 @@
 extends Node2D
+const Budget = preload("res://scripts/impact_budget.gd")
+var budget_key := 0
+var spawn_max := 40
 
 # One batch-drawn node, fixed slots. No per-hit Node/Timer/scene allocation.
 const SPARK_VERTICES := 8
@@ -20,12 +23,16 @@ var overwritten := 0
 var spark := PackedVector2Array()
 
 func configure(enemies: Node, row: Dictionary) -> void:
+	spawn_max = int(preload("res://scripts/shadow_afterimage.gd").compiled_presentation().Impact_spawn_max_per_frame)
 	configure_shape(row)
 	if not enabled: return
+	if budget_key==0: budget_key = Budget.scope(self)
+	if not Budget.take(budget_key,spawn_max): return
 	enemies.enemy_damaged.connect(emit_at)
 	if enemies is EnemyManager and is_instance_valid(enemies._player):
 		player_fx = get_script().new()
 		player_fx.name = "PlayerHitFx"
+		player_fx.spawn_max = spawn_max
 		player_fx.configure_shape(row)
 		player_fx.outer_color = PLAYER_OUTER_COLOR
 		player_fx.core_color = PLAYER_CORE_COLOR

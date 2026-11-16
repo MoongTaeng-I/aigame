@@ -83,10 +83,11 @@ func _ready() -> void:
 	notice = text(UI.NOTICE,Rect2(50,704,1180,16),11,true)
 	notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
 	var header := Panel.new()
-	header.position = Vector2(440,26); header.size = Vector2(400,70)
+	header.position = Vector2(440,12); header.size = Vector2(400,86)
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(header); UI.crest(header)
-	var header_label := text("지역 선택",Rect2(440,50,400,40),28,true)
+	var header_label := text("지역 선택",Rect2(440,32,400,46),24,true)
+	header_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	header_label.add_theme_font_override("font",UI.BLACK)
 	menu_nodes.append(header); menu_nodes.append(header_label)
 	for i in range(3):
@@ -98,24 +99,27 @@ func _ready() -> void:
 		var frame := NinePatchRect.new()
 		frame.texture = preload("res://assets/ui/ui_frame_overlay.png")
 		frame.patch_margin_left = 40; frame.patch_margin_right = 40; frame.patch_margin_top = 40; frame.patch_margin_bottom = 40
-		frame.size = Vector2(560,315); frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame.position = Vector2(-40,-40)
+		frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+		frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+		frame.size = Vector2(640,395); frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(frame)
 		var lock_image := picture(preload("res://assets/ui/ui_lock.png"),Rect2(248,125,64,64),card)
 		lock_image.name = "Lock"
 		cards.append(card); menu_nodes.append(card)
-	region_title = text("",Rect2(350,454,580,50),34,true)
-	best_label = text("",Rect2(390,501,500,34),24,true)
-	locked_label = text("",Rect2(390,535,500,30),22,true)
-	start_button = button("게임 시작",Rect2(440,583,400,68),owner_flow.start_region)
+	region_title = text("",Rect2(350,500,580,44),34,true)
+	best_label = text("",Rect2(390,544,500,30),24,true)
+	locked_label = text("",Rect2(390,574,500,26),22,true)
+	start_button = button("게임 시작",Rect2(440,610,400,68),owner_flow.start_region)
 	locked_click = Control.new()
 	locked_click.position = start_button.position
 	locked_click.size = start_button.size
 	locked_click.mouse_filter = Control.MOUSE_FILTER_STOP
 	locked_click.gui_input.connect(_locked_input)
 	add_child(locked_click)
-	var left := button("‹",Rect2(300,267,64,64),owner_flow.change_region.bind(-1))
-	var right := button("›",Rect2(916,267,64,64),owner_flow.change_region.bind(1))
-	var gear := button("설정",Rect2(1196,24,56,48),toggle_settings)
+	var left := button("‹",Rect2(240,268,64,64),owner_flow.change_region.bind(-1))
+	var right := button("›",Rect2(976,268,64,64),owner_flow.change_region.bind(1))
+	var gear := button("설정",Rect2(1140,24,112,56),toggle_settings)
 	settings = PanelContainer.new()
 	settings.z_index = 5
 	settings.position = Vector2(810,82)
@@ -138,7 +142,7 @@ func _ready() -> void:
 	UI.animate_window(settings)
 	settings.hide()
 	menu_nodes.append_array([region_title,best_label,locked_label,start_button,locked_click,left,right,gear])
-	hint = text("",Rect2(340,645,600,42),22,true)
+	hint = text("",Rect2(340,680,600,24),22,true)
 	hint.add_theme_color_override("font_color",Color("#c8e1ff"))
 	hint.hide()
 	show_screen("loading")
@@ -317,7 +321,7 @@ func layout_cards() -> void:
 		card.scale = Vector2.ONE*factor
 		card.modulate.a = 1 if i==1 else float(values.Ui_side_alpha)
 		var slide := slide_direction*float(values.Ui_card_slide_px)*pow(slide_remaining/maxf(float(values.Ui_card_slide_sec),0.000001),2)
-		card.position = Vector2(640+(i-1)*490-280*factor+slide,300-157.5*factor)
+		card.position = Vector2(640+(i-1)*608-280*factor+slide,300-157.5*factor)
 	# Keep the selected card above the small previews.
 	cards[0].z_index = 0; cards[2].z_index = 0; cards[1].z_index = 1
 

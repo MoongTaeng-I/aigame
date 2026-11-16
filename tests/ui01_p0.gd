@@ -7,7 +7,7 @@ func run(t: SceneTree) -> void:
 		var style := UI.THEME.get_stylebox(name,"Button") as StyleBoxTexture
 		t.check(style!=null and style.texture_margin_left==24 and style.texture.get_size()==Vector2(160,64),"UI01 button ninepatch "+name)
 	var window := UI.THEME.get_stylebox("panel","Panel") as StyleBoxTexture
-	t.check(window.texture_margin_top==40 and window.axis_stretch_horizontal==StyleBoxTexture.AXIS_STRETCH_MODE_TILE,"UI01 window40px tiled center")
+	t.check(window.texture_margin_top==40 and window.axis_stretch_horizontal==StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH,"UI01 window40px stretched edges and center")
 	var animated := Panel.new()
 	t.root.add_child(animated)
 	var opening := UI.animate_window(animated)

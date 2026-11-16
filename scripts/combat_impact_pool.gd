@@ -1,4 +1,7 @@
 extends Node2D
+const Budget = preload("res://scripts/impact_budget.gd")
+var budget_key := 0
+var spawn_max := 40
 
 const Draw = preload("res://scripts/combat_fx_draw.gd")
 var settings: Dictionary
@@ -10,6 +13,7 @@ var active_count := 0
 
 func configure(values: Dictionary, capacity: int, is_shadow: bool) -> void:
 	settings = values
+	spawn_max = int(settings.Impact_spawn_max_per_frame)
 	shadow = is_shadow
 	z_index = 40
 	process_mode = Node.PROCESS_MODE_PAUSABLE
@@ -18,6 +22,8 @@ func configure(values: Dictionary, capacity: int, is_shadow: bool) -> void:
 
 func spawn(kind: String, point: Vector2, size: float, life: float, velocity: Vector2 = Vector2.ZERO, gravity: float = 0) -> void:
 	if slots.is_empty(): return
+	if budget_key==0: budget_key = Budget.scope(self)
+	if not Budget.take(budget_key,spawn_max): return
 	var slot: Dictionary = slots[cursor]
 	if not slot.active: active_count+=1
 	cursor = (cursor+1)%slots.size()
