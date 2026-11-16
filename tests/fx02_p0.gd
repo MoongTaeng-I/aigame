@@ -120,7 +120,7 @@ func fear(t: SceneTree) -> void:
 	screen.flash_white(0.35,0.05)
 	screen.set_slash_active(true)
 	screen._process(0.01)
-	t.check(screen.shake_offset==Vector2.ZERO and screen.flash_remaining>0 and screen.white_remaining>0 and screen.vignette_remaining>0 and screen.slash_alpha>0 and screen.screen.visible,"FX02 shake disabled preserves other screen FX")
+	t.check(screen.shake_offset==Vector2.ZERO and screen.flash_remaining>0 and screen.white_remaining>0 and screen.vignette_remaining>0 and screen.slash_alpha>0 and not screen.screen.visible and screen.dim_rect.visible and screen.flash_rect.visible and screen.white_rect.visible and screen.vignette_rect.visible,"OPT01 shake disabled preserves ColorRect/vignette overlays without screen sampling")
 	screen.set_slash_active(false)
 	screen._process(float(stats.Cast_sec)+0.61)
 	t.check(not screen.screen.visible and screen.slash_alpha==0,"FX02 screen transient values return to zero")

@@ -1,4 +1,5 @@
 extends Control
+var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 
 # All temporary skill presentation values live here; gameplay values come from CSV.
 const CARD := Vector2(128,132)
@@ -100,7 +101,7 @@ func _process(_delta: float) -> void:
 	var presentation: Dictionary = manager.presentation
 	var alpha := float(presentation.get("Stealth_alpha",STEALTH_ALPHA)) if manager.player.is_stealthed() else 1.0
 	var weight := float(presentation.get("Stealth_wave_strength",0.15))*(0.5+0.5*sin(manager.clock*TAU*float(presentation.get("Stealth_wave_hz",0.6)))) if manager.player.is_stealthed() else 0.0
-	manager.player.modulate = Color(Color.WHITE.lerp(Color(String(presentation.get("Fear_color","#a34dff"))),weight),alpha)
+	manager.player.modulate = Color(Color.WHITE.lerp(Color(presentation.get("Fear_color","#a34dff")),weight),alpha)
 	_layout()
 	queue_redraw()
 	if overlay!=null:
@@ -121,9 +122,8 @@ func _draw() -> void:
 	for index in range(manager.SkillData.IDS.size()):
 		var state: Dictionary = manager.icon_state(manager.SkillData.IDS[index])
 		var box := card_rect(index)
-		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
-		draw_rect(box,Color(String(palette.get("Hud_background","#101d35dd"))))
-		draw_rect(box,Color(String(palette.get("Hud_border","#ffffff"))),false,BORDER_WIDTH)
+		draw_rect(box,Color(palette.get("Hud_background","#101d35dd")))
+		draw_rect(box,Color(palette.get("Hud_border","#ffffff")),false,BORDER_WIDTH)
 		draw_string(font,box.position+NAME_OFFSET,state.name,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,FONT_SIZE,INK)
 		draw_string(font,box.position+KEY_OFFSET,state.key,HORIZONTAL_ALIGNMENT_LEFT,CARD.x,SMALL_FONT_SIZE,INK)
 

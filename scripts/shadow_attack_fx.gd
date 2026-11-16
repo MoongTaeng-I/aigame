@@ -21,6 +21,8 @@ var claw_direction := Vector2.RIGHT
 var claw_ended := 0.0
 var star_hits := 0
 var prep_stars: Array[float] = []
+var was_visible := false
+var redraw_frame := -1
 
 func configure(owner_actor: Node2D, values: Dictionary) -> void:
 	actor = owner_actor
@@ -103,7 +105,7 @@ func observe() -> void:
 			if actor.hit_done: claw_to = actor.global_position
 			claw_active = false
 			claw_ended = age
-	queue_redraw()
+	redraw_active()
 
 func advance(delta: float) -> void:
 	if get_tree().paused: return
@@ -113,7 +115,18 @@ func advance(delta: float) -> void:
 	for slot in bands:
 		if slot.active and age-float(slot.at)>=float(settings.get("Belion_band_sec",0.25)): slot.active = false
 	if claw_visible and not claw_active and age-claw_ended>=float(settings.get("Beru_claw_life_sec",0.3)): claw_visible = false
-	queue_redraw()
+	redraw_active()
+
+func redraw_active() -> void:
+	var visible_fx: bool = claw_visible or (actor.is_sweep() and actor.cast_active)
+	for slot in arcs:
+		if slot.active: visible_fx = true; break
+	for slot in bands:
+		if slot.active: visible_fx = true; break
+	if (visible_fx or was_visible) and redraw_frame!=Engine.get_process_frames():
+		redraw_frame = Engine.get_process_frames()
+		queue_redraw()
+	was_visible = visible_fx
 
 func _physics_process(delta: float) -> void: advance(delta)
 
@@ -139,11 +152,11 @@ func _draw() -> void:
 				var fraction := j/4.0 if edge==1.0 else 1-j/4.0
 				var point: Vector2 = Vector2.RIGHT.rotated(lerpf(slot.a,slot.b,fraction))*float(slot.radius)*float(edge)
 				points.append(to_local(slot.center)+Vector2(point.x,point.y*float(settings.get("Shadow_fx_y_scale",0.62))))
-		var fill := Color(String(settings.get("Belion_band_dark","#3c1470") if int(slot.stripe)%2==0 else settings.get("Belion_band_light","#9646ff")))
+		var fill := Color(settings.get("Belion_band_dark","#3c1470") if int(slot.stripe)%2==0 else settings.get("Belion_band_light","#9646ff"))
 		fill.a = alpha
 		draw_colored_polygon(points,fill)
 		points.append(points[0])
-		draw_polyline(points,Color(Color(String(settings.get("Belion_band_outline","#1e0832"))),alpha),float(settings.get("Belion_band_outline_px",2)),true)
+		draw_polyline(points,Color(Color(settings.get("Belion_band_outline","#1e0832")),alpha),float(settings.get("Belion_band_outline_px",2)),true)
 		Draw.arc(self,to_local(slot.center),slot.radius,slot.a,slot.b,float(settings.get("Belion_tip_width",8)),float(settings.get("Shadow_fx_y_scale",0.62)),[palette[0],Color.WHITE,Color.WHITE],alpha)
 	if actor.is_sweep() and actor.cast_active and actor.clock-actor.cast_started_at<float(actor.attack.Windup_sec):
 		var state: Dictionary = actor.sweep_visual_state()

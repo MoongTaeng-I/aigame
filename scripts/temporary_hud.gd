@@ -29,6 +29,8 @@ var debug_labels: Array = []
 var world_map: Node2D
 var player: Node2D
 var debug_visible := false
+var performance_label: Label
+var performance_elapsed := 0.0
 
 func configure_look(map: Node2D, actor: Node2D, labels: Array) -> void:
 	world_map = map
@@ -49,6 +51,13 @@ func _ready() -> void:
 	add_child(root_control)
 	root_control.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root_control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	performance_label = Label.new()
+	performance_label.name = "DebugPerformance"
+	performance_label.position = Vector2(20,172)
+	performance_label.add_theme_font_size_override("font_size",16)
+	performance_label.add_theme_color_override("font_color",Color("#182238"))
+	performance_label.hide()
+	root_control.add_child(performance_label)
 	if player!=null:
 		xp_bar = ProgressBar.new()
 		xp_bar.name = "TopExperienceBar"
@@ -60,7 +69,7 @@ func _ready() -> void:
 		var background := StyleBoxFlat.new()
 		background.bg_color = Color("#182238")
 		var fill := StyleBoxFlat.new()
-		fill.bg_color = Color(String(load("res://scripts/shadow_afterimage.gd").presentation().get("Xp_color","#a68cff")))
+		fill.bg_color = Color(load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate().get("Xp_color","#a68cff"))
 		xp_bar.add_theme_stylebox_override("background",background)
 		xp_bar.add_theme_stylebox_override("fill",fill)
 		level_label = Label.new()
@@ -72,7 +81,7 @@ func _ready() -> void:
 		var hp_bar := preload("res://scripts/player_hp_bar.gd").new()
 		hp_bar.name = "FootHpBar"
 		hp_bar.player = player
-		hp_bar.settings = load("res://scripts/shadow_afterimage.gd").presentation()
+		hp_bar.settings = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 		player.add_child(hp_bar)
 	timer_label = Label.new()
 	timer_label.name = "ElapsedTime"
@@ -102,6 +111,11 @@ static func format_elapsed(seconds: float) -> String:
 
 func _process(_delta: float) -> void:
 	refresh()
+	if debug_visible:
+		performance_elapsed += _delta
+		if performance_elapsed>=0.25:
+			performance_elapsed = 0
+			performance_label.text = "FPS %d | Draw %d | Objects %d | Nodes %d | Enemies %d" % [Engine.get_frames_per_second(),Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),Performance.get_monitor(Performance.OBJECT_COUNT),Performance.get_monitor(Performance.OBJECT_NODE_COUNT),manager.get_alive_count()]
 
 func refresh() -> void:
 	if not is_instance_valid(manager) or not is_instance_valid(skill_ui): return
@@ -127,9 +141,9 @@ func rebuild_roster() -> void:
 		card.custom_minimum_size = ROSTER_CARD
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var style := StyleBoxFlat.new()
-		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
-		style.bg_color = Color(String(palette.get("Hud_background","#101d35dd")))
-		style.border_color = Color(String(palette.get("Hud_border","#ffffff")))
+		var palette: Dictionary = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
+		style.bg_color = Color(palette.get("Hud_background","#101d35dd"))
+		style.border_color = Color(palette.get("Hud_border","#ffffff"))
 		style.set_border_width_all(1)
 		card.add_theme_stylebox_override("panel",style)
 		roster.add_child(card)
@@ -166,5 +180,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 func toggle_debug() -> void:
 	debug_visible = not debug_visible
+	if performance_label!=null: performance_label.visible = debug_visible
 	for label in debug_labels: label.visible = debug_visible
 	if world_map!=null: world_map.set_debug_visible(debug_visible)

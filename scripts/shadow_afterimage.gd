@@ -12,11 +12,10 @@ const PRESENTATION_CACHE := &"combat_presentation"
 static func cache_presentation(rows: Dictionary) -> void:
 	var loaded: Dictionary = {}
 	for row in rows.values(): loaded[row.Id] = row.Value
-	# Only strings live in Engine metadata; no static GDScript resource is retained.
-	Engine.set_meta(PRESENTATION_CACHE,loaded)
+	install_presentation(loaded)
 
 static func presentation() -> Dictionary:
-	if Engine.has_meta(PRESENTATION_CACHE): return Engine.get_meta(PRESENTATION_CACHE).duplicate()
+	if Engine.has_meta(PRESENTATION_CACHE): return Engine.get_meta(PRESENTATION_CACHE)
 	# Pure presentation data; this loader never touches combat RNG or hit state.
 	var file := FileAccess.open("res://data/combat_presentation.csv",FileAccess.READ)
 	var result: Dictionary = {}
@@ -24,8 +23,8 @@ static func presentation() -> Dictionary:
 	while not file.eof_reached():
 		var cells := file.get_csv_line()
 		if cells.size()==2: result[cells[0]] = cells[1]
-	Engine.set_meta(PRESENTATION_CACHE,result)
-	return result.duplicate()
+	install_presentation(result)
+	return Engine.get_meta(PRESENTATION_CACHE)
 
 func configure(snapshot: Dictionary, seconds: float, alpha: float = 0.45) -> void:
 	pose = snapshot.duplicate(true)
@@ -53,3 +52,32 @@ func _draw() -> void:
 		elif pose.get("kind","")=="charger_test": Visual.draw_charger_pose(self,float(pose.radius),pose.facing)
 		elif pose.get("kind","")=="belion": Visual.draw_belion_pose(self,float(pose.radius),pose.facing)
 		else: Visual.draw_pose(self,float(pose.radius),pose.facing,int(pose.motion),float(pose.phase))
+
+static func compiled_presentation() -> Dictionary:
+	var raw := presentation()
+	var stamp := raw.hash()
+	var cached: Dictionary = Engine.get_meta(&"presentation_compiled",{})
+	if cached.get("stamp") == stamp: return cached["values"]
+	var values := compile_values(raw)
+	Engine.set_meta(&"presentation_compiled",{"stamp":stamp,"values":values})
+	return values
+
+static func compile_values(raw: Dictionary) -> Dictionary:
+	var values := {}
+	for key in raw:
+		var value = raw[key]
+		if value is String:
+			if value.begins_with("#"): value = Color(value)
+			elif value.is_valid_float(): value = float(value)
+		values[key] = value
+	values.make_read_only()
+	return values
+
+static func install_presentation(raw: Dictionary) -> void:
+	raw.make_read_only()
+	var values := compile_values(raw)
+	# Keep the public loading-screen cache and every new round identical.
+	# Raw CSV spellings are retained only for compatibility/equivalence audits.
+	Engine.set_meta(&"combat_presentation_raw",raw)
+	Engine.set_meta(PRESENTATION_CACHE,values)
+	Engine.set_meta(&"presentation_compiled",{"stamp":values.hash(),"values":values})

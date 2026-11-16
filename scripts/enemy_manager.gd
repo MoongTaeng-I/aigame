@@ -111,7 +111,7 @@ func recycle_enemy(enemy: EnemyActor) -> void:
 
 func _ready() -> void:
 	_random.randomize()
-	var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+	var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 	if int(presentation.get("Damage_number_enabled",1))!=0:
 		damage_numbers = preload("res://scripts/damage_number_pool.gd").new()
 		add_child(damage_numbers)

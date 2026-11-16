@@ -1,6 +1,10 @@
 extends CanvasLayer
 var settings: Dictionary
 var screen: ColorRect
+var dim_rect: ColorRect
+var flash_rect: ColorRect
+var white_rect: ColorRect
+var vignette_rect: ColorRect
 var shake_offset := Vector2.ZERO
 var remaining := 0.0
 var duration := 0.0
@@ -37,6 +41,13 @@ func _ready() -> void:
 	screen.material = effect
 	add_child(screen)
 	screen.hide()
+	dim_rect = overlay()
+	flash_rect = overlay()
+	white_rect = overlay()
+	vignette_rect = overlay()
+	var vignette := ShaderMaterial.new()
+	vignette.shader = preload("res://scripts/skill_vignette.gdshader")
+	vignette_rect.material = vignette
 func kick(px: float, seconds: float, flash_sec: float = 0.0) -> void:
 	strength = px
 	duration = maxf(seconds,0.000001)
@@ -57,12 +68,25 @@ func _process(delta: float) -> void:
 		var phase := elapsed*TAU*float(settings.get("Shake_hz",38))
 		shake_offset = Vector2(sin(phase),cos(phase*1.31))*strength*remaining/duration
 	if screen==null: return
-	screen.visible = shake_offset!=Vector2.ZERO or flash_remaining>0 or slash_alpha>0 or white_remaining>0 or vignette_remaining>0
-	screen.material.set_shader_parameter("shake_uv",shake_offset/get_viewport().get_visible_rect().size)
-	screen.material.set_shader_parameter("flash",float(settings.get("Fear_flash_alpha",0.18))*flash_remaining/maxf(0.000001,float(settings.get("Fear_flash_sec",0.15))))
-	screen.material.set_shader_parameter("flash_color",Color(String(settings.get("Fear_color","#a34dff"))))
-	screen.material.set_shader_parameter("slash_dim",slash_alpha)
-	screen.material.set_shader_parameter("dim_color",Color(String(settings.get("Fx_outline_color","#16265a"))))
-	screen.material.set_shader_parameter("white_flash",white_strength*white_remaining/maxf(white_duration,0.000001))
-	screen.material.set_shader_parameter("fear_vignette",float(settings.get("Fear_vignette_alpha",0.6))*vignette_remaining/maxf(vignette_duration,0.000001))
-	screen.material.set_shader_parameter("vignette_width",float(settings.get("Fear_vignette_width",0.4)))
+	screen.visible = shake_offset!=Vector2.ZERO
+	if screen.visible: screen.material.set_shader_parameter("shake_uv",shake_offset/get_viewport().get_visible_rect().size)
+	var fear := Color(settings.get("Fear_color",Color("#a34dff")))
+	dim_rect.color = Color(settings.get("Fx_outline_color",Color("#16265a")),slash_alpha)
+	flash_rect.color = Color(fear,float(settings.get("Fear_flash_alpha",0.18))*flash_remaining/maxf(0.000001,float(settings.get("Fear_flash_sec",0.15))))
+	white_rect.color = Color(1,1,1,white_strength*white_remaining/maxf(white_duration,0.000001))
+	dim_rect.visible = dim_rect.color.a>0
+	flash_rect.visible = flash_rect.color.a>0
+	white_rect.visible = white_rect.color.a>0
+	vignette_rect.visible = vignette_remaining>0
+	if vignette_rect.visible:
+		vignette_rect.material.set_shader_parameter("tint",fear)
+		vignette_rect.material.set_shader_parameter("strength",float(settings.get("Fear_vignette_alpha",0.6))*vignette_remaining/maxf(vignette_duration,0.000001))
+		vignette_rect.material.set_shader_parameter("width",float(settings.get("Fear_vignette_width",0.4)))
+
+func overlay() -> ColorRect:
+	var rect := ColorRect.new()
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(rect)
+	rect.hide()
+	return rect

@@ -3,7 +3,7 @@ extends RefCounted
 const Geometry = preload("res://scripts/combat_geometry.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const Visual = preload("res://scripts/shadow_visual.gd")
-var presentation: Dictionary = Afterimage.presentation()
+var presentation: Dictionary = Afterimage.compiled_presentation().duplicate()
 const PREVIEW := Color(0.3,0.8,1,0.28)
 const ICE := Color(0.4,0.85,1,0.48)
 var boss: Node2D

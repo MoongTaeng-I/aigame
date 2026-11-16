@@ -75,7 +75,7 @@ func burst() -> void:
 		slot.foot_y = ground
 		slot.direction = Vector2.RIGHT.rotated(visual_rng.randf()*TAU)
 		slot.radius = visual_rng.randf_range(float(settings.Burst_min_px),float(settings.Burst_max_px))
-	queue_redraw()
+	if not wisps.is_empty() or embers.any(func(slot: Dictionary) -> bool: return slot.active) or puffs.any(func(slot: Dictionary) -> bool: return slot.active): queue_redraw()
 
 func ember_world_point(slot: Dictionary) -> Vector2:
 	var elapsed := age-float(slot.born)
@@ -86,6 +86,7 @@ func _physics_process(delta: float) -> void:
 
 func advance(delta: float) -> void:
 	if get_tree().paused: return
+	var had_particles := not wisps.is_empty() or embers.any(func(slot: Dictionary) -> bool: return slot.active) or puffs.any(func(slot: Dictionary) -> bool: return slot.active)
 	age += maxf(delta,0)
 	for slot in embers:
 		if slot.active and age-float(slot.born)>=float(settings.Ember_life_sec): slot.active = false
@@ -107,7 +108,7 @@ func advance(delta: float) -> void:
 	for slot in puffs:
 		if slot.active and age-float(slot.born)>=float(settings.Burst_sec): slot.active = false
 	sync_aura()
-	queue_redraw()
+	if had_particles or not wisps.is_empty() or embers.any(func(slot: Dictionary) -> bool: return slot.active) or puffs.any(func(slot: Dictionary) -> bool: return slot.active): queue_redraw()
 
 func _draw() -> void:
 	for slot in embers:
@@ -115,7 +116,7 @@ func _draw() -> void:
 		var progress := clampf((age-float(slot.born))/float(settings.Ember_life_sec),0,1)
 		var radius := float(slot.size)*(1-progress)
 		var point := to_local(ember_world_point(slot))
-		draw_circle(point,radius,Color(Color(String(settings.Ember_color)),1-progress))
+		draw_circle(point,radius,Color(Color(settings.Ember_color),1-progress))
 		draw_circle(point,radius*float(settings.Ember_core_ratio),Color(1,1,1,1-progress))
 	for slot in wisps:
 		var base := to_local(body_world(Vector2(float(slot.x),foot_y()-body_height()*float(settings.Wisp_height_ratio))))
@@ -126,7 +127,7 @@ func _draw() -> void:
 				var part := float(j)/steps
 				points.append(base+Vector2(sin(float(slot.phase)+part*TAU*float(settings.Wisp_turns)-float(slot.age)*TAU*float(settings.Wisp_flow_hz))*float(settings.Wisp_sway_px)*part,-float(settings.Wisp_length_px)*part))
 			var progress := float(i)/steps
-			var color := Color(String(settings.Wisp_color))
+			var color := Color(settings.Wisp_color)
 			color.a = float(settings.Wisp_alpha)*(1-float(slot.age)/float(settings.Wisp_life_sec))*(1-progress)
 			draw_line(points[0],points[1],color,lerpf(float(settings.Wisp_start_width),float(settings.Wisp_end_width),progress),true)
 	for slot in puffs:
@@ -136,5 +137,5 @@ func _draw() -> void:
 		point.y = minf(point.y,float(slot.foot_y)-float(settings.Burst_above_foot_px))
 		point = to_local(point)
 		var radius := float(slot.radius)*(1-progress)
-		draw_circle(point,radius+float(settings.Burst_outline_px)*(1-progress),Color(Color(String(settings.Burst_outline_color)),1-progress))
-		draw_circle(point,radius,Color(Color(String(settings.Burst_color)),1-progress))
+		draw_circle(point,radius+float(settings.Burst_outline_px)*(1-progress),Color(Color(settings.Burst_outline_color),1-progress))
+		draw_circle(point,radius,Color(Color(settings.Burst_color),1-progress))

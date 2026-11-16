@@ -16,6 +16,7 @@ var enemy_id: String = ""
 var character_view: Node2D
 var sprite_body: Node2D
 var visual_record: Dictionary = {}
+var base_sprite_tint := Color.WHITE
 var move_speed: float = 0.0
 var attack_range_type: AttackRangeType = AttackRangeType.MELEE
 var body_radius: float = 16.0
@@ -61,6 +62,7 @@ func apply_fear(duration: float) -> void:
 
 func configure(record: Dictionary) -> void:
 	visual_record = record.duplicate()
+	base_sprite_tint = Color(record.Sprite_tint) if record.get("Sprite_tint")!=null else Color.WHITE
 	enemy_id = String(record["Id"])
 	move_speed = float(record["Move_speed"])
 	attack_range_type = int(record["Attack_range_type"])
@@ -250,9 +252,10 @@ func configure_visual() -> void:
 
 func update_sprite_tint() -> void:
 	if sprite_body==null: return
-	var color := Color(String(visual_record.Sprite_tint)) if visual_record.get("Sprite_tint")!=null else Color.WHITE
-	sprite_body.sprite_tint = color.lerp(SkillUI.FEAR_COLOR,0.5) if is_feared() else color
-	sprite_body.queue_redraw()
+	var color := base_sprite_tint.lerp(SkillUI.FEAR_COLOR,0.5) if is_feared() else base_sprite_tint
+	if sprite_body.sprite_tint!=color:
+		sprite_body.sprite_tint = color
+		sprite_body.queue_redraw()
 
 func update_walk_visual(player_position: Vector2, moved: bool, delta: float, keep_facing: bool) -> void:
 	if sprite_body==null or not sprite_body.visible: return
@@ -273,11 +276,14 @@ func advance_hit_flash(delta: float) -> void:
 	update_hit_flash_material()
 
 func update_hit_flash_material() -> void:
-	for canvas in [character_view,sprite_body]:
-		if not is_instance_valid(canvas): continue
-		if canvas.material==null and hit_flash_remaining>0:
-			var effect := ShaderMaterial.new()
+	var flashing := hit_flash_remaining>0.000000001
+	var effect: ShaderMaterial = null
+	if flashing:
+		effect = Engine.get_meta(&"shared_hit_flash") if Engine.has_meta(&"shared_hit_flash") else null
+		if effect==null:
+			effect = ShaderMaterial.new()
 			effect.shader = preload("res://scripts/hit_flash.gdshader")
-			canvas.material = effect
-		if canvas.material is ShaderMaterial:
-			canvas.material.set_shader_parameter("hit_flash",1.0 if hit_flash_remaining>0.000000001 else 0.0)
+			effect.set_shader_parameter("hit_flash",1.0)
+			Engine.set_meta(&"shared_hit_flash",effect)
+	for canvas in [character_view,sprite_body]:
+		if is_instance_valid(canvas): canvas.material = effect

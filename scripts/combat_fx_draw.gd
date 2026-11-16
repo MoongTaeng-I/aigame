@@ -1,7 +1,7 @@
 extends RefCounted
 
 static func colors(values: Dictionary, shadow: bool) -> Array[Color]:
-	return [Color(String(values.get("Shadow_fx_outline","#1a1240") if shadow else values.get("Player_fx_outline","#16265a"))),Color(String(values.get("Shadow_fx_color","#7a5cff") if shadow else values.get("Player_fx_color","#5ad4ff"))),Color(String(values.get("Shadow_fx_core","#ece6ff") if shadow else values.get("Player_fx_core","#ffffff")))]
+	return [Color(values.get("Shadow_fx_outline","#1a1240") if shadow else values.get("Player_fx_outline","#16265a")),Color(values.get("Shadow_fx_color","#7a5cff") if shadow else values.get("Player_fx_color","#5ad4ff")),Color(values.get("Shadow_fx_core","#ece6ff") if shadow else values.get("Player_fx_core","#ffffff"))]
 
 static func polygon(canvas: Node2D, points: PackedVector2Array, color: Color) -> void:
 	# A shrinking core can collapse to coincident float32 vertices before its

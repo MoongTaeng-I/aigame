@@ -47,8 +47,8 @@ func _draw() -> void:
 		var alpha := minf(progress*4,1)*minf((1-progress)*4,1)
 		draw_texture_rect(head_texture,Rect2(Vector2(-size.x/2,-size.y-float(settings.get("Fear_head_rise_px",30))*progress),size),false,Color(1,1,1,alpha))
 		return
-	var color := Color(String(settings.get("Fear_color","#e8283c")))
-	var outline := Color(String(settings.get("Fear_outline_color","#3c000f")))
+	var color := Color(settings.get("Fear_color","#e8283c"))
+	var outline := Color(settings.get("Fear_outline_color","#3c000f"))
 	if age<duration:
 		draw_circle(Vector2.ZERO,radius,Color(color,float(settings.get("Fear_range_alpha",0.18))))
 		draw_arc(Vector2.ZERO,radius,0,TAU,96,outline,float(settings.get("Fear_range_width",6)),true)
@@ -68,7 +68,7 @@ func _draw() -> void:
 	var fx = preload("res://scripts/skill_cartoon_fx.gd")
 	var claw_alpha := maxf(0,1-age/maxf(float(settings.get("Fear_claw_sec",0.12)),0.000001))
 	for direction in claws:
-		fx.blade(self,direction*radius*float(settings.get("Fear_claw_start_ratio",0.15)),Vector2(direction).rotated(float(settings.get("Fear_claw_curve",0.15)))*radius,float(settings.get("Fear_claw_width",10)),Color(Color(String(settings.get("Fear_claw_color","#e8283c"))),claw_alpha),settings,false,outline)
+		fx.blade(self,direction*radius*float(settings.get("Fear_claw_start_ratio",0.15)),Vector2(direction).rotated(float(settings.get("Fear_claw_curve",0.15)))*radius,float(settings.get("Fear_claw_width",10)),Color(Color(settings.get("Fear_claw_color","#e8283c")),claw_alpha),settings,false,outline)
 	var bat_progress := clampf(age/maxf(duration+float(settings.get("Fear_bat_tail_sec",0.6)),0.000001),0,1)
 	for bat in bats:
 		var center: Vector2 = Vector2(bat.direction)*(float(bat.start)+float(settings.get("Fear_bat_travel_px",1100))*bat_progress)
@@ -76,4 +76,4 @@ func _draw() -> void:
 		var flap := lerpf(float(settings.get("Fear_bat_wing_min",0.5)),1,(sin(age*TAU*float(settings.get("Fear_bat_hz",12))+float(bat.phase))+1)*0.5)
 		var wing := size*flap
 		draw_colored_polygon(PackedVector2Array([center+Vector2(-size,-wing),center+Vector2(-size*0.45,0),center+Vector2(0,-size*0.2),center+Vector2(size*0.45,0),center+Vector2(size,-wing),center+Vector2(size*0.25,wing*0.4),center+Vector2(0,wing*0.2),center+Vector2(-size*0.25,wing*0.4)]),Color(0,0,0,1-bat_progress))
-		for sign_x in [-1,1]: draw_circle(center+Vector2(sign_x*size*0.15,-size*0.1),float(settings.get("Fear_bat_eye_px",1)),Color(Color(String(settings.get("Fear_color","#e8283c"))),1-bat_progress))
+		for sign_x in [-1,1]: draw_circle(center+Vector2(sign_x*size*0.15,-size*0.1),float(settings.get("Fear_bat_eye_px",1)),Color(Color(settings.get("Fear_color","#e8283c")),1-bat_progress))

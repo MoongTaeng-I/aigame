@@ -315,3 +315,4 @@ Belion_prep_star_min,0.15
 Belion_prep_star_max,0.9
 Belion_band_outline_px,2
 Basic_thrust_step_px,6
+Damage_number_merge_sec,0.15

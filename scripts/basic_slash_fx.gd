@@ -66,8 +66,8 @@ func _draw() -> void:
 		if debug_enabled(): draw_colored_polygon(polygon,Color(1,0.945,0.659,0.35))
 		return
 	var alpha := clampf(1-age/maxf(life,0.000001),0,1)
-	draw_colored_polygon(crescent_ribbon(float(settings.get("Basic_glow_width",5))),Color(Color(String(settings.get("Basic_glow_color","#83d9ff"))),alpha*0.6))
-	draw_colored_polygon(crescent_ribbon(float(settings.get("Basic_core_width",1.5))),Color(Color(String(settings.get("Basic_core_color","#ffffff"))),alpha))
+	draw_colored_polygon(crescent_ribbon(float(settings.get("Basic_glow_width",5))),Color(Color(settings.get("Basic_glow_color","#83d9ff")),alpha*0.6))
+	draw_colored_polygon(crescent_ribbon(float(settings.get("Basic_core_width",1.5))),Color(Color(settings.get("Basic_core_color","#ffffff")),alpha))
 	if debug_enabled(): draw_colored_polygon(polygon,Color(1,0.945,0.659,0.35))
 
 func draw_cartoon() -> void:

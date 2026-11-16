@@ -72,14 +72,14 @@ func run(t: SceneTree) -> void:
 	enemy.advance_hit_flash(0.079)
 	t.check(enemy.sprite_body.material.get_shader_parameter("hit_flash")==1.0,"ART-09 flash remains through0.079sec")
 	enemy.advance_hit_flash(0.001)
-	t.check(enemy.sprite_body.material.get_shader_parameter("hit_flash")==0.0 and enemy.modulate.a==1,"ART-09 white flash ends at0.08sec preserving alpha")
+	t.check(enemy.sprite_body.material==null and enemy.modulate.a==1,"ART-09 white flash ends at0.08sec preserving alpha")
 	for id in ["boss_ice_bear","boss_ice_elf","boss_baruka"]:
 		var boss: Node2D = n.manager.create_boss(id,[],func() -> Node2D: return n.player)
 		n.manager.activate_boss(boss)
 		boss.apply_damage(1)
 		t.check(boss.character_view.material.get_shader_parameter("hit_flash")==1.0,"ART-09 procedural boss white flash "+id)
 		boss.boss_tick(0.08)
-		t.check(boss.character_view.material.get_shader_parameter("hit_flash")==0.0,"ART-09 boss flash clock "+id)
+		t.check(boss.character_view.material==null,"ART-09 boss flash clock "+id)
 	main.queue_free()
 	await t.process_frame
 	await t.process_frame

@@ -4,7 +4,7 @@ const PLAYER_COLOR := Color("#b18cff")
 const Geometry = preload("res://scripts/combat_geometry.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
-var presentation: Dictionary = Afterimage.presentation()
+var presentation: Dictionary = Afterimage.compiled_presentation().duplicate()
 var visuals_enabled := true
 var trail_elapsed := 0.0
 var dash_land_remaining := 0.0
@@ -336,7 +336,7 @@ func _physics_process(delta: float) -> void:
             var copy := Afterimage.new()
             var snapshot := {"kind":"player","radius":body_radius}
             if sprite_body!=null: snapshot["sprite_pose"] = sprite_body.pose_snapshot()
-            if snapshot.has("sprite_pose"): snapshot.sprite_pose.sprite_tint *= Color(String(presentation.get("Dash_trail_color","#8a6bff")))
+            if snapshot.has("sprite_pose"): snapshot.sprite_pose.sprite_tint *= Color(presentation.get("Dash_trail_color","#8a6bff"))
             copy.configure(snapshot,float(presentation.Trail_life_sec),float(presentation.Trail_alpha))
             get_parent().add_child(copy)
             copy.global_position = before.lerp(global_position,clampf(at/maxf(dash_step,0.000000001),0,1))

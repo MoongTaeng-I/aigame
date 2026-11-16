@@ -1,5 +1,7 @@
 extends Node2D
 class_name SpriteBody
+var redraw_state: Array = []
+var redraw_frame := -1
 
 const SHADOW_SIZE := Vector2(32.0,12.0)
 const SHADOW_COLOR := Color(0.0,0.0,0.0,0.35)
@@ -56,7 +58,8 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	_motion_clock = 0.0
 	_visual_cast_active = false
 	_lunge_remaining = 0.0
-	var presentation: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
+	var presentation: Dictionary = load("res://scripts/shadow_afterimage.gd").compiled_presentation()
+	prepare_ground_shadow(presentation)
 	flip_deadband = float(presentation.Flip_deadband)
 	idle_texture = null
 	_using_idle = false
@@ -68,7 +71,7 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 	_walk_frame_column = 0
 	flip_h = false
 	anchor_x = record.get("Sprite_anchor_x")
-	sprite_tint = Color(String(record.Sprite_tint)) if record.get("Sprite_tint")!=null else Color.WHITE
+	sprite_tint = Color(record.Sprite_tint) if record.get("Sprite_tint")!=null else Color.WHITE
 	shadow_size = Vector2(float(record.Shadow_w) if record.get("Shadow_w")!=null else SHADOW_SIZE.x,float(record.Shadow_h) if record.get("Shadow_h")!=null else SHADOW_SIZE.y)
 	fallback_radius = radius
 	fallback_color = color
@@ -108,9 +111,10 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 			else:
 				print("ART-03 경고: Idle_sprite_path를 이미지로 읽을 수 없어 이동 시트 첫 칸을 사용합니다: "+idle_path)
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	queue_redraw()
+	request_redraw()
 
 func configure_snapshot(snapshot: Dictionary) -> void:
+	prepare_ground_shadow(load("res://scripts/shadow_afterimage.gd").compiled_presentation())
 	motion_transform = snapshot.get("motion_transform",Transform2D.IDENTITY)
 	flip_deadband = float(snapshot.get("flip_deadband",0.3))
 	anchor_x = snapshot.get("anchor_x")
@@ -135,7 +139,7 @@ func configure_snapshot(snapshot: Dictionary) -> void:
 	fallback_outline = Color(snapshot.get("fallback_outline",Color("#eee6ff")))
 	show_shadow = bool(snapshot.get("show_shadow",false))
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	queue_redraw()
+	request_redraw()
 
 func pose_snapshot() -> Dictionary:
 	return {
@@ -182,7 +186,7 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	else:
 		_animation_elapsed = 0.0
 		frame_column = 0
-	queue_redraw()
+	request_redraw()
 
 func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	if layout=="pose":
@@ -197,7 +201,7 @@ func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	_animation_elapsed += maxf(0.0,delta)
 	var fps := animation_fps if moving else idle_fps
 	frame_column = floori(_animation_elapsed*fps)%maxi(1,columns)
-	queue_redraw()
+	request_redraw()
 
 func set_attack_pose(direction: Vector2, column: int) -> void:
 	if direction.x<0.0: flip_h = true
@@ -206,7 +210,7 @@ func set_attack_pose(direction: Vector2, column: int) -> void:
 	_animation_elapsed = 0.0
 	frame_row = 2
 	frame_column = clampi(column,0,maxi(0,columns-1))
-	queue_redraw()
+	request_redraw()
 
 func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_facing: bool = false) -> void:
 	if not keep_facing:
@@ -220,13 +224,13 @@ func advance_walk_pose(direction: Vector2, moving: bool, delta: float, keep_faci
 	_animation_elapsed = _animation_elapsed+maxf(delta,0.0) if moving else 0.0
 	frame_column = floori(_animation_elapsed*animation_fps)%maxi(columns,1) if moving else 0
 	_walk_frame_column = frame_column
-	queue_redraw()
+	request_redraw()
 
 func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void:
 	if layout=="pose":
 		frame_row = 0
 		frame_column = 1 if enabled and columns>1 and (release_age<0.15-0.000000001 or remaining<=0.3+0.000000001) else _walk_frame_column
-		queue_redraw()
+		request_redraw()
 		return
 	frame_row = 0
 	frame_column = _walk_frame_column
@@ -237,7 +241,7 @@ func set_shoot_pose(remaining: float, release_age: float, enabled: bool) -> void
 		elif remaining<=0.3+0.000000001:
 			frame_row = 1
 			frame_column = 0 if remaining>0.15+0.000000001 else 1
-	queue_redraw()
+	request_redraw()
 
 func advance_shadow_pose(direction: Vector2, moving: bool, delta: float, attacking: bool, attack_direction: Vector2) -> void:
 	if attacking:
@@ -312,7 +316,7 @@ func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, at
 	_visual_cast_active = attacking
 	motion_transform = Transform2D.IDENTITY
 	if motion_values.is_empty():
-		queue_redraw()
+		request_redraw()
 		return
 	var wave := sin(_motion_clock*TAU*float(motion_values.get("Step_hz",0.0))) if moving else 0.0
 	var bounce := absf(wave)
@@ -328,7 +332,7 @@ func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, at
 	motion_transform = Transform2D(angle,stretch,0.0,Vector2.ZERO)
 	var pivot := Vector2(0,foot_y)
 	motion_transform.origin = pivot+offset-motion_transform*pivot
-	queue_redraw()
+	request_redraw()
 
 func advance_frozen_walk_time(moving: bool, delta: float) -> void:
 	if not moving: _pose_walk_elapsed = 0
@@ -364,7 +368,7 @@ func _use_fallback(message: String) -> void:
 	texture = null
 	using_fallback = true
 	print("ART-01 경고: "+message)
-	queue_redraw()
+	request_redraw()
 
 func _draw() -> void:
 	if show_shadow: draw_ground_shadow(self,shadow_size)
@@ -394,14 +398,14 @@ func apply_dash_stretch(direction: Vector2, dashing: bool, landing: float, setti
 	var pivot := Vector2(0,foot_y)
 	deformation.origin = pivot-deformation*pivot
 	motion_transform = deformation*motion_transform
-	queue_redraw()
+	request_redraw()
 
 func trigger_basic_step(direction: Vector2, px: float, seconds: float) -> void:
 	basic_step_direction = direction.normalized()
 	basic_step_px = px
 	basic_step_sec = seconds
 	basic_step_remaining = seconds
-	queue_redraw()
+	request_redraw()
 
 func advance_player_skill_pose(direction: Vector2, moving: bool, delta: float, fear: bool, dash: bool, slash: bool, dash_direction: Vector2, settings: Dictionary) -> void:
 	advance_pose(direction,moving,delta)
@@ -416,15 +420,34 @@ func advance_player_skill_pose(direction: Vector2, moving: bool, delta: float, f
 	motion_transform = Transform2D(angle,Vector2.ZERO)
 	var pivot := Vector2(0,foot_y)
 	motion_transform.origin = pivot+offset-motion_transform*pivot
-	queue_redraw()
+	request_redraw()
+
+static func prepare_ground_shadow(settings: Dictionary) -> void:
+	var signature := [settings.get("Shadow_color",Color("#46506e")),settings.get("Shadow_alpha",0.45),settings.get("Shadow_layers",8),settings.get("Shadow_softness",0.35)]
+	if Engine.get_meta(&"ground_shadow_signature",[])==signature: return
+	var image := Image.create(128,128,false,Image.FORMAT_RGBA8)
+	var layers := maxi(1,int(signature[2]))
+	var layer_alpha := 1.0-pow(1.0-float(signature[1]),1.0/layers)
+	var color := Color(signature[0])
+	for y in range(128):
+		for x in range(128):
+			var radius := Vector2((x+0.5)/64.0-1,(y+0.5)/64.0-1).length()
+			var count := 0
+			for i in range(layers):
+				if radius<=1.0-float(signature[3])*i/maxi(1,layers-1): count+=1
+			image.set_pixel(x,y,Color(color,1.0-pow(1.0-layer_alpha,count)))
+	image.generate_mipmaps()
+	Engine.set_meta(&"ground_shadow_texture",ImageTexture.create_from_image(image))
+	Engine.set_meta(&"ground_shadow_signature",signature)
 
 static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
-	var settings: Dictionary = load("res://scripts/shadow_afterimage.gd").presentation()
-	var color := Color(String(settings.get("Shadow_color","#46506e")))
-	var alpha := float(settings.get("Shadow_alpha",0.45))
-	var layers := maxi(1,int(settings.get("Shadow_layers",8)))
-	color.a = 1.0-pow(1.0-alpha,1.0/layers)
-	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2(1.0,size.y/size.x))
-	for i in range(layers):
-		canvas.draw_circle(Vector2.ZERO,size.x*0.5*(1.0-float(settings.get("Shadow_softness",0.35))*float(i)/maxi(1,layers-1)),color)
-	canvas.draw_set_transform(Vector2.ZERO,0.0,Vector2.ONE)
+	var texture: Texture2D = Engine.get_meta(&"ground_shadow_texture") if Engine.has_meta(&"ground_shadow_texture") else null
+	if texture!=null: canvas.draw_texture_rect(texture,Rect2(-size*0.5,size),false)
+
+func request_redraw() -> void:
+	var state := [texture,idle_texture,frame_row,frame_column,columns,rows,cell_height,baseline,anchor_x,foot_y,flip_h,_using_idle,motion_transform,basic_step_direction,basic_step_px,basic_step_remaining,show_shadow,show_image,sprite_tint,shadow_size,using_fallback,fallback_radius,fallback_color,fallback_outline]
+	if state==redraw_state: return
+	redraw_state = state
+	if redraw_frame==Engine.get_process_frames(): return
+	redraw_frame = Engine.get_process_frames()
+	queue_redraw()

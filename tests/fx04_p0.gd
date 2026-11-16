@@ -34,6 +34,8 @@ func player_and_numbers(t: SceneTree) -> void:
 	enemy.global_position = n.player.global_position+Vector2(60,0)
 	enemy.hp = 1000
 	var numbers: Node2D = n.manager.damage_numbers
+	numbers.settings = numbers.settings.duplicate()
+	numbers.settings.Damage_number_merge_sec = 0 # Retain per-hit/oldest-slot coverage for the supported unmerged mode.
 	n.player.update_basic_attack(0,[enemy])
 	t.check(not n.player.current_basic_fx.thrust and n.player.sprite_body.frame_column==23 and active(numbers.slots).size()==1 and numbers.slots[0].value==10,"FX04 first hit slash23 one actual damage number")
 	t.check(numbers.slots[0].color==Color.WHITE and n.player.basic_fx_pool.size()==8 and active(n.player.basic_impacts.slots).size()==1,"FX04 player color fixed blade pool and accepted hit star")

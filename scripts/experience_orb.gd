@@ -1,4 +1,5 @@
 extends Node2D
+var settings: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 
 var value: int = 0
 var radius: float = 0.0
@@ -50,7 +51,6 @@ func _collect() -> bool:
 	return true
 
 func _draw() -> void:
-	var settings: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
-	var color := Color(String(settings.get("Xp_color","#a68cff")))
+	var color := Color(settings.get("Xp_color","#a68cff"))
 	for i in range(int(settings.get("Xp_glow_layers",3)),0,-1): draw_circle(Vector2.ZERO,radius*(1.0+float(i)*float(settings.get("Xp_glow_radius",0.25))),Color(color,float(settings.get("Xp_glow_alpha",0.18))/i))
 	draw_colored_polygon(PackedVector2Array([Vector2(0,-radius),Vector2(radius,0),Vector2(0,radius),Vector2(-radius,0)]),color)

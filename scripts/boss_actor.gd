@@ -26,7 +26,7 @@ var visual_shot_until := -1.0
 var visual_facing := Vector2.RIGHT
 
 func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable) -> void:
-	visual_settings = preload("res://scripts/shadow_afterimage.gd").presentation()
+	visual_settings = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 	visual_strike_until = -1.0
 	visual_shot_until = -1.0
 	manager = owner_manager

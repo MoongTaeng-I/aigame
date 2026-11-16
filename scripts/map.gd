@@ -16,7 +16,8 @@ func _ready() -> void:
     bodies.y_sort_enabled = true
     add_child(bodies)
     _create_boundaries()
-    settings = load("res://scripts/shadow_afterimage.gd").presentation()
+    settings = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
+    preload("res://scripts/sprite_body.gd").prepare_ground_shadow(settings)
     ground = load("res://assets/art/env/snow_ground.png")
     texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
     texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
@@ -72,7 +73,7 @@ func _create_environment(bodies: Node2D) -> void:
         var column := rng.randi_range(0,5)
         _add_prop(bodies,pos,column,rng.randf()<0.5,float(settings.get("Inner_prop_scale",0.55)) if column<4 else 1.0)
     container.set_meta("count",prop_layout.size())
-    modulate = Color(String(settings.get("World_tint","#eef2fa")))
+    modulate = Color(settings.get("World_tint","#eef2fa"))
     var weather := preload("res://scripts/snow_weather.gd").new()
     weather.name = "SnowWeather"
     weather.settings = settings

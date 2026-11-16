@@ -6,6 +6,7 @@ var shadow := true
 var visual_rng := RandomNumberGenerator.new()
 var slots: Array = []
 var cursor := 0
+var active_count := 0
 
 func configure(values: Dictionary, capacity: int, is_shadow: bool) -> void:
 	settings = values
@@ -18,6 +19,7 @@ func configure(values: Dictionary, capacity: int, is_shadow: bool) -> void:
 func spawn(kind: String, point: Vector2, size: float, life: float, velocity: Vector2 = Vector2.ZERO, gravity: float = 0) -> void:
 	if slots.is_empty(): return
 	var slot: Dictionary = slots[cursor]
+	if not slot.active: active_count+=1
 	cursor = (cursor+1)%slots.size()
 	slot.active = true
 	slot.kind = kind
@@ -40,10 +42,13 @@ func belion_burst(point: Vector2) -> void:
 
 func advance(delta: float) -> void:
 	if get_tree().paused: return
+	if active_count==0: return
 	for slot in slots:
 		if not slot.active: continue
 		slot.age += maxf(0,delta)
-		if slot.age>=slot.life: slot.active = false
+		if slot.age>=slot.life:
+			slot.active = false
+			active_count-=1
 	queue_redraw()
 
 func _physics_process(delta: float) -> void: advance(delta)
@@ -61,7 +66,7 @@ func _draw() -> void:
 				Draw.blade(self,point-side,point+side,float(settings.get("Beru_mark_width",9))*(1-progress),palette,1-progress)
 		elif slot.kind=="stone":
 			var size := float(slot.size)*(1-progress)
-			draw_colored_polygon(PackedVector2Array([point+Vector2(-size,0),point+Vector2(0,-size),point+Vector2(size,0),point+Vector2(0,size)]),Color(Color(String(settings.get("Belion_stone_color","#5f6480"))),1-progress))
+			draw_colored_polygon(PackedVector2Array([point+Vector2(-size,0),point+Vector2(0,-size),point+Vector2(size,0),point+Vector2(0,size)]),Color(Color(settings.get("Belion_stone_color","#5f6480")),1-progress))
 		else:
 			var direction := Vector2(slot.velocity).normalized()
 			Draw.blade(self,point,point+direction*float(slot.size)*(1-progress),float(settings.get("Shadow_spark_width",3))*(1-progress),palette,1-progress)

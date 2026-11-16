@@ -8,5 +8,5 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 func _draw() -> void:
 	var rect := Rect2(-24,0,48,5)
-	draw_rect(rect.grow(1),Color(String(settings.get("Hp_background","#182238"))))
-	draw_rect(Rect2(rect.position,Vector2(rect.size.x*ratio,rect.size.y)),Color(String(settings.get("Hp_color","#e84d5b"))))
+	draw_rect(rect.grow(1),Color(settings.get("Hp_background","#182238")))
+	draw_rect(Rect2(rect.position,Vector2(rect.size.x*ratio,rect.size.y)),Color(settings.get("Hp_color","#e84d5b")))

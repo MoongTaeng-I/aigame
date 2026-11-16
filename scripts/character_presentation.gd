@@ -2,6 +2,7 @@ extends Node2D
 
 # Only artwork joins the shared y-sort layer. Physics and effects stay in place.
 var actor: Node2D
+var last_body_state: Array = []
 
 static func attach(source: Node2D) -> Node2D:
 	var view: Node2D = load("res://scripts/character_presentation.gd").new()
@@ -34,7 +35,19 @@ func sync_pose() -> void:
 	# An external artwork node must also inherit the actor's fade/stealth tint.
 	modulate = actor.modulate if get_parent()!=actor else Color.WHITE
 	self_modulate = actor.self_modulate if get_parent()!=actor else Color.WHITE
-	queue_redraw()
+	# Sprites redraw their own commands; moving the parent updates transforms
+	# without rebuilding this empty body's draw list.
+	if actor.get("sprite_body")==null or not actor.sprite_body.visible:
+		var state := [global_transform,modulate,self_modulate,visible,actor.get("facing"),actor.get("fear_remaining"),actor.get("hp"),actor.get("phase")]
+		if actor.has_method("snapshot"): state.append(actor.snapshot())
+		if actor.get("elf")!=null:
+			state.append([actor.elf.hidden,actor.elf.burst,actor.elf.now()<actor.elf.burst_first])
+		if state!=last_body_state:
+			last_body_state = state
+			queue_redraw()
+	elif not last_body_state.is_empty():
+		last_body_state.clear()
+		queue_redraw()
 
 func _process(_delta: float) -> void:
 	sync_pose()

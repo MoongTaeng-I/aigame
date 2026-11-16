@@ -5,7 +5,7 @@ const Cast = preload("res://scripts/skill_cast.gd")
 const Area = preload("res://scripts/skill_area.gd")
 const UI = preload("res://scripts/skill_ui.gd")
 const Toast = preload("res://scripts/boss_toast.gd")
-var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 var visual_rng := RandomNumberGenerator.new()
 var visuals_enabled := true
 
@@ -93,6 +93,7 @@ func try_upgrade(id: String) -> bool:
 func _physics_process(delta: float) -> void:
 	if player==null or player.is_dead or get_tree().paused:
 		return
+	var had_effects: bool = not effects.is_empty() or skills.skill_rapid_slash.active
 	clock += delta
 	for cast in skills.values():
 		cast.advance(clock)
@@ -101,16 +102,17 @@ func _physics_process(delta: float) -> void:
 		if effects[index].has("stars") and clock>=float(effects[index].at)+float(presentation.get("Slash_star_sec",0.12)): effects[index].stars.clear()
 		if clock>=float(effects[index].until):
 			effects.remove_at(index)
-	queue_redraw()
+	if had_effects or not effects.is_empty() or skills.skill_rapid_slash.active: queue_redraw()
 
 func _slash_tick(stats: Dictionary, at: float) -> void:
 	if player.is_dead or player.is_stealthed():
 		return
+	var candidates: Array = enemies.get_living_enemies()
 	var star_candidates: Array = []
 	if visuals_enabled:
-		for enemy in Area.living_in_circle(player.global_position,float(stats.Range),enemies.get_living_enemies()):
+		for enemy in Area.living_in_circle(player.global_position,float(stats.Range),candidates):
 			star_candidates.append({"enemy":enemy,"hp":enemy.hp,"position":enemy.global_position})
-	Area.damage_circle(player.global_position,float(stats.Range),int(stats.Damage),enemies.get_living_enemies())
+	Area.damage_circle(player.global_position,float(stats.Range),int(stats.Damage),candidates)
 	if visuals_enabled:
 		var lines: Array = []
 		var widths: Array = []
@@ -196,7 +198,7 @@ func _draw() -> void:
 	if visuals_enabled and slash!=null and slash.active and not slash.snapshot.is_empty():
 		var segments := int(presentation.get("Slash_range_dashes",48))
 		for i in range(segments):
-			draw_arc(to_local(player.global_position),float(slash.snapshot.Range),TAU*i/segments,TAU*(i+0.5)/segments,4,Color(Color(String(presentation.get("Slash_range_color","#5ad4ff"))),float(presentation.get("Slash_range_alpha",0.35))),float(presentation.get("Slash_range_width",2)),true)
+			draw_arc(to_local(player.global_position),float(slash.snapshot.Range),TAU*i/segments,TAU*(i+0.5)/segments,4,Color(Color(presentation.get("Slash_range_color","#5ad4ff")),float(presentation.get("Slash_range_alpha",0.35))),float(presentation.get("Slash_range_width",2)),true)
 	for effect in effects:
 		if not effect.has("lines"):
 			if effect.has("fear"): continue
@@ -212,7 +214,7 @@ func _draw() -> void:
 			var a := to_local(line[0])
 			var b := to_local(line[1])
 			b = a.lerp(b,clampf(age/maxf(draw_sec,0.000001),0,1))
-			fx.blade(self,a,b,float(effect.widths[i])*remaining,Color(Color(String(presentation.Slash_outer_color)),remaining),presentation,true,Color(String(presentation.get("Fx_outline_color","#16265a"))))
+			fx.blade(self,a,b,float(effect.widths[i])*remaining,Color(Color(presentation.Slash_outer_color),remaining),presentation,true,Color(presentation.get("Fx_outline_color","#16265a")))
 		var star_sec := float(presentation.get("Slash_star_sec",0.12))
 		if age<star_sec:
 			for center in effect.stars: fx.star(self,to_local(center),float(presentation.get("Slash_star_px",12)),1-age/star_sec,presentation)

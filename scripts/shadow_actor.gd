@@ -53,7 +53,7 @@ var sweep_current_angle := 0.0
 var sweep_hits: Dictionary = {}
 var sweep_trail: Array = []
 var sweep_particles: Array = []
-var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 
 func _ready() -> void:
 	character_view = preload("res://scripts/character_presentation.gd").attach(self)
@@ -592,7 +592,7 @@ func update_dash_trail(previous: Vector2, delta: float, was_active: bool) -> voi
 			pose.sprite_pose.frame_row = 0 if sprite_body.layout=="pose" else 2
 			pose.sprite_pose.frame_column = 1 if sprite_body.layout=="pose" or dash_trail_next_age<float(config.Attack_after_frame_sec)-0.000000001 else 2
 			pose.sprite_pose.flip_h = dash_direction.x<0.0
-			if int(presentation.get("Shadow_attack_fx_enabled",1))!=0: pose.sprite_pose.sprite_tint *= Color(String(presentation.get("Beru_trail_color","#8a6bff")))
+			if int(presentation.get("Shadow_attack_fx_enabled",1))!=0: pose.sprite_pose.sprite_tint *= Color(presentation.get("Beru_trail_color","#8a6bff"))
 			var copy: Node2D = manager.leave_afterimage(departure.lerp(global_position,fraction),pose,life,float(presentation.Trail_alpha))
 			copy.set_meta("beru_dash_trail",true)
 			copy._physics_process(age)
