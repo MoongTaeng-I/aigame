@@ -38,6 +38,7 @@ func configure(snapshot: Dictionary, seconds: float, alpha: float = 0.45) -> voi
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	elapsed += delta
 	modulate.a = opacity*maxf(0.0,1.0-elapsed/lifetime)
 	if elapsed+0.000000001>=lifetime:

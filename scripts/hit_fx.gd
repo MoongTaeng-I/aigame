@@ -59,6 +59,7 @@ func emit_at(world_position: Vector2) -> void:
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if not enabled or active_count==0: return
 	for index in range(ages.size()):
 		if ages[index]>=duration: continue

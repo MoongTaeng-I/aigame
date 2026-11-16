@@ -271,6 +271,7 @@ func update_shoot_visual(player_position: Vector2, enabled: bool, delta: float, 
 	sprite_body.set_shoot_pose(shot_interval_sec-shot_elapsed,shot_visual_age,enabled)
 
 func advance_hit_flash(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if hit_flash_remaining<=0.0: return
 	hit_flash_remaining = maxf(0.0,hit_flash_remaining-maxf(0.0,delta))
 	update_hit_flash_material()

@@ -99,9 +99,16 @@ func _physics_process(delta: float) -> void:
 		cast.advance(clock)
 	if screen_fx!=null: screen_fx.set_slash_active(visuals_enabled and skills.skill_rapid_slash.active)
 	for index in range(effects.size()-1,-1,-1):
-		if effects[index].has("stars") and clock>=float(effects[index].at)+float(presentation.get("Slash_star_sec",0.12)): effects[index].stars.clear()
-		if clock>=float(effects[index].until):
-			effects.remove_at(index)
+		var effect: Dictionary = effects[index]
+		if not effect.has("lines"):
+			if clock>=float(effect.until): effects.remove_at(index)
+			continue
+		if effect.has("lines"):
+			effect.visual_age = float(effect.get("visual_age",0))+maxf(0,clock-float(effect.get("visual_clock",effect.at)))*float(get_viewport().get_meta(&"fx05_visual_scale",1.0))
+			effect.visual_clock = clock
+		var elapsed := float(effect.get("visual_age",clock-float(effect.at)))
+		if effect.has("stars") and elapsed>=float(presentation.get("Slash_star_sec",0.12)): effect.stars.clear()
+		if elapsed>=float(effect.until)-float(effect.at): effects.remove_at(index)
 	if had_effects or not effects.is_empty() or skills.skill_rapid_slash.active: queue_redraw()
 
 func _slash_tick(stats: Dictionary, at: float) -> void:
@@ -204,7 +211,7 @@ func _draw() -> void:
 			if effect.has("fear"): continue
 			UI.draw_ranges(self,[effect])
 			continue
-		var age := maxf(0,clock-float(effect.at))
+		var age := float(effect.get("visual_age",maxf(0,clock-float(effect.at))))
 		var draw_sec := float(presentation.get("Slash_draw_sec",0.03))
 		var life := float(presentation.get("Slash_life_sec",0.25))
 		var hold := draw_sec+float(presentation.get("Slash_hold_sec",0.04))

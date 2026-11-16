@@ -34,6 +34,7 @@ var _random := RandomNumberGenerator.new()
 var wander_radius: float = 0.0
 var _count_label: Label
 var boss_director: Node2D
+var boss_fx: Node2D
 var damage_numbers: Node2D
 var _scaling_rows: Array = []
 
@@ -112,6 +113,13 @@ func recycle_enemy(enemy: EnemyActor) -> void:
 func _ready() -> void:
 	_random.randomize()
 	var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
+	if int(presentation.get("Boss_fx_enabled",1))!=0 or int(presentation.get("Impact_fx_enabled",1))!=0:
+		boss_fx = preload("res://scripts/boss_fx_pool.gd").new()
+		add_child(boss_fx)
+		boss_fx.configure(self,presentation)
+		if _player!=null:
+			if _player.has_signal("damaged"): _player.connect("damaged",func(_point: Vector2) -> void: boss_fx.hit_player())
+			if _player.has_signal("leveled_up"): _player.connect("leveled_up",boss_fx.level_up)
 	if int(presentation.get("Damage_number_enabled",1))!=0:
 		damage_numbers = preload("res://scripts/damage_number_pool.gd").new()
 		add_child(damage_numbers)
@@ -234,6 +242,7 @@ func _update_dying_enemies(delta: float) -> void:
 			_dying_enemies.erase(enemy)
 
 func _on_enemy_died(enemy: EnemyActor) -> void:
+	if is_instance_valid(boss_fx): boss_fx.died(enemy)
 	if _active_enemies.has(enemy):
 		_active_enemies.erase(enemy)
 		_contact_ready_at.erase(enemy.get_instance_id())
@@ -550,6 +559,7 @@ func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyA
 	boss.collision_layer = 0
 	boss.collision_mask = 0
 	boss.configure_boss(self,actions,provider)
+	if is_instance_valid(boss_fx) and boss_fx.enabled() and boss.sprite_body!=null: boss.sprite_body.presentation_alpha = 0
 	boss.died.connect(_on_enemy_died)
 	boss.damaged.connect(_on_enemy_damaged)
 	boss.damage_presented.connect(_on_damage_presented)
@@ -558,6 +568,7 @@ func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyA
 func activate_boss(boss: EnemyActor) -> void:
 	_spawn_order_counter += 1
 	boss.activate_at(boss.global_position,_spawn_order_counter)
+	if is_instance_valid(boss_fx): boss_fx.emerge(boss)
 	boss.collision_mask = 0
 	_active_enemies.append(boss)
 	# Resolve the emergence overlap immediately with the existing pair rules.

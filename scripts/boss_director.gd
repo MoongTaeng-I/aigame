@@ -73,6 +73,7 @@ func begin_warning(now: float) -> void:
 	phase = "warn"
 	warning_started = now
 	deadline = now+float(rule.Warn_sec)
+	if is_instance_valid(manager.boss_fx): manager.boss_fx.schedule_gate(active_id,gate_position,float(rule.Warn_sec)+float(rule.Emerge_sec))
 	manager.set_normal_spawning_stopped(true)
 	var name_ko: String = manager._enemy_records[bosses[active_id].Enemy_id].Name_ko
 	var subject: String = preload("res://scripts/boss_toast.gd").particle(name_ko,"이","가").trim_prefix(name_ko)
@@ -100,5 +101,5 @@ func _boss_died(_dead: EnemyActor) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	if phase in ["warn","emerge"]:
+	if phase in ["warn","emerge"] and (not is_instance_valid(manager.boss_fx) or not manager.boss_fx.enabled()):
 		draw_arc(to_local(gate_position),float(rule.Gate_radius),0,TAU,64,Color("#8ce8ff"),4)

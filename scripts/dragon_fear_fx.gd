@@ -26,6 +26,7 @@ func lifetime() -> float:
 	return duration if head_only else maxf(duration+maxi(0,int(settings.get("Fear_wave_count",3))-1)*float(settings.get("Fear_wave_delay_sec",0.08)),duration+float(settings.get("Fear_bat_tail_sec",0.6)))
 
 func _process(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	age += maxf(delta,0)
 	for i in range(waves.size()-1,-1,-1):
 		if age>=float(waves[i].delay)+duration: waves.remove_at(i)

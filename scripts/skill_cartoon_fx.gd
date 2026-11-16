@@ -49,6 +49,7 @@ func spawn_puffs(at: Vector2, count: int) -> void:
 		puffs.append({"center":at,"offset":direction*visual_rng.randf()*float(settings.get("Dash_puff_spread_px",14)),"at":age,"until":age+float(settings.get("Dash_puff_sec",0.25))})
 
 func _process(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	var had_effects := not speedlines.is_empty() or not puffs.is_empty()
 	age += maxf(0,delta)
 	if not dash_track.is_empty():

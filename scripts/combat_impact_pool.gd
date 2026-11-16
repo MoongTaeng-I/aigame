@@ -41,6 +41,7 @@ func belion_burst(point: Vector2) -> void:
 	spawn("star",point,float(settings.get("Belion_star_px",12)),life)
 
 func advance(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if get_tree().paused: return
 	if active_count==0: return
 	for slot in slots:

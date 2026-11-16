@@ -2,6 +2,8 @@ extends Node2D
 class_name SpriteBody
 var redraw_state: Array = []
 var redraw_frame := -1
+var presentation_transform := Transform2D.IDENTITY
+var presentation_alpha := 1.0
 
 const SHADOW_SIZE := Vector2(32.0,12.0)
 const SHADOW_COLOR := Color(0.0,0.0,0.0,0.35)
@@ -115,6 +117,8 @@ func configure(record: Dictionary, radius: float, color: Color, outline: Color) 
 
 func configure_snapshot(snapshot: Dictionary) -> void:
 	prepare_ground_shadow(load("res://scripts/shadow_afterimage.gd").compiled_presentation())
+	presentation_transform = snapshot.get("presentation_transform",Transform2D.IDENTITY)
+	presentation_alpha = float(snapshot.get("presentation_alpha",1.0))
 	motion_transform = snapshot.get("motion_transform",Transform2D.IDENTITY)
 	flip_deadband = float(snapshot.get("flip_deadband",0.3))
 	anchor_x = snapshot.get("anchor_x")
@@ -143,7 +147,7 @@ func configure_snapshot(snapshot: Dictionary) -> void:
 
 func pose_snapshot() -> Dictionary:
 	return {
-		"motion_transform":step_transform()*motion_transform,
+		"motion_transform":step_transform()*motion_transform,"presentation_transform":presentation_transform,"presentation_alpha":presentation_alpha,
 		"texture":texture,"layout":layout,"columns":columns,"rows":rows,"cell_height":cell_height,
 		"baseline":baseline,"foot_y":foot_y,"animation_fps":animation_fps,
 		"anchor_x":anchor_x,"sprite_tint":sprite_tint,
@@ -189,6 +193,7 @@ func advance_pose(direction: Vector2, moving: bool, delta: float) -> void:
 	request_redraw()
 
 func advance_state_pose(direction: Vector2, moving: bool, delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if layout=="pose":
 		advance_shadow_pose(direction,moving,delta,false,direction)
 		return
@@ -286,6 +291,7 @@ func configure_walk(record: Dictionary) -> void:
 	walk_fps = fps
 
 func pose_walk_column(idle_column: int, moving: bool, delta: float) -> int:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if not moving: _pose_walk_elapsed = 0.0
 	if layout!="pose" or walk_cols.x<0 or not moving: return idle_column
 	_pose_walk_elapsed += maxf(0,delta)
@@ -306,6 +312,7 @@ func advance_explicit_pose(column: int, direction: Vector2, moving: bool, delta:
 	advance_pose_motion(moving,delta,column==2,direction)
 
 func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, attack_direction: Vector2 = Vector2.RIGHT) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	basic_step_remaining = maxf(0,basic_step_remaining-maxf(delta,0))
 	_motion_clock += maxf(delta,0.0)
 	var began := attacking and not _visual_cast_active
@@ -379,11 +386,11 @@ func _draw() -> void:
 		return
 	var destination := display_rect()
 	draw_set_transform_matrix(image_transform())
-	draw_texture_rect_region(current_texture(),destination,source_rect(),sprite_tint,false,true)
+	draw_texture_rect_region(current_texture(),destination,source_rect(),Color(sprite_tint,sprite_tint.a*presentation_alpha),false,true)
 	draw_set_transform_matrix(Transform2D.IDENTITY)
 
 func image_transform() -> Transform2D:
-	return step_transform()*motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
+	return presentation_transform*step_transform()*motion_transform*Transform2D(Vector2(-1 if flip_h else 1,0),Vector2(0,1),Vector2.ZERO)
 
 func step_transform() -> Transform2D:
 	return Transform2D(0,basic_step_direction*basic_step_px*basic_step_remaining/maxf(basic_step_sec,0.000001))
@@ -445,7 +452,7 @@ static func draw_ground_shadow(canvas: CanvasItem, size: Vector2) -> void:
 	if texture!=null: canvas.draw_texture_rect(texture,Rect2(-size*0.5,size),false)
 
 func request_redraw() -> void:
-	var state := [texture,idle_texture,frame_row,frame_column,columns,rows,cell_height,baseline,anchor_x,foot_y,flip_h,_using_idle,motion_transform,basic_step_direction,basic_step_px,basic_step_remaining,show_shadow,show_image,sprite_tint,shadow_size,using_fallback,fallback_radius,fallback_color,fallback_outline]
+	var state := [presentation_transform,presentation_alpha,texture,idle_texture,frame_row,frame_column,columns,rows,cell_height,baseline,anchor_x,foot_y,flip_h,_using_idle,motion_transform,basic_step_direction,basic_step_px,basic_step_remaining,show_shadow,show_image,sprite_tint,shadow_size,using_fallback,fallback_radius,fallback_color,fallback_outline]
 	if state==redraw_state: return
 	redraw_state = state
 	if redraw_frame==Engine.get_process_frames(): return

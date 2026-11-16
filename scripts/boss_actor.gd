@@ -51,7 +51,11 @@ func is_auto_targetable() -> bool:
 func apply_damage(amount: int) -> bool:
 	if elf!=null and elf.hidden and is_active and not is_logically_dead and amount>0:
 		elf.end_stealth(manager._elapsed_seconds)
-	return super.apply_damage(amount)
+	var accepted := super.apply_damage(amount)
+	if accepted and is_instance_valid(manager) and is_instance_valid(manager.boss_fx) and manager.boss_fx.enabled(false):
+		hit_flash_remaining = float(visual_settings.Boss_hit_flash_sec)
+		update_hit_flash_material()
+	return accepted
 
 func begin_death() -> void:
 	if elf!=null: elf.cleanup()
@@ -185,8 +189,10 @@ func advance_action() -> void:
 		if int(current.Kind)==1:
 			phase = "dash"
 			dash_started = phase_end
+			if is_instance_valid(manager.boss_fx): manager.boss_fx.dash_start(origin,facing,dash_length)
 			collision_layer = 0
 		else:
+			if is_instance_valid(manager.boss_fx): manager.boss_fx.strike(self,current,origin,facing)
 			var hit := Geometry.in_sector(origin,facing,float(current.Range),float(current.Arc_deg),target.global_position) if int(current.Kind)==0 else origin.distance_to(target.global_position)<=float(current.Slam_radius)
 			if hit:
 				if target.has_method("record_damage_source"): target.record_damage_source(origin)
@@ -198,6 +204,7 @@ func advance_action() -> void:
 		var previous := global_position
 		var travelled := minf(dash_length,maxf(0,clock-dash_started)*float(current.Dash_speed))
 		global_position = origin+facing*travelled
+		if is_instance_valid(manager.boss_fx): manager.boss_fx.dash_segment(previous,global_position,travelled/float(current.Dash_speed),previous.distance_to(origin)/float(current.Dash_speed))
 		# Telegraph and damage both use the clipped body-width corridor.
 		if not dash_hit and Geometry.in_corridor(target.global_position,previous,global_position,facing,body_radius):
 			dash_hit = true
@@ -233,6 +240,7 @@ func _draw() -> void:
 	# Reuse the existing enemy hp/max_hp state; temporary compact health bar.
 	draw_health_bar()
 	if current.is_empty(): return
+	if preload("res://scripts/boss_warning_fx.gd").draw(self): return
 	var color := Color(0.3,0.7,1,0.3)
 	var center := to_local(origin)
 	if int(current.Kind)==1:

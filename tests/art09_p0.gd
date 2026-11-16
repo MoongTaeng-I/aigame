@@ -78,7 +78,7 @@ func run(t: SceneTree) -> void:
 		n.manager.activate_boss(boss)
 		boss.apply_damage(1)
 		t.check(boss.character_view.material.get_shader_parameter("hit_flash")==1.0,"ART-09 procedural boss white flash "+id)
-		boss.boss_tick(0.08)
+		boss.boss_tick(0.1) # FX05 user-approved boss-only flash duration.
 		t.check(boss.character_view.material==null,"ART-09 boss flash clock "+id)
 	main.queue_free()
 	await t.process_frame

@@ -646,3 +646,130 @@ combat_presentation.csv 추가 키(모든 단위는 표시 전용):
 F3에는 FPS·Performance RENDER_TOTAL_DRAW_CALLS_IN_FRAME·오브젝트 수·노드 수·현재 적 수를 추가로 표시한다(기본 숨김, 0.25초 간격). 헤드리스 CPU 기록과 실제 화면의 GPU/그리기 호출은 구분해 확인한다.
 
 `presentation()`과 `compiled_presentation()`은 로딩 때 설치한 동일한 typed/read-only 표준 캐시를 사용한다. Engine의 표준 캐시와 새 라운드의 설정 값은 같으며, 원시 CSV 문자열 스냅샷은 동등성 검사용으로만 따로 보관한다. 표시 소비자의 사본·변환은 초기화 때만 만들고 그리기/매 프레임 경로에서는 캐시 값을 읽는다.
+
+
+## 2026-11-16 FX-05 — 보스·게이트·피격 연출
+
+기존 예고 도형의 꼭짓점·반경·시간을 그대로 사용하고 붉은 외곽/채움과 안쪽에서 차오르는 진행 채움만 추가한다. 실행 효과는 기존 판정/도착/은신/발사 준비 지점에 연결한다. 얼음 화살 세 ID(proj_test_01, elf_arrow, elf_burst_arrow)는 같은 판정·속도·수명으로 공유 텍스처를 진행 방향으로 회전하며 꼬리4개는 소멸 뒤에도 남은0.15초 이내에 정리된다.
+
+정상 보스 일정은 기존 경고+등장 준비 시간을 알 수 있으므로 실제 활성화1.2초 전에 게이트를 연다. 직접 생성처럼 일정을 모르는 경로는 활성화 순간 연다. 게이트는 바닥 위·모든 캐릭터 아래이며 세운 원형이다. 활성화 시점·실제 위치·AI는 그대로 두고 그림만 게이트 중심에서0.45초 동안 나오며0.4초에 닫힌다. 그림 변환/투명도는 잔상 스냅샷에도 포함한다.
+
+보스 처치 슬로 모션은 뷰포트의 시각 배율만 사용한다. 게임 시간·전투 시계·물리 이동·판정·결과 데이터·결과 표시 시점과 Engine.time_scale은 바뀌지 않는다. 기존 사망 정리와 별개인 고정 그림 슬롯이 남은 시각 페이드를 담당한다. ESC/선택 일시정지에는 모든 새 효과가 멈춘다. 사용자 승인에 따라 최종 결과 자동정지에서는 처치 그림·흰 번쩍임·흔들림만 끝까지 진행하고, 나머지 효과·세계는 정지한다. 피격 비네트·플래시는 화면 읽기 없는 기존 경로, 흔들림은 기존 skill_screen_fx를 사용하며 겹침은 현재 남은 세기보다 강할 때만 교체하고 벡터 길이를8px로 제한한다. Shake_enabled=0은 흔들림만 끈다.
+
+표시값은 초기화된 typed 캐시, 효과는 고정 슬롯, 텍스처와 피격 재질은 공유한다. 새 효과는 전투 RNG를 사용하지 않고 비활성 풀은 다시 그리지 않는다(마지막 소멸 지우기1회). Boss_fx_enabled=0은 새 보스/화살/게이트 효과 없이 기존 예고를 사용하고 Impact_fx_enabled=0은 새 피격·처치·레벨업 효과를 만들지 않는다.
+
+| combat_presentation.csv 키 | 예시 | 설명 |
+|---|---|---|
+| Boss_fx_enabled | 1 | 보스 실행 FX 공통 색/사용 여부 · 표시값 |
+| Impact_fx_enabled | 1 | 피격·처치·레벨업 표시 사용 여부 · 표시값 |
+| Boss_fx_outline | #16265a | 보스 실행 FX 공통 색/사용 여부 · 색상 |
+| Boss_fx_color | #7fd3ff | 보스 실행 FX 공통 색/사용 여부 · 색상 |
+| Boss_fx_core | #ffffff | 보스 실행 FX 공통 색/사용 여부 · 색상 |
+| Boss_warn_outline | #c81e32 | 기존 예고 영역의 외곽·기본/진행 채움 · 색상 |
+| Boss_warn_color | #ff3c50 | 기존 예고 영역의 외곽·기본/진행 채움 · 색상 |
+| Boss_warn_width | 4 | 기존 예고 영역의 외곽·기본/진행 채움 · 화면px |
+| Boss_warn_alpha | 0.18 | 기존 예고 영역의 외곽·기본/진행 채움 · 비율 |
+| Boss_warn_deep_alpha | 0.32 | 기존 예고 영역의 외곽·기본/진행 채움 · 비율 |
+| Fx05_pool_max | 512 | 고정 풀 및 공통 카툰 도형 · 개 |
+| Gate_pool_max | 4 | 동시 게이트 고정 슬롯 수 · 개 |
+| Boss_ghost_max | 4 | 보스 사망 그림 고정 슬롯 수 · 개 |
+| Fx05_outline_px | 3 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Fx05_draw_ratio | 0.2 | 고정 풀 및 공통 카툰 도형 · 비율 |
+| Fx05_ring_end_width | 3 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Fx05_spike_width | 12 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Fx05_star_px | 8 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Boss_fx_y_scale | 0.62 | 보스 실행 FX 공통 색/사용 여부 · 비율 |
+| Fx05_puff_spread_px | 40 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Fx05_puff_min_px | 4 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Fx05_puff_max_px | 10 | 고정 풀 및 공통 카툰 도형 · 화면px |
+| Bear_claw_count | 3 | 일반 공격 초승달 · 개 |
+| Bear_claw_width | 18 | 일반 공격 초승달 · 화면px |
+| Bear_claw_sec | 0.2 | 일반 공격 초승달 · 초 |
+| Bear_claw_spacing_ratio | 0.16 | 일반 공격 초승달 · 비율 |
+| Bear_dust_count | 4 | 돌진 경로 눈먼지 · 개 |
+| Bear_dust_interval_sec | 0.1 | 돌진 경로 눈먼지 · 초 |
+| Bear_speedline_count | 6 | 돌진 속도선 · 개 |
+| Bear_dash_fx_sec | 0.2 | 돌진 속도선 수명 · 초 |
+| Bear_speedline_spread | 30 | 돌진 속도선 · 화면px |
+| Bear_speedline_width | 3 | 돌진 속도선 · 화면px |
+| Bear_wave_sec | 0.3 | 내려찍기 확산 링 · 초 |
+| Bear_wave_width | 16 | 내려찍기 확산 링 · 화면px |
+| Bear_spike_count | 8 | 내려찍기 얼음 가시 · 개 |
+| Bear_spike_min_px | 30 | 내려찍기 얼음 가시 · 화면px |
+| Bear_spike_max_px | 50 | 내려찍기 얼음 가시 · 화면px |
+| Bear_spike_sec | 0.4 | 내려찍기 얼음 가시 · 초 |
+| Bear_spike_radius_ratio | 0.8 | 내려찍기 얼음 가시 · 비율 |
+| Bear_shard_count | 6 | 내려찍기 파편 · 개 |
+| Bear_shard_speed | 100 | 내려찍기 파편 · 표시값 |
+| Bear_shard_px | 18 | 내려찍기 파편 · 화면px |
+| Bear_slam_shake_px | 6 | 내려찍기 흔들림 · 화면px |
+| Bear_slam_shake_sec | 0.2 | 내려찍기 흔들림 · 초 |
+| Elf_push_rings | 2 | 밀어내기 냉기 링 · 개 |
+| Elf_push_sec | 0.25 | 밀어내기 냉기 링 · 초 |
+| Elf_push_width | 12 | 밀어내기 냉기 링 · 화면px |
+| Elf_push_delay_sec | 0.04 | 밀어내기 냉기 링 · 초 |
+| Elf_smoke_count | 10 | 은신 시작/종료 눈 연기 · 개 |
+| Elf_smoke_sec | 0.35 | 은신 시작/종료 눈 연기 · 초 |
+| Elf_gather_sec | 0.3 | 연사 준비 손 빛 · 초 |
+| Elf_gather_px | 28 | 연사 준비 손 빛 · 화면px |
+| Elf_gather_particles | 8 | 연사 준비 손 빛 · 개 |
+| Elf_hand_x | 18 | 손 빛의 발 기준 화면 좌표 · 표시값 |
+| Elf_hand_y | -65 | 손 빛의 발 기준 화면 좌표 · 표시값 |
+| Baruka_tri_sec | 0.2 | 삼각 돌진 도착 베기 수명 · 초 |
+| Baruka_slash_width | 18 | 바루카 베기 폭 · 화면px |
+| Baruka_blink_px | 60 | 순간이동 도착 X자 · 화면px |
+| Baruka_blink_sec | 0.15 | 순간이동 도착 X자 · 초 |
+| Baruka_star_px | 18 | 순간이동 도착 별 · 화면px |
+| Zone_crystal_count | 5 | 얼음 지대별 결정 · 개 |
+| Zone_crystal_px | 28 | 얼음 지대별 결정 · 화면px |
+| Zone_crystal_radius_ratio | 0.6 | 얼음 지대별 결정 · 비율 |
+| Zone_fog_count | 12 | 얼음 지대 가장자리 안개 · 개 |
+| Zone_fog_px | 10 | 얼음 지대 가장자리 안개 · 화면px |
+| Zone_fog_wave | 0.15 | 얼음 지대 가장자리 안개 · 비율 |
+| Zone_fog_alpha | 0.2 | 얼음 지대 가장자리 안개 · 비율 |
+| Zone_fade_mult | 5 | 지대 말기 시각 페이드 비율 · 표시값 |
+| Arrow_px | 56 | 얼음 화살 그림/꼬리 · 화면px |
+| Arrow_tail_count | 4 | 얼음 화살 그림/꼬리 · 개 |
+| Arrow_tail_sec | 0.15 | 얼음 화살 그림/꼬리 · 초 |
+| Arrow_tail_px | 4 | 얼음 화살 그림/꼬리 · 화면px |
+| Arrow_tail_alpha | 0.45 | 얼음 화살 그림/꼬리 · 비율 |
+| Gate_lead_sec | 1.2 | 보스 등장 게이트 · 초 |
+| Gate_px | 220 | 보스 등장 게이트 · 화면px |
+| Gate_back_px | 20 | 보스 등장 게이트 · 화면px |
+| Gate_center_up_ratio | 0.45 | 보스 등장 게이트 · 비율 |
+| Gate_open_sec | 0.6 | 보스 등장 게이트 · 초 |
+| Gate_spin_deg | 40 | 보스 등장 게이트 · 초당 회전각(도) |
+| Gate_particle_count | 12 | 보스 등장 게이트 · 개 |
+| Gate_particle_hz | 1 | 보스 등장 게이트 · Hz |
+| Gate_particle_px | 3 | 보스 등장 게이트 · 화면px |
+| Gate_emerge_sec | 0.45 | 보스 등장 게이트 · 초 |
+| Gate_emerge_scale | 0.55 | 보스 등장 게이트 · 비율 |
+| Gate_close_sec | 0.4 | 보스 등장 게이트 · 초 |
+| Gate_shake_px | 5 | 보스 등장 게이트 · 화면px |
+| Gate_shake_sec | 0.2 | 보스 등장 게이트 · 초 |
+| Gate_flash_alpha | 0.35 | 보스 등장 게이트 · 비율 |
+| Gate_flash_sec | 0.12 | 보스 등장 게이트 · 초 |
+| Player_hit_vignette_alpha | 0.35 | 플레이어 피격 화면 표시 · 비율 |
+| Player_hit_vignette_sec | 0.25 | 플레이어 피격 화면 표시 · 초 |
+| Player_hit_shake_px | 3 | 플레이어 피격 화면 표시 · 화면px |
+| Player_hit_shake_sec | 0.12 | 플레이어 피격 화면 표시 · 초 |
+| Player_hp_shake_sec | 0.2 | 발밑 HP 바 표시 흔들림 · 초 |
+| Player_hp_shake_px | 3 | 발밑 HP 바 표시 흔들림 · 화면px |
+| Player_hp_shake_hz | 24 | 발밑 HP 바 표시 흔들림 · Hz |
+| Player_hit_color | #ff3048 | 플레이어 피격 화면 표시 · 색상 |
+| Kill_puff_count | 5 | 일반 적 처치 눈 연기 · 개 |
+| Kill_puff_sec | 0.25 | 일반 적 처치 눈 연기 · 초 |
+| Boss_hit_flash_sec | 0.1 | 보스 흰색 번쩍임 · 초 |
+| Boss_kill_slowmo_sec | 0.4 | 보스 처치 화면·그림 시계 · 초 |
+| Boss_kill_slowmo_scale | 0.3 | 보스 처치 화면·그림 시계 · 비율 |
+| Boss_kill_flash_alpha | 0.6 | 보스 처치 화면·그림 시계 · 비율 |
+| Boss_kill_flash_sec | 0.15 | 보스 처치 화면·그림 시계 · 초 |
+| Boss_kill_shake_px | 8 | 보스 처치 화면·그림 시계 · 화면px |
+| Boss_kill_shake_sec | 0.3 | 보스 처치 화면·그림 시계 · 초 |
+| Level_ring_count | 2 | 레벨업 빛 고리 · 개 |
+| Level_ring_px | 80 | 레벨업 빛 고리 · 화면px |
+| Level_ring_sec | 0.4 | 레벨업 빛 고리 · 초 |
+| Level_ring_width | 5 | 레벨업 빛 고리 · 화면px |
+| Level_ring_delay | 0.06 | 레벨업 빛 고리 · 초 |
+| Shake_max_px | 8 | 겹친 흔들림 최대 화면px · 화면px |
+| Fx05_core_ratio | 0.4 | 고정 풀 및 공통 카툰 도형 · 비율 |

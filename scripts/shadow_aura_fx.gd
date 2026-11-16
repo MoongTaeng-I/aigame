@@ -85,6 +85,7 @@ func _physics_process(delta: float) -> void:
 	advance(delta)
 
 func advance(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if get_tree().paused: return
 	var had_particles := not wisps.is_empty() or embers.any(func(slot: Dictionary) -> bool: return slot.active) or puffs.any(func(slot: Dictionary) -> bool: return slot.active)
 	age += maxf(delta,0)

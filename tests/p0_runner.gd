@@ -72,6 +72,7 @@ func _run() -> void:
 	await preload("res://tests/fx03_p0.gd").new().run(self)
 	await preload("res://tests/fx04_p0.gd").new().run(self)
 	await preload("res://tests/opt01_p0.gd").new().run(self)
+	await preload("res://tests/fx05_p0.gd").new().run(self)
 	await preload("res://tests/art04_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)

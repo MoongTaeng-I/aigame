@@ -108,6 +108,7 @@ func observe() -> void:
 	redraw_active()
 
 func advance(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if get_tree().paused: return
 	age += maxf(0,delta)
 	for slot in arcs:

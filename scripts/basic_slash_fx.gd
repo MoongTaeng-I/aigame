@@ -29,6 +29,9 @@ func activate() -> void:
 		life_timer.stop()
 		life_timer.start(life)
 func _process(delta: float) -> void:
+	var raw := delta
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0))
+	if life_timer!=null and not life_timer.is_stopped() and raw>delta: life_timer.start(life_timer.time_left+raw-delta)
 	age += maxf(delta,0)
 	queue_redraw()
 func crescent_points() -> PackedVector2Array:

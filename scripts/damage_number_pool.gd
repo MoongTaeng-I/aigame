@@ -62,6 +62,7 @@ func number_color(source: String, killed: bool) -> Color:
 	return Color(settings.get("Damage_number_kill_color",Color("#ffd84a")) if killed else (settings.get("Damage_number_shadow_color",Color("#d6c8ff")) if source=="shadow" else settings.get("Damage_number_player_color",Color.WHITE)))
 
 func advance(delta: float) -> void:
+	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	if get_tree().paused: return
 	clock += maxf(delta,0)
 	if active_count==0: return

@@ -157,6 +157,8 @@ func advance() -> void:
 			if kind==10:
 				for point in preview_zones:
 					zones.append({"center":point,"until":boss.phase_end+float(boss.current.Zone_life_sec),"radius":float(boss.current.Zone_radius),"freeze":float(boss.current.Freeze_sec),"inside":false})
+					if is_instance_valid(boss.manager.boss_fx):
+						var effect: Dictionary = boss.manager.boss_fx.emit("zone",point,float(boss.current.Zone_radius),maxf(0,boss.phase_end+float(boss.current.Zone_life_sec)-now()),float(boss.manager.boss_fx.settings.Zone_crystal_px),Vector2.RIGHT,{"owner":boss,"zone":zones.back()}) if boss.manager.boss_fx.enabled() else {}
 				var at: float = boss.phase_end
 				preview_zones.clear()
 				finish(at)
@@ -186,6 +188,7 @@ func advance() -> void:
 				target().apply_damage(int(boss.current.Damage))
 			if now()+0.000000001<end_time: return
 			boss.global_position = boss.dash_end
+			if kind in [7,8] and is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.strike(boss,boss.current,boss.global_position,boss.facing)
 			boss.collision_layer = 2
 			if kind==7:
 				if not boss.dash_hit and triangle_contains(target().global_position):
@@ -272,6 +275,7 @@ func draw() -> void:
 	for zone in zones: boss.draw_circle(boss.to_local(zone.center),float(zone.radius),ICE)
 	boss.draw_health_bar()
 	if boss.current.is_empty(): return
+	if preload("res://scripts/boss_warning_fx.gd").draw(boss): return
 	var kind: int = int(boss.current.Kind)
 	if kind==7:
 		var points := triangle_points()

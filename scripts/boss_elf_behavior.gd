@@ -81,6 +81,7 @@ func tick(delta: float) -> void:
 			boss.ready_at[rows[4].Id] = now()+float(rows[4].Cooldown_sec)
 			push_effect_center = boss.global_position
 			push_effect_until = now()+PUSH_FX_SEC
+			if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.strike(boss,rows[4],boss.global_position,boss.facing)
 		elif not hidden and ready(6):
 			last_branch = "stealth"
 			start_stealth()
@@ -88,6 +89,7 @@ func tick(delta: float) -> void:
 			last_branch = "burst_start"
 			burst = true
 			burst_first = now()+float(rows[5].Telegraph_sec)
+			if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.burst_prep(boss)
 			burst_end = burst_first+float(rows[5].Duration_sec)
 			shot_index = 0
 		elif distance<=float(rows[3].Use_range):
@@ -196,6 +198,7 @@ func interrupt_burst() -> void:
 	boss.ready_at[rows[5].Id] = now()+float(rows[5].Cooldown_sec)
 
 func start_stealth() -> void:
+	if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.stealth(boss.global_position)
 	hidden = true
 	hidden_until = now()+float(rows[6].Duration_sec)
 	for shadow in boss.manager._shadow_bodies:
@@ -203,6 +206,7 @@ func start_stealth() -> void:
 	boss.queue_redraw()
 
 func end_stealth(at: float) -> void:
+	if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.stealth(boss.global_position)
 	hidden = false
 	boss.ready_at[rows[6].Id] = at+float(rows[6].Cooldown_sec)
 	boss.queue_redraw()
@@ -215,7 +219,7 @@ func cleanup() -> void:
 	push_effect_until = 0
 
 func draw() -> void:
-	if now()<push_effect_until:
+	if now()<push_effect_until and int(boss.visual_settings.get("Boss_fx_enabled",1))==0:
 		boss.draw_arc(boss.to_local(push_effect_center),float(rows[4].Use_range),0,TAU,48,PUSH_COLOR,2)
 	if hidden: return
 	boss.draw_health_bar()
