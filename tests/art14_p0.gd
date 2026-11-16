@@ -27,7 +27,7 @@ func run(t: SceneTree) -> void:
 func death(t: SceneTree) -> void:
 	var flow := preload("res://scripts/game_flow.gd").new()
 	t.root.add_child(flow)
-	var until := Time.get_ticks_msec()+8000
+	var until := Time.get_ticks_msec()+12000
 	while flow.state=="loading" and Time.get_ticks_msec()<until: await t.process_frame
 	flow.start_region()
 	stop_physics(flow.session)

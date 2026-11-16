@@ -30,17 +30,14 @@ func fear(t: SceneTree) -> void:
 	var wave: Node2D = waves_in(n)[0]
 	t.check(inside.is_feared() and not outside.is_feared() and is_equal_approx(inside.fear_remaining,float(stats.Duration_sec)) and wave.radius==float(stats.Range) and is_equal_approx(n.player.fear_cast_remaining,float(stats.Cast_sec)) and n.manager._random.state==combat_rng,"FX06 fear Range duration targets cast lock and combat RNG unchanged")
 	t.check(wave.waves.size()==3 and wave.claws.size()==8 and wave.bats.size()==20 and wave.embers.size()==40,"FX06 fear three rings eight scratches twenty bats forty embers")
-	t.check(Color(wave.waves[0].color).is_equal_approx(Color("#ff2a3c")) and Color(wave.waves[2].color).is_equal_approx(Color("#7a0010")) and is_equal_approx(wave.y_scale,0.62) and wave.wave_radius(float(stats.Cast_sec),float(wave.waves[2].delay))>=0 and wave.wave_max>=900,"FX06 ring colors outer to inner, ground squash .62, last ring reaches offscreen 900")
-	var additive: CanvasItemMaterial = Fear.additive_material()
-	t.check(wave.glow.material==additive and additive.blend_mode==CanvasItemMaterial.BLEND_MODE_ADD and wave.material==null,"FX06 fear glow uses the shared additive material")
+	t.check(Color(wave.waves[0].color).is_equal_approx(Color("#c8102e")) and Color(wave.waves[2].color).is_equal_approx(Color("#3a0008")) and is_equal_approx(wave.y_scale,0.62) and wave.wave_radius(float(stats.Cast_sec),float(wave.waves[2].delay))>=0 and wave.wave_max>=900,"FX06 ring colors outer #c8102e to inner #3a0008 (FIX02), ground squash .62, last ring reaches offscreen 900")
+	t.check(wave.glow.material==null and wave.material==null,"FX06 fear glow uses normal blending, no per-cast material (FIX02)")
 	var bodies: Node = n.map.get_node("CharacterBodies")
 	t.check(is_instance_valid(wave.ground) and wave.ground.get_parent()==n.map and wave.ground.get_index()<bodies.get_index() and wave.ground.global_position==wave.global_position and is_equal_approx(wave.disk_color.a,0.45) and is_equal_approx(wave.disk_sec,float(stats.Cast_sec)+0.6),"FX06 actual range disk below actors fading over Cast_sec+.6")
 	t.check(wave.scratch_width<=4 and is_equal_approx(wave.scratch_sec,0.15) and is_equal_approx(wave.ember_sec,0.8),"FX06 scratches width<=4 for .15s, embers .8s")
 	n.skills._fear_start(stats,n.skills.clock)
 	var both: Array = waves_in(n)
-	var materials := {}
-	for item in both: materials[item.glow.material.get_instance_id()] = true
-	t.check(both.size()==2 and materials.size()==1,"FX06 repeated fear reuses one additive material")
+	t.check(both.size()==2 and both.all(func(item: Node2D) -> bool: return item.glow.material==null),"FX06 repeated fear creates no glow material (FIX02)")
 	wave._process(0.16)
 	t.check(wave.claws.is_empty() and wave.embers.size()==40 and wave.waves.size()==3,"FX06 scratches end at .15 while rings and embers continue")
 	var ground: Node2D = wave.ground
@@ -156,16 +153,7 @@ func choice(t: SceneTree) -> void:
 	n.player.add_experience(n.player.get_xp_to_next())
 	t.check(n.choices.active and int(audio.request_counts.get("level_up",0))==level_before,"FX06 choice window opens without its appearance sound")
 	var ui: Control = n.choices.ui
-	var window := Rect2(0,float(ui.WINDOW_TOP),0,float(ui.WINDOW_HEIGHT))
-	var title: float = ui.TITLE_TOP-window.position.y
-	var cards: float = ui.card_rect(0).position.y-(ui.TITLE_TOP+ui.TITLE_SIZE.y)
-	var reroll: float = ui.reroll_rect().position.y-ui.card_rect(0).end.y
-	var bottom: float = window.end.y-ui.reroll_rect().end.y
-	t.check(title>0 and is_equal_approx(title,cards) and is_equal_approx(cards,reroll) and is_equal_approx(reroll,bottom),"FX06 title cards reroll evenly spaced in window")
-	var slots := [ui.ICON_TOP,ui.NAME_TOP-ui.ICON_TOP-ui.ICON_SIZE,ui.DESCRIPTION_TOP-ui.NAME_TOP-ui.NAME_HEIGHT,ui.LEVEL_TOP-ui.DESCRIPTION_TOP-ui.DESCRIPTION_HEIGHT,ui.CARD_SIZE.y-ui.LEVEL_TOP-ui.LEVEL_HEIGHT]
-	var even := true
-	for gap in slots: even = even and gap>0 and is_equal_approx(gap,slots[0])
-	t.check(even,"FX06 card icon name description level evenly spaced with shared baselines")
+	# FIX02 replaced the FX06 even-gap layout checks with padded-window checks in fix02_p0.gd.
 	var click_before := int(audio.request_counts.get("ui_click",0))
 	var event := InputEventMouseButton.new()
 	event.button_index = MOUSE_BUTTON_LEFT

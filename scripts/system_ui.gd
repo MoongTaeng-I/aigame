@@ -5,8 +5,9 @@ const BOLD = preload("res://assets/fonts/NotoSansKR-Bold-subset.otf")
 const BLACK = preload("res://assets/fonts/NotoSansKR-Black-subset.otf")
 const CREST = preload("res://assets/ui/ui_window_crest.png")
 const FRAME = preload("res://assets/ui/ui_icon_frame.png")
-const NOTICE = "본 게임은 웹툰 ‘나 혼자만 레벨업’의 비상업적 팬 게임(포트폴리오)입니다. 원작의 저작권은 각 권리자에게 있습니다. 글꼴: Noto Sans CJK(SIL OFL 1.1)"
-const SOUND_NOTICE = "사운드: Google Gemini·OpenAI ChatGPT 생성, YouTube 저작권 없는 효과음 가공"
+const NOTICE = "본 게임은 웹툰 ‘나 혼자만 레벨업’의 비상업적 팬 게임(포트폴리오)입니다. 원작의 저작권은 각 권리자에게 있습니다."
+# ui_window_crest.png is drawn from 10px above the window rect to 24px below it.
+const CREST_TOP := -10.0
 const ICONS = {
 	"skill_dash":preload("res://assets/ui/icon_dash.png"),"skill_rapid_slash":preload("res://assets/ui/icon_rapid_slash.png"),
 	"skill_stealth":preload("res://assets/ui/icon_stealth.png"),"skill_dragon_fear":preload("res://assets/ui/icon_dragon_fear.png"),
@@ -20,7 +21,30 @@ static func icon(id: String) -> Texture2D:
 
 static func panel(node: CanvasItem, box: Rect2, crest: bool = false) -> void:
 	node.draw_style_box(THEME.get_stylebox("panel","Panel"),box)
-	if crest: node.draw_texture_rect(CREST,Rect2(box.position+Vector2((box.size.x-96)/2,24-34),Vector2(96,34)),false)
+	if crest: node.draw_texture_rect(CREST,Rect2(box.position+Vector2((box.size.x-96)/2,CREST_TOP),Vector2(96,34)),false)
+
+# Inner margin of a ui_window rect: the drawn border line sits Ui_window_border_px inside the
+# texture edge, and every label/button/slider keeps Ui_window_pad_x/y clear of that line.
+static func window_margin() -> Vector4:
+	var values := settings()
+	var border := float(values.Ui_window_border_px)
+	return Vector4(border+float(values.Ui_window_pad_x),border+float(values.Ui_window_pad_y),border+float(values.Ui_window_pad_x),border+float(values.Ui_window_pad_y))
+
+static func window_style() -> StyleBoxTexture:
+	var style := THEME.get_stylebox("panel","PanelContainer").duplicate() as StyleBoxTexture
+	var margin := window_margin()
+	style.content_margin_left = margin.x
+	style.content_margin_top = margin.y
+	style.content_margin_right = margin.z
+	style.content_margin_bottom = margin.w
+	return style
+
+# Button rect height whose drawn face keeps `pad` px above and below one text line.
+static func button_height(font_size: int, pad: float) -> float:
+	return ceilf(float(settings().Ui_button_border_px)*2+pad*2+BOLD.get_height(font_size))
+
+static func pad_window(container: PanelContainer) -> void:
+	container.add_theme_stylebox_override("panel",window_style())
 
 static func icon_draw(node: CanvasItem, texture: Texture2D, box: Rect2) -> void:
 	if texture==null: return
@@ -28,7 +52,7 @@ static func icon_draw(node: CanvasItem, texture: Texture2D, box: Rect2) -> void:
 	node.draw_style_box(preload("res://assets/ui/ui_theme.tres").get_stylebox("icon","SystemUI"),box)
 
 static func crest(parent: Control) -> void:
-	parent.draw.connect(func() -> void: parent.draw_texture(CREST,Vector2((parent.size.x-96)/2,-10)))
+	parent.draw.connect(func() -> void: parent.draw_texture(CREST,Vector2((parent.size.x-96)/2,CREST_TOP)))
 
 static func animate_window(target: Control) -> Node:
 	var motion := preload("res://scripts/ui_motion.gd").new()

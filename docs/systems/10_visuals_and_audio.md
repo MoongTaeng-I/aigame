@@ -999,3 +999,39 @@ GameAudio Autoload 하나와 Master/BGM/SFX 버스를 사용한다. AudioStreamP
 | Stage_noise_scale | 6 | 노이즈 크기 |
 | Stage_noise_mix | 0.35 | 원형 대비 노이즈 섞음 |
 | Stage_glow_band | 0.08 | 경계 빛 폭(임계값 단위) |
+
+## 2026-11-17 FIX-02 — UI 여백·인게임 음량·로딩 5초
+
+판정·전투·흐름 순서는 유지한다. 로딩은 Loading_sec 값만 1.5→5로 바꿨고, 실제 로딩이 먼저 끝나도 5초 동안 로딩 화면을 유지하는 기존 방식 그대로다.
+
+- 시스템 창 여백: ui_window 9분할 그림의 테두리 선은 텍스처 가장자리에서 Ui_window_border_px 안쪽에 있다. 모든 시스템 창(설정·일시정지·결과·레벨업 창, 토스트)의 글자·버튼·슬라이더는 그 선에서 좌우 Ui_window_pad_x, 위아래 Ui_window_pad_y 안에 둔다. 문장(crest)은 위 테두리 선 위쪽에 있어 제목과 겹치지 않는다. 지역 선택 화면의 "지역 선택" 제목 판은 창이 아닌 표지판으로 보고 기존 크기를 유지한다.
+- 토스트: 첫 토스트의 테두리 선 위치를 화면 위 Toast_top_px에 둔다. 높이는 위아래 Toast_pad_y + 제목줄("! 알림 !", Toast_title_font_size) + Toast_title_gap_px + 본문 한 줄이다. 테두리 안 너비는 본문 글자 폭 + 좌우 Toast_pad_x이며 Toast_min_width~(화면 폭-Toast_screen_margin) 사이로 맞춘다. 최대를 넘을 때만 글자를 줄인다(Toast_min_font_size까지). 여러 개가 쌓일 때 간격 규칙(Toast_gap_px)은 그대로다.
+- 레벨업 선택 창: 창(문장 포함)은 첫 토스트 아래 Choice_toast_gap_px부터 시작한다. 카드 테두리 사이 간격과 창 테두리~바깥 카드 간격은 같다. 카드 안 여백은 좌우 Choice_card_pad_x, 위 Choice_card_pad_top, 아래 Choice_card_pad_bottom이고, Lv 텍스트는 카드 아래 테두리에서 Choice_card_pad_bottom 이상 떨어진다. 다시 뽑기 버튼은 글자 위아래 Choice_reroll_text_pad 이상(버튼 그림 면 기준, 면은 텍스처 가장자리에서 Ui_button_border_px 안쪽)이고, 버튼 면 아래가 창 테두리에서 Choice_reroll_bottom_px 위에 있다.
+- 결과·일시정지 창: 너비 580 고정, 높이는 내용에 맞춰 화면 세로 가운데에 둔다. 버튼은 창 좌우 여백 안에서 같은 너비다. ESC 일시정지 창에 메뉴 설정과 같은 배경음악·효과음 슬라이더(0~100)를 두고 같은 값을 쓴다. 한쪽에서 바꾸면 다른 쪽 슬라이더·숫자도 바뀐다. 계속·메인으로 버튼은 그대로다.
+- 설정 창·지역 선택 화면: 사운드 출처 문구를 지우고, 팬 공지에서 글꼴 표기를 지웠다(남은 문구: "본 게임은 웹툰 ‘나 혼자만 레벨업’의 비상업적 팬 게임(포트폴리오)입니다. 원작의 저작권은 각 권리자에게 있습니다."). 메뉴 오른쪽 위 "설정" 버튼 글자는 Ui_gear_font_size다. 내보내기 포함 필터(export_presets.cfg include_filter)에 assets/fonts/OFL.txt와 assets/audio/CREDITS.txt를 더해 exe 내보내기에 함께 넣는다.
+- 로딩 바: 실제 로딩 진행을 넘지 않는 범위에서 Loading_sec 동안 시간에 맞춰 차오른다.
+- 드래곤 피어 색(선택 항목): Fear_glow_additive=0이면 고리·가장자리·할퀴기·불씨를 빛 더하기 대신 일반 합성으로 그린다(재질 없음). 고리 색은 Fear_ring_outer_color #c8102e → Fear_ring_inner_color #3a0008이고, 분홍 가장자리선이 남지 않게 Fear_edge_color도 #c8102e로 바꿨다. 시전 동안 화면 전체를 Fear_dim_color·Fear_dim_alpha로 어둡게 하고 비네트 꼬리(Fear_vignette_tail_sec) 동안 걷는다. 비네트·흔들림은 유지한다.
+
+| combat_presentation.csv 키 | 예시 | 설명 |
+|---|---|---|
+| Ui_window_pad_x | 32 | 창 테두리 선에서 좌우 안쪽 여백px |
+| Ui_window_pad_y | 24 | 창 테두리 선에서 위아래 안쪽 여백px |
+| Ui_window_border_px | 30 | ui_window.png 가장자리~테두리 선 안쪽 거리px |
+| Ui_button_border_px | 14 | ui_button 그림 가장자리~버튼 면 거리px |
+| Ui_gear_font_size | 16 | 메뉴 "설정" 버튼 글자 크기 |
+| Toast_top_px | 16 | 첫 토스트 테두리 선의 화면 위 거리px |
+| Toast_pad_x | 40 | 토스트 본문 좌우 여백px |
+| Toast_pad_y | 12 | 토스트 위아래 여백px |
+| Toast_title_gap_px | 6 | 제목줄과 본문 사이px |
+| Toast_title_font_size | 16 | "! 알림 !" 글자 크기 |
+| Choice_card_pad_x | 20 | 카드 좌우 안쪽 여백px |
+| Choice_card_pad_top | 20 | 카드 위 안쪽 여백px |
+| Choice_card_pad_bottom | 24 | 카드 아래 안쪽 여백px(Lv 텍스트 아래) |
+| Choice_reroll_text_pad | 12 | 다시 뽑기 글자 위아래 여백px |
+| Choice_reroll_bottom_px | 28 | 다시 뽑기 버튼 면~창 아래 테두리px |
+| Choice_toast_gap_px | 8 | 첫 토스트 아래~레벨업 창 문장 위px |
+| Fear_glow_additive | 0 | 1이면 피어 빛 더하기, 0이면 일반 합성 |
+| Fear_dim_color | #200008 | 피어 시전 중 화면 어둡게 색 |
+| Fear_dim_alpha | 0.25 | 화면 어둡게 알파 |
+
+값을 바꾼 기존 키: Loading_sec 1.5→5, Toast_min_width 533→420(테두리 안 너비 기준), Fear_ring_outer_color #ff2a3c→#c8102e, Fear_ring_inner_color #7a0010→#3a0008, Fear_edge_color #ffb3ba→#c8102e.

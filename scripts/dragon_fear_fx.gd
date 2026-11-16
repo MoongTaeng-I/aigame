@@ -104,7 +104,8 @@ func initialize(visual_rng: RandomNumberGenerator) -> void:
 		var direction := Vector2.RIGHT.rotated(visual_rng.randf()*TAU)
 		embers.append({"direction":direction,"start":visual_rng.randf()*float(settings.get("Fear_ember_start_px",36)),"size":visual_rng.randf_range(float(settings.get("Fear_ember_min_px",8)),float(settings.get("Fear_ember_max_px",16))),"speed":visual_rng.randf_range(0.6,1.0)})
 	glow = Node2D.new()
-	glow.material = additive_material()
+	# Fear_glow_additive 0 keeps normal blending so the reds stay dark on bright snow.
+	glow.material = additive_material() if int(settings.get("Fear_glow_additive",1))!=0 else null
 	glow.draw.connect(_draw_glow)
 	add_child(glow)
 

@@ -4,27 +4,11 @@ const UI = preload("res://scripts/system_ui.gd")
 # Temporary layout and presentation constants; all progression values come from CSV.
 const LAYER := 100
 const CARD_SIZE := Vector2(280,380)
-const CARD_GAP := 28.0
-const WINDOW_TOP := 62.0
-const WINDOW_HEIGHT := 612.0
-const TITLE_SIZE := Vector2(920,64)
-const REROLL_SIZE := Vector2(500,64)
-# Title, cards and reroll share equal vertical gaps inside the window.
-const SECTION_GAP := (WINDOW_HEIGHT-TITLE_SIZE.y-CARD_SIZE.y-REROLL_SIZE.y)/4.0
-const TITLE_TOP := WINDOW_TOP+SECTION_GAP
-const CARD_TOP := TITLE_TOP+TITLE_SIZE.y+SECTION_GAP
-const REROLL_TOP := CARD_TOP+CARD_SIZE.y+SECTION_GAP
+const WINDOW_WIDTH := 1000.0
+const REROLL_WIDTH := 500.0
 const RIBBON_CUT := 22.0
-const NAME_HEIGHT := 48.0
-const ICON_SIZE := 100.0
-const DESCRIPTION_HEIGHT := 78.0
-const LEVEL_HEIGHT := 60.0
-# Icon, name, description and level slots share equal gaps; icon-less cards keep the same baselines.
-const SLOT_GAP := (CARD_SIZE.y-ICON_SIZE-NAME_HEIGHT-DESCRIPTION_HEIGHT-LEVEL_HEIGHT)/5.0
-const ICON_TOP := SLOT_GAP
-const NAME_TOP := ICON_TOP+ICON_SIZE+SLOT_GAP
-const DESCRIPTION_TOP := NAME_TOP+NAME_HEIGHT+SLOT_GAP
-const LEVEL_TOP := DESCRIPTION_TOP+DESCRIPTION_HEIGHT+SLOT_GAP
+const ICON_SIZE := 90.0
+const DESCRIPTION_LINES := 3
 const ICON_RADIUS := 32.0
 const PADDING := 12.0
 const FONT_SIZE := 20
@@ -63,6 +47,26 @@ var hover_scales := [1.0,1.0,1.0,1.0]
 var reroll_hover := false
 var was_visible := false
 var closing_copy: Control
+# Layout, computed once from CSV keys (Ui_window_*, Choice_*, Toast_*). Rects are texture rects;
+# ui_window/ui_button textures draw their border line `border`/button border px inside them.
+var border := 30.0
+var window_top := 0.0
+var window_height := 0.0
+var title_top := 0.0
+var title_height := 0.0
+var card_top := 0.0
+var card_gap := 0.0
+var reroll_top := 0.0
+var reroll_height := 0.0
+var name_top := 0.0
+var name_height := 0.0
+var description_top := 0.0
+var description_height := 0.0
+var level_top := 0.0
+var level_text_top := 0.0
+var level_text_height := 0.0
+var icon_top := 0.0
+var card_inset := 0.0
 
 func configure(choice_manager: Node) -> void: manager = choice_manager
 
@@ -70,17 +74,54 @@ func _ready() -> void:
 	add_to_group("audio_choice_ui")
 	theme = UI.THEME
 	values = UI.settings()
+	layout()
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_exited.connect(func() -> void: hovered=-1; queue_redraw())
 	visibility_changed.connect(on_visibility)
 
+func layout() -> void:
+	border = float(values.Ui_window_border_px)
+	var pad_x := float(values.Ui_window_pad_x)
+	var pad_y := float(values.Ui_window_pad_y)
+	# The crest rises above the drawn top border; keep it below the first toast slot.
+	var toast_bottom := float(values.Toast_top_px)+preload("res://scripts/boss_toast.gd").visible_height(values)
+	var visible_top := toast_bottom+float(values.Choice_toast_gap_px)+border-UI.CREST_TOP
+	window_top = visible_top-border
+	title_top = visible_top+pad_y
+	title_height = ceilf(UI.BLACK.get_height(TITLE_FONT_SIZE))
+	card_top = title_top+title_height+pad_y-border
+	# Equal gaps between the drawn card frames and between the window frame and the outer cards.
+	card_gap = (WINDOW_WIDTH-border*2-(CARD_SIZE.x-border*2)*3)/4
+	reroll_height = UI.button_height(FONT_SIZE,float(values.Choice_reroll_text_pad))
+	var button_border := float(values.Ui_button_border_px)
+	reroll_top = card_top+CARD_SIZE.y-border+pad_y-button_border
+	var visible_bottom := reroll_top+reroll_height-button_border+float(values.Choice_reroll_bottom_px)
+	window_height = visible_bottom+border-window_top
+	# Card slots: icon, name, description, level squares + Lv text, evenly spaced inside the padding.
+	card_inset = border+float(values.Choice_card_pad_x)
+	var content_top := border+float(values.Choice_card_pad_top)
+	var content_bottom := CARD_SIZE.y-border-float(values.Choice_card_pad_bottom)
+	name_height = ceilf(UI.BLACK.get_height(FONT_SIZE))
+	description_height = (SMALL_FONT_SIZE+LINE_GAP)*DESCRIPTION_LINES
+	level_text_height = ceilf(UI.BOLD.get_height(SMALL_FONT_SIZE))
+	var level_height := BOX_SIZE.y+LINE_GAP+level_text_height
+	var slot_gap := (content_bottom-content_top-ICON_SIZE-name_height-description_height-level_height)/3
+	icon_top = content_top
+	name_top = icon_top+ICON_SIZE+slot_gap
+	description_top = name_top+name_height+slot_gap
+	level_top = description_top+description_height+slot_gap
+	level_text_top = level_top+BOX_SIZE.y+LINE_GAP
+
+func window_rect() -> Rect2:
+	return Rect2((size.x-WINDOW_WIDTH)/2,window_top,WINDOW_WIDTH,window_height)
+
 func card_rect(index: int) -> Rect2:
-	var width := CARD_SIZE.x*3.0+CARD_GAP*2.0
-	return Rect2(Vector2((size.x-width)/2.0+index*(CARD_SIZE.x+CARD_GAP),CARD_TOP),CARD_SIZE)
+	var left := window_rect().position.x+card_gap
+	return Rect2(Vector2(left+index*(CARD_SIZE.x-border*2+card_gap),card_top),CARD_SIZE)
 
 func reroll_rect() -> Rect2:
-	return Rect2(Vector2((size.x-REROLL_SIZE.x)/2.0,REROLL_TOP),REROLL_SIZE)
+	return Rect2(Vector2((size.x-REROLL_WIDTH)/2.0,reroll_top),Vector2(REROLL_WIDTH,reroll_height))
 
 func on_visibility() -> void:
 	if visible:
@@ -160,23 +201,27 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 		var scale_y := lerpf(float(values.Ui_open_scale_y),1,p)
 		var x := sin(p*TAU*int(values.Ui_flicker_count))*float(values.Ui_jitter_px)*(1-p)
 		node.draw_set_transform(Vector2(x,size.y*(1-scale_y)/2),0,Vector2(1,scale_y))
-	UI.panel(node,Rect2((size.x-1000)/2,WINDOW_TOP,1000,WINDOW_HEIGHT),true)
-	centered(node,"! 레벨 업 !",Rect2((size.x-TITLE_SIZE.x)/2,TITLE_TOP,TITLE_SIZE.x,TITLE_SIZE.y),TITLE_FONT_SIZE,UI.BLACK)
+	var frame := window_rect()
+	UI.panel(node,frame,true)
+	var pad_x := float(values.Ui_window_pad_x)
+	centered(node,"! 레벨 업 !",Rect2(frame.position.x+border+pad_x,title_top,frame.size.x-(border+pad_x)*2,title_height),TITLE_FONT_SIZE,UI.BLACK)
 	for i in range(states.size()):
 		var state: Dictionary = states[i]
 		var box := card_rect(i)
 		var factor := float(hover_scales[i]) if animate else 1.0
 		box = Rect2(box.get_center()-box.size*factor/2,box.size*factor)
 		UI.panel(node,box)
-		var inset := 40.0*factor
-		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+Vector2((box.size.x-ICON_SIZE*factor)/2,ICON_TOP*factor),Vector2.ONE*ICON_SIZE*factor))
-		centered(node,state.name,Rect2(box.position+Vector2(inset,NAME_TOP*factor),Vector2(box.size.x-inset*2,NAME_HEIGHT*factor)),FONT_SIZE,UI.BLACK)
-		wrapped(node,state.description,Rect2(box.position+Vector2(inset,DESCRIPTION_TOP*factor),Vector2(box.size.x-inset*2,DESCRIPTION_HEIGHT*factor)))
-		var level_box := Rect2(box.position+Vector2(inset,LEVEL_TOP*factor),Vector2(box.size.x-inset*2,LEVEL_HEIGHT*factor))
+		var inset := card_inset*factor
+		var inner := box.size.x-inset*2
+		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+Vector2((box.size.x-ICON_SIZE*factor)/2,icon_top*factor),Vector2.ONE*ICON_SIZE*factor))
+		centered(node,state.name,Rect2(box.position+Vector2(inset,name_top*factor),Vector2(inner,name_height*factor)),FONT_SIZE,UI.BLACK)
+		wrapped(node,state.description,Rect2(box.position+Vector2(inset,description_top*factor),Vector2(inner,description_height*factor)))
+		var level_box := Rect2(box.position+Vector2(inset,level_top*factor),Vector2(inner,(level_text_top+level_text_height-level_top)*factor))
+		var level_text := Rect2(box.position+Vector2(inset,level_text_top*factor),Vector2(inner,level_text_height*factor))
 		if state.heal:
-			centered(node,"체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE)
+			centered(node,"체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_text,SMALL_FONT_SIZE)
 		elif state.get("summon",false):
-			centered(node,"소환 %d → %d / %d" % [state.level,state.next,state.max],level_box,SMALL_FONT_SIZE)
+			centered(node,"소환 %d → %d / %d" % [state.level,state.next,state.max],level_text,SMALL_FONT_SIZE)
 		else:
 			var max_level: int = state.max
 			var width := minf(BOX_SIZE.x,(level_box.size.x-BOX_GAP*(max_level-1))/max_level)
@@ -185,7 +230,7 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 				var square := Rect2(Vector2(box.get_center().x-total/2+level*(width+BOX_GAP),level_box.position.y),Vector2(width,BOX_SIZE.y))
 				node.draw_rect(square,FILLED if level<int(state.level) else PANEL_BG)
 				node.draw_rect(square,NEXT if level==int(state.level) else BORDER,false,2)
-			centered(node,"Lv %d → %d" % [state.level,state.next],Rect2(level_box.position+Vector2(0,28),Vector2(level_box.size.x,32)),SMALL_FONT_SIZE)
+			centered(node,"Lv %d → %d" % [state.level,state.next],level_text,SMALL_FONT_SIZE)
 	var button := reroll_rect()
 	if animate and int(values.Ui_fx_enabled)!=0: button = Rect2(button.get_center()-button.size*hover_scales[3]/2,button.size*hover_scales[3])
 	var style := "disabled" if not can_reroll else ("pressed" if reroll_hover and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) else ("hover" if reroll_hover else "normal"))

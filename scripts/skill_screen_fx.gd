@@ -23,6 +23,9 @@ var push_direction := Vector2.ZERO
 var push_px := 0.0
 var push_remaining := 0.0
 var push_duration := 0.0
+var fear_dim_rect: ColorRect
+var fear_dim_color := Color(0,0,0,0)
+var fear_dim_tail := 0.6
 
 func push(direction: Vector2, px: float, seconds: float) -> void:
 	if int(settings.get("Shake_enabled",1))==0 or seconds<=0 or direction==Vector2.ZERO: return
@@ -42,8 +45,11 @@ func flash_white(alpha: float, seconds: float) -> void:
 	_process(0)
 
 func start_fear(cast_seconds: float) -> void:
-	vignette_duration = cast_seconds+float(settings.get("Fear_vignette_tail_sec",0.6))
+	fear_dim_tail = float(settings.get("Fear_vignette_tail_sec",0.6))
+	vignette_duration = cast_seconds+fear_dim_tail
 	vignette_remaining = vignette_duration
+	fear_dim_color = Color(Color(settings.get("Fear_dim_color",Color("#200008"))),float(settings.get("Fear_dim_alpha",0)))
+	_process(0)
 func _ready() -> void:
 	layer = 110
 	screen = ColorRect.new()
@@ -55,6 +61,7 @@ func _ready() -> void:
 	add_child(screen)
 	screen.hide()
 	dim_rect = overlay()
+	fear_dim_rect = overlay()
 	flash_rect = overlay()
 	white_rect = overlay()
 	vignette_rect = overlay()
@@ -99,6 +106,9 @@ func _process(delta: float) -> void:
 	flash_rect.color = Color(fear,float(settings.get("Fear_flash_alpha",0.18))*flash_remaining/maxf(0.000001,float(settings.get("Fear_flash_sec",0.15))))
 	white_rect.color = Color(1,1,1,white_strength*white_remaining/maxf(white_duration,0.000001))
 	dim_rect.visible = dim_rect.color.a>0
+	# Full Fear_dim_alpha while casting, fading out over the vignette tail.
+	fear_dim_rect.color = Color(fear_dim_color,fear_dim_color.a*clampf(vignette_remaining/maxf(fear_dim_tail,0.000001),0,1))
+	fear_dim_rect.visible = fear_dim_rect.color.a>0
 	flash_rect.visible = flash_rect.color.a>0
 	white_rect.visible = white_rect.color.a>0
 	vignette_rect.visible = vignette_remaining>0 or player_hit_remaining>0

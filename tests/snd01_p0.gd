@@ -59,7 +59,7 @@ func run(t: SceneTree) -> void:
 	var sfx_bus := AudioServer.get_bus_index("SFX")
 	t.check(is_equal_approx(audio.bgm_db,float(audio.settings.Sound_bgm_db)+linear_to_db(0.5)) and AudioServer.is_bus_mute(sfx_bus) and not AudioServer.is_bus_mute(AudioServer.get_bus_index("BGM")),"SND01 sliders update separate buses (FX06 0-100 levels, 0 mutes)")
 	var texts: Array = flow.ui.settings.find_children("*","Label",true,false).filter(func(label: Label) -> bool: return label.name!="Value" and not (label.text in ["배경음악","효과음"])).map(func(label: Label) -> String: return label.text)
-	t.check(flow.ui.settings.find_child("SoundCredits",true,false)==null and texts==[preload("res://scripts/system_ui.gd").NOTICE,preload("res://scripts/system_ui.gd").SOUND_NOTICE],"SND01 settings keep only copyright notice and one sound credit line (FX06)")
+	t.check(flow.ui.settings.find_child("SoundCredits",true,false)==null and texts==[preload("res://scripts/system_ui.gd").NOTICE],"SND01 settings keep only the fan notice without font or sound credit lines (FIX02)")
 	flow.start_region(); flow.toggle_pause(); audio._process(0)
 	t.check(not audio.choice_pause() and not audio.request("ui_click") and audio.pool.slice(2).all(func(p: AudioStreamPlayer) -> bool: return not p.playing),"SND01 ESC pause stops all SFX")
 	flow.free();t.paused = false

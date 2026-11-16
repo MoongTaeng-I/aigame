@@ -37,7 +37,12 @@ var art_locked: ShaderMaterial
 var logo_material: ShaderMaterial
 var closing_modals: Array[Control] = []
 var sound_sliders: Dictionary = {}
+# Every live volume slider (menu settings and ESC pause) per bus; one value is shared.
+var volume_sliders: Dictionary = {"BGM":[],"SFX":[]}
+var pause_sliders: Dictionary = {}
 var transition: CanvasLayer
+const SETTINGS_WIDTH := 540.0
+const MODAL_WIDTH := 580.0
 
 func configure(flow: Node) -> void:
 	owner_flow = flow
@@ -122,26 +127,31 @@ func _ready() -> void:
 	var left := button("‹",Rect2(240,268,64,64),owner_flow.change_region.bind(-1))
 	var right := button("›",Rect2(976,268,64,64),owner_flow.change_region.bind(1))
 	var gear := button("설정",Rect2(1140,24,112,56),toggle_settings)
+	gear.name = "SettingsButton"
+	gear.add_theme_font_size_override("font_size",int(values.Ui_gear_font_size))
 	settings = PanelContainer.new()
+	settings.name = "SettingsWindow"
 	settings.z_index = 5
-	settings.position = Vector2(760,60)
-	settings.size = Vector2(492,0)
+	settings.position = Vector2(1252-SETTINGS_WIDTH,60)
+	settings.size = Vector2(SETTINGS_WIDTH,0)
+	UI.pad_window(settings)
 	add_child(settings)
 	var quit := Button.new()
 	quit.text = "게임 종료"
+	quit.custom_minimum_size.y = UI.button_height(20,4)
 	quit.pressed.connect(func() -> void: get_tree().quit())
 	var settings_column := VBoxContainer.new()
 	settings_column.add_theme_constant_override("separation",14)
 	settings.add_child(settings_column)
 	add_sound_settings(settings_column)
-	for line in [UI.NOTICE,UI.SOUND_NOTICE]:
-		var settings_notice := Label.new()
-		settings_notice.text = line
-		settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		settings_notice.custom_minimum_size.x = 400
-		settings_notice.add_theme_font_size_override("font_size",14)
-		settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
-		settings_column.add_child(settings_notice)
+	var settings_notice := Label.new()
+	settings_notice.name = "Notice"
+	settings_notice.text = UI.NOTICE
+	settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	settings_notice.custom_minimum_size.x = inner_width(SETTINGS_WIDTH)
+	settings_notice.add_theme_font_size_override("font_size",14)
+	settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
+	settings_column.add_child(settings_notice)
 	settings_column.add_child(quit)
 	UI.animate_button(quit)
 	UI.animate_window(settings)
@@ -232,9 +242,14 @@ func toggle_settings() -> void:
 		UI.animate_window(copy).close()
 	settings.hide()
 
-func add_sound_settings(column: VBoxContainer) -> void:
+func inner_width(window_width: float) -> float:
+	var margin := UI.window_margin()
+	return window_width-margin.x-margin.z
+
+func add_sound_settings(column: VBoxContainer, in_pause: bool = false) -> void:
 	var audio := preload("res://scripts/audio_events.gd").manager(self)
 	if audio==null: return
+	var registry: Dictionary = pause_sliders if in_pause else sound_sliders
 	for bus in ["BGM","SFX"]:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation",12)
@@ -258,10 +273,21 @@ func add_sound_settings(column: VBoxContainer) -> void:
 		number.add_theme_font_size_override("font_size",18)
 		slider.value_changed.connect(func(level: float) -> void:
 			audio.set_level(bus,level)
-			number.text = "%d" % level)
+			sync_volume(bus,level))
 		row.add_child(label); row.add_child(slider); row.add_child(number)
 		column.add_child(row)
-		sound_sliders[bus] = slider
+		registry[bus] = slider
+		volume_sliders[bus].append(slider)
+
+# Mirror one bus level into every other live slider without re-sending it to the audio manager.
+func sync_volume(bus: String, level: float) -> void:
+	var live: Array = []
+	for slider in volume_sliders[bus]:
+		if not is_instance_valid(slider) or slider.is_queued_for_deletion(): continue
+		live.append(slider)
+		if slider.value!=level: slider.set_value_no_signal(level)
+		slider.get_parent().get_node("Value").text = "%d" % level
+	volume_sliders[bus] = live
 
 func _locked_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:
@@ -301,14 +327,19 @@ func close_modal() -> void:
 			closing_modals.append(old)
 	modal = null
 
-func show_modal(title: String, details: String, actions: Array) -> void:
+func show_modal(title: String, details: String, actions: Array, sound: bool = false) -> void:
 	close_modal()
 	modal = PanelContainer.new()
+	modal.name = "ModalWindow"
 	modal.z_index = 10
-	modal.position = Vector2(350,180)
-	modal.size = Vector2(580,390)
+	modal.position = Vector2((1280-MODAL_WIDTH)/2,180)
+	modal.size = Vector2(MODAL_WIDTH,0)
+	UI.pad_window(modal)
 	add_child(modal)
 	UI.crest(modal)
+	# Keep the window centred when its content (sliders, wrapped text) sets the height.
+	var window := modal
+	modal.resized.connect(func() -> void: window.position.y = roundf((720-window.size.y)/2))
 	UI.animate_window(modal)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation",18)
@@ -320,19 +351,23 @@ func show_modal(title: String, details: String, actions: Array) -> void:
 	heading.add_theme_font_size_override("font_size",36)
 	column.add_child(heading)
 	result_text = Label.new()
+	result_text.name = "Details"
 	result_text.text = details
 	result_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	result_text.custom_minimum_size.x = inner_width(MODAL_WIDTH)
 	result_text.add_theme_font_size_override("font_size",23)
-	result_text.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	result_text.visible = not details.is_empty()
 	column.add_child(result_text)
+	if sound: add_sound_settings(column,true)
 	for action in actions:
 		var view := Button.new()
 		view.text = action.text
-		view.custom_minimum_size.y = 48
+		view.custom_minimum_size.y = UI.button_height(23,4)
 		view.add_theme_font_size_override("font_size",23)
 		view.pressed.connect(action["call"],CONNECT_DEFERRED)
 		column.add_child(view)
 		UI.animate_button(view)
+	modal.size = Vector2(MODAL_WIDTH,0)
 	queue_redraw()
 
 func picture(texture: Texture2D, box: Rect2, parent: Control = null) -> TextureRect:

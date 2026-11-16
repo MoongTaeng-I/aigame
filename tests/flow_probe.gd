@@ -3,7 +3,7 @@ func _initialize() -> void: call_deferred("run")
 func run() -> void:
 	var flow: Node = load("res://scenes/flow.tscn").instantiate()
 	root.add_child(flow)
-	var until := Time.get_ticks_msec()+8000
+	var until := Time.get_ticks_msec()+12000
 	while flow.state=="loading" and Time.get_ticks_msec()<until: await process_frame
 	var loaded: bool = flow.state=="menu"
 	var playing := false

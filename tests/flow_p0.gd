@@ -12,13 +12,13 @@ func run(tree: SceneTree) -> void:
 	t.check(flow.state=="loading" and flow.session==null and flow.ui.screen=="loading","S9 loading screen before gameplay")
 	var progress := 0.0
 	var monotonic := true
-	var until := Time.get_ticks_msec()+8000
+	var until := Time.get_ticks_msec()+12000
 	while flow.state=="loading" and Time.get_ticks_msec()<until:
 		await t.process_frame
 		monotonic = monotonic and flow.load_progress>=progress
 		progress = flow.load_progress
 	t.check(flow.state=="menu" and progress==1 and monotonic,"S9 actual incremental loading/validation reaches menu with monotonic real progress")
-	t.check(flow.loading_elapsed>=1.5 and flow.loading_minimum==1.5,"S9 Loading_sec minimum1.5 real seconds respected")
+	t.check(flow.loading_elapsed>=5 and flow.loading_minimum==5,"S9 Loading_sec minimum5 real seconds respected (FIX02)")
 	t.check(flow.regions.size()==2 and flow.ui.region_title.text=="1. 얼음 던전" and flow.ui.best_label.text.ends_with("-"),"S9 first region and no session record")
 	flow.change_region(1)
 	t.check(flow.ui.start_button.disabled and flow.ui.locked_click.visible and flow.ui.locked_label.text=="추후 업데이트 예정","S9 locked region dark/lock/disabled start with notice target")

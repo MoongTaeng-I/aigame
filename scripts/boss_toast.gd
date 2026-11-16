@@ -1,11 +1,8 @@
 extends Control
 const UI = preload("res://scripts/system_ui.gd")
 
-const PANEL_SIZE := Vector2(533,88)
-const TOP_MARGIN := 22.0
 const CORNER_RADIUS := 14
 const BORDER_WIDTH := 2
-const CONTENT_MARGIN := 18.0
 const FONT_SIZE := 20
 const BACKGROUND := Color(0.055,0.035,0.09,0.92)
 const BORDER := Color("#9870dc")
@@ -34,6 +31,16 @@ static func notify(source: Node, text: String) -> void:
 			view.push_message(text)
 			return
 
+# Height of the drawn frame (inside the border line): title line, gap, one body line, padding.
+static func visible_height(values: Dictionary, body_font_size: int = FONT_SIZE) -> float:
+	return float(values.Toast_pad_y)*2+UI.BLACK.get_height(int(values.Toast_title_font_size))+float(values.Toast_title_gap_px)+UI.BOLD.get_height(body_font_size)
+
+# Rect offset that puts the first toast's drawn frame Toast_top_px below the screen top.
+static func first_top(values: Dictionary) -> float:
+	return float(values.Toast_top_px)-float(values.Ui_window_border_px)
+
+func border() -> float: return float(presentation.Ui_window_border_px)
+
 func _ready() -> void:
 	theme = UI.THEME
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -44,17 +51,18 @@ func _ready() -> void:
 	panel.name = "BossToastPanel"
 	add_child(panel)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	panel.offset_left = -PANEL_SIZE.x/2
-	panel.offset_right = PANEL_SIZE.x/2
-	panel.offset_top = TOP_MARGIN
-	panel.offset_bottom = TOP_MARGIN+PANEL_SIZE.y
-	panel.custom_minimum_size = PANEL_SIZE
+	var start_size := Vector2(float(presentation.Toast_min_width)+border()*2,visible_height(presentation)+border()*2)
+	panel.offset_left = -start_size.x/2
+	panel.offset_right = start_size.x/2
+	panel.offset_top = first_top(presentation)
+	panel.offset_bottom = panel.offset_top+start_size.y
+	panel.custom_minimum_size = start_size
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var body_style := UI.THEME.get_stylebox("panel","PanelContainer").duplicate() as StyleBoxTexture
-	body_style.content_margin_left = CONTENT_MARGIN
-	body_style.content_margin_right = CONTENT_MARGIN
-	body_style.content_margin_top = 30
-	body_style.content_margin_bottom = CONTENT_MARGIN
+	body_style.content_margin_left = border()+float(presentation.Toast_pad_x)
+	body_style.content_margin_right = body_style.content_margin_left
+	body_style.content_margin_top = border()+float(presentation.Toast_pad_y)+UI.BLACK.get_height(int(presentation.Toast_title_font_size))+float(presentation.Toast_title_gap_px)
+	body_style.content_margin_bottom = border()+float(presentation.Toast_pad_y)
 	panel.add_theme_stylebox_override("panel",body_style)
 	label = Label.new()
 	label.name = "BossToastText"
@@ -85,14 +93,17 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	copy.draw.connect(draw_heading.bind(copy))
 	var content := copy.get_child(0) as Label
 	content.text = text.replace("\n"," ")
+	# Widths below are of the drawn frame: text width + Toast_pad_x per side, clamped to
+	# [Toast_min_width, screen width - Toast_screen_margin]; the font shrinks only past the maximum.
+	var pad := float(presentation.Toast_pad_x)*2
 	var maximum := maxf(float(presentation.Toast_min_width),size.x-float(presentation.Toast_screen_margin))
 	var font_size := FONT_SIZE
-	var measured := UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x+CONTENT_MARGIN*2
-	if measured>maximum: font_size = maxi(int(presentation.Toast_min_font_size),floori(font_size*(maximum-CONTENT_MARGIN*2)/(measured-CONTENT_MARGIN*2)))
+	var measured := UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x+pad
+	if measured>maximum: font_size = maxi(int(presentation.Toast_min_font_size),floori(font_size*(maximum-pad)/(measured-pad)))
 	content.add_theme_font_size_override("font_size",font_size)
-	measured = UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x+CONTENT_MARGIN*2
-	var width := clampf(measured,float(presentation.Toast_min_width),maximum)
-	copy.custom_minimum_size = Vector2(width,PANEL_SIZE.y)
+	measured = ceilf(UI.BOLD.get_string_size(content.text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x)+pad
+	var width := clampf(measured,float(presentation.Toast_min_width),maximum)+border()*2
+	copy.custom_minimum_size = Vector2(width,visible_height(presentation,font_size)+border()*2)
 	copy.size = copy.custom_minimum_size
 	copy.offset_left = -width/2; copy.offset_right = width/2
 	var entry := {"panel":copy,"text":text,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
@@ -123,7 +134,7 @@ func _refresh() -> void:
 		if float(entries[index].remaining)<=0:
 			entries[index].panel.queue_free()
 			entries.remove_at(index)
-	var top := TOP_MARGIN
+	var top := first_top(presentation)
 	for entry in entries:
 		var view: PanelContainer = entry.panel
 		if not entry.retiring:
@@ -156,5 +167,6 @@ func show_completion(text: String) -> void:
 
 func draw_heading(view: Control) -> void:
 	var title := "! 알림 !"
-	var width := UI.BLACK.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,16).x
-	view.draw_string(UI.BLACK,Vector2((view.size.x-width)/2,36),title,HORIZONTAL_ALIGNMENT_LEFT,-1,16,TEXT_COLOR)
+	var font_size := int(presentation.Toast_title_font_size)
+	var width := UI.BLACK.get_string_size(title,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x
+	view.draw_string(UI.BLACK,Vector2((view.size.x-width)/2,border()+float(presentation.Toast_pad_y)+UI.BLACK.get_ascent(font_size)),title,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size,TEXT_COLOR)

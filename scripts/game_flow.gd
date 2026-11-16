@@ -61,6 +61,8 @@ func _load_data() -> void:
 	while (Time.get_ticks_msec()-loading_started)/1000.0<loading_minimum:
 		await get_tree().process_frame
 		if not is_inside_tree(): return
+		show_load_progress()
+	show_load_progress()
 	loading_elapsed = (Time.get_ticks_msec()-loading_started)/1000.0
 	regions = data_store.get_table("region.csv").values()
 	regions.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return String(a.Id)<String(b.Id))
@@ -74,7 +76,13 @@ func validate_loaded_data() -> String:
 
 func set_load_progress(value: float) -> void:
 	load_progress = value
-	ui.progress.value = value
+	show_load_progress()
+
+# The bar fills over Loading_sec of real time and never runs ahead of the actual load work.
+func show_load_progress() -> void:
+	var timed := 0.0
+	if loading_minimum>0: timed = clampf((Time.get_ticks_msec()-loading_started)/1000.0/loading_minimum,0,1)
+	ui.progress.value = minf(load_progress,timed)
 
 func fail_loading(message: String) -> void:
 	state = "error"
@@ -157,7 +165,7 @@ func toggle_pause() -> void:
 	if state!="playing" or not is_instance_valid(session) or session.round_nodes.choices.active: return
 	state = "paused"
 	get_tree().paused = true
-	ui.show_modal("일시정지","",[{"text":"계속","call":resume},{"text":"메인으로","call":show_menu}])
+	ui.show_modal("일시정지","",[{"text":"계속","call":resume},{"text":"메인으로","call":show_menu}],true)
 
 func resume() -> void:
 	if is_instance_valid(session) and session.round_finished: return
