@@ -11,7 +11,7 @@ from probe_process import execute
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
 parser.add_argument("task", help="Task ID used in output file names")
-parser.add_argument("kind", choices=("p0", "runtime"))
+parser.add_argument("kind", choices=("p0", "runtime", "probe"))
 parser.add_argument("attempt", type=int)
 args = parser.parse_args()
 task = args.task.lower()
@@ -26,7 +26,8 @@ stem = f"{task}-{kind}-attempt{attempt}"
 log = root / ".local/godot_logs" / f"{stem}.log"
 log.parent.mkdir(parents=True, exist_ok=True)
 command = [str(executable), "--headless", "--path", str(root)]
-command += ["--script", "tests/p0_runner.gd" if kind == "p0" else "tests/runtime_probe.gd"]
+# "probe" runs only the S9 flow test (clear -> result -> menu) in a fresh process (CRASH-01).
+command += ["--script", {"p0": "tests/p0_runner.gd", "runtime": "tests/runtime_probe.gd", "probe": "tests/clear_menu_probe.gd"}[kind]]
 command += ["--log-file", str(log)]
 timeout_sec = 300 if kind == "p0" else 120
 started_at = time.perf_counter()
