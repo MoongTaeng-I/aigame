@@ -330,6 +330,10 @@ func advance_pose_motion(moving: bool, delta: float, attacking: bool = false, at
 	motion_transform.origin = pivot+offset-motion_transform*pivot
 	queue_redraw()
 
+func advance_frozen_walk_time(moving: bool, delta: float) -> void:
+	if not moving: _pose_walk_elapsed = 0
+	elif layout=="pose" and walk_cols.x>=0: _pose_walk_elapsed += maxf(0,delta)
+
 func update_movement_flip(direction: Vector2) -> void:
 	var normalized := direction.normalized()
 	if absf(normalized.x)>flip_deadband:

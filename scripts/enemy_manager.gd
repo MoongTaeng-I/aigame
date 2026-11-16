@@ -34,6 +34,7 @@ var _random := RandomNumberGenerator.new()
 var wander_radius: float = 0.0
 var _count_label: Label
 var boss_director: Node2D
+var damage_numbers: Node2D
 var _scaling_rows: Array = []
 
 func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0, iterations: int = 1, scaling_records: Dictionary = {}) -> void:
@@ -110,6 +111,11 @@ func recycle_enemy(enemy: EnemyActor) -> void:
 
 func _ready() -> void:
 	_random.randomize()
+	var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").presentation()
+	if int(presentation.get("Damage_number_enabled",1))!=0:
+		damage_numbers = preload("res://scripts/damage_number_pool.gd").new()
+		add_child(damage_numbers)
+		damage_numbers.configure(presentation)
 	_create_temporary_enemy_counter()
 	_update_count_label()
 
@@ -176,6 +182,7 @@ func _spawn_from_row(row: Dictionary) -> void:
 			if not enemy.died.is_connected(_on_enemy_died):
 				enemy.died.connect(_on_enemy_died)
 			enemy.damaged.connect(_on_enemy_damaged)
+			enemy.damage_presented.connect(_on_damage_presented)
 		# Configure every spawn from the immutable base, including pooled actors.
 		enemy.configure(scaled_enemy_record(enemy_record))
 		_contact_ready_at.erase(enemy.get_instance_id())
@@ -545,6 +552,7 @@ func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyA
 	boss.configure_boss(self,actions,provider)
 	boss.died.connect(_on_enemy_died)
 	boss.damaged.connect(_on_enemy_damaged)
+	boss.damage_presented.connect(_on_damage_presented)
 	return boss
 
 func activate_boss(boss: EnemyActor) -> void:
@@ -554,3 +562,8 @@ func activate_boss(boss: EnemyActor) -> void:
 	_active_enemies.append(boss)
 	# Resolve the emergence overlap immediately with the existing pair rules.
 	_resolve_contact_pushes()
+
+func _on_damage_presented(enemy: Node2D, amount: int, source: String, owner: Node, killed: bool) -> void:
+	if amount<=0: return
+	if is_instance_valid(damage_numbers): damage_numbers.show_damage(enemy,amount,source,killed)
+	if is_instance_valid(owner) and owner.has_method("record_visual_hit"): owner.record_visual_hit(enemy.global_position)

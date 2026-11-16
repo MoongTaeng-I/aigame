@@ -161,7 +161,7 @@ func player_checks() -> void:
 		var outside: EnemyActor = t._spawn(f,base+direction*45+side*(34.29/4+0.01))
 		f.player.update_basic_attack(0,[target,inside,outside])
 		t.check(target.hp==10 and inside.hp==90 and outside.hp==100,"S8-I3-C rotated narrow34.29 boundary "+str(angle))
-		var polygons: Array = f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D)
+		var polygons: Array = f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D and n.visible)
 		var expected := Geometry.triangle_points(base,direction,90,34.29)
 		var same := polygons.size()==1
 		if same:
@@ -169,14 +169,16 @@ func player_checks() -> void:
 		t.check(same,"S8-I3-C displayed and hit geometry share exact snapshot "+str(angle))
 		t.check(polygons[0].get_child(0).wait_time==0.2,"S8-I3-C visual lifetime Hit_effect_sec")
 		f.player.update_basic_attack(0.15,[])
-		t.check(f.player._remaining_hits==0 and f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D).size()==1,"S8-I3-C skipped second hit emits no triangle")
+		t.check(f.player._remaining_hits==0 and f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D and n.visible).size()==1,"S8-I3-C skipped second hit emits no triangle")
 		await baruka.base.cleanup(f)
 	var f: Dictionary = t._fixture()
 	f.player.configure_combat(100,baruka.store.get_row("basic_attack.csv","attack_01"))
+	f.player.presentation = f.player.presentation.duplicate()
+	f.player.presentation.Basic_fx_enabled = "0" # Retain old node-deletion coverage on the supported legacy renderer.
 	f.player.apply_choice_modifiers(30,0,0)
 	var target: EnemyActor = t._spawn(f,Vector2(110,0))
 	f.player.update_basic_attack(0,[target])
-	var polygons: Array = f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D)
+	var polygons: Array = f.host.get_children().filter(func(n: Node) -> bool: return n is Polygon2D and n.visible)
 	t.check(is_equal_approx(polygons[0].polygon[0].distance_to(polygons[0].polygon[1]),120*0.381),"S8-I3-C range choice scales width at same ratio")
 	await t.create_timer(0.21).timeout
 	t.check(not is_instance_valid(polygons[0]),"S8-I3-C triangle removed after effect lifetime")

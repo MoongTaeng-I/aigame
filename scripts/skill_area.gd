@@ -10,4 +10,5 @@ static func living_in_circle(origin: Vector2, radius: float, candidates: Array) 
 
 static func damage_circle(origin: Vector2, radius: float, damage: int, candidates: Array) -> void:
 	for enemy in living_in_circle(origin,radius,candidates):
+		if enemy.has_method("record_damage_presentation"): enemy.record_damage_presentation("player")
 		enemy.apply_damage(damage)

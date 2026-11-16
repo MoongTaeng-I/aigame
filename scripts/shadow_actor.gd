@@ -40,6 +40,9 @@ var dash_through_active: bool = false
 var sprite_body: Node2D
 var character_view: Node2D
 var aura_fx: Node2D
+var attack_fx: Node2D
+var visual_hitstop_remaining := 0.0
+var visual_hitstop_fresh := false
 var sprite_hit_at := -INF
 var dash_trail_cast_at := -INF
 var dash_trail_next_age := 0.0
@@ -75,6 +78,10 @@ func apply_damage(_amount: int) -> bool:
 	return false
 
 func setup_visual_aura() -> void:
+	if int(presentation.get("Shadow_attack_fx_enabled",1))!=0 and not is_instance_valid(attack_fx):
+		attack_fx = preload("res://scripts/shadow_attack_fx.gd").new()
+		add_child(attack_fx)
+		attack_fx.configure(self,presentation)
 	if int(presentation.get("Shadow_aura_enabled",1))==0 or is_instance_valid(aura_fx): return
 	aura_fx = preload("res://scripts/shadow_aura_fx.gd").new()
 	add_child(aura_fx)
@@ -151,6 +158,7 @@ func tick(delta: float) -> void:
 	global_position = manager.enemies._clamp_body_to_map(global_position,body_radius)
 	update_sprite_visual(global_position-visual_origin,delta)
 	update_dash_trail(visual_origin,delta,dash_visual_was_active)
+	if is_instance_valid(attack_fx): attack_fx.observe()
 	queue_redraw()
 
 func act_on_target(player: Node2D, delta: float) -> void:
@@ -271,6 +279,7 @@ func start_attack() -> void:
 		dash_through_active = true
 		dash_updated_at = clock
 	if diagnostic_sink.is_valid(): diagnostic_sink.call("dash_start" if is_dash_through() else "fan_start",{"goal":[dash_goal.x,dash_goal.y]})
+	if is_instance_valid(attack_fx): attack_fx.begin_cast()
 	advance_attack(manager.enemies.get_living_enemies())
 
 func is_dash_through() -> bool:
@@ -307,18 +316,21 @@ func advance_sweep(living: Array) -> void:
 	var previous := sweep_current_angle
 	sweep_previous_angle = previous
 	sweep_current_angle = next_angle
+	if is_instance_valid(attack_fx): attack_fx.band(previous,next_angle)
 	for enemy: EnemyActor in living:
 		var key := enemy.get_instance_id()
 		if int(sweep_hits.get(key,-1))==enemy.spawn_order: continue
 		if in_sweep_interval(enemy,previous,next_angle):
 			sweep_hits[key] = enemy.spawn_order
+			enemy.record_damage_presentation("shadow",self)
 			enemy.apply_damage(int(attack.Damage))
-			spawn_belion_fragments(enemy.global_position)
-	add_sweep_trail_tip()
+			if int(presentation.get("Shadow_attack_fx_enabled",1))==0: spawn_belion_fragments(enemy.global_position)
+	if int(presentation.get("Shadow_attack_fx_enabled",1))==0: add_sweep_trail_tip()
 	if progress>=1.0:
 		hit_done = true
 		cast_active = false
 		sprite_hit_at = clock
+		if is_instance_valid(attack_fx): attack_fx.sweep_end()
 		sweep_forward = not sweep_forward
 		ready_at = cast_started_at+windup+duration+float(attack.Interval_sec)
 
@@ -370,9 +382,12 @@ func advance_fan_attack(living: Array) -> void:
 	if not hit_done and age+0.000000001>=float(motion.Hit_time_sec):
 		hit_done = true
 		sprite_hit_at = clock
+		if is_instance_valid(attack_fx): attack_fx.fan_hit()
 		var geometry := attack_geometry()
 		for enemy: EnemyActor in living:
-			if in_sector(enemy,geometry): enemy.apply_damage(int(attack.Damage))
+			if in_sector(enemy,geometry):
+				enemy.record_damage_presentation("shadow",self)
+				enemy.apply_damage(int(attack.Damage))
 	if age+0.000000001>=float(motion.Motion_sec):
 		cast_active = false
 		ready_at = cast_started_at+float(motion.Motion_sec)+float(attack.Interval_sec)
@@ -409,6 +424,7 @@ func advance_dash(living: Array) -> void:
 		for enemy: EnemyActor in living:
 			if in_dash_segment(enemy,previous,global_position) and int(dash_hits.get(enemy.get_instance_id(),-1))!=enemy.spawn_order:
 				dash_hits[enemy.get_instance_id()] = enemy.spawn_order
+				enemy.record_damage_presentation("shadow",self)
 				enemy.apply_damage(int(attack.Damage))
 		if dash_travelled>=dash_length or global_position!=intended:
 			hit_done = true
@@ -490,8 +506,20 @@ func snapshot() -> Dictionary:
 
 func update_sprite_visual(movement: Vector2, delta: float) -> void:
 	if sprite_body==null: return
+	if visual_hitstop_fresh: visual_hitstop_fresh = false
+	elif visual_hitstop_remaining>0:
+		visual_hitstop_remaining = maxf(0,visual_hitstop_remaining-delta)
+		if visual_hitstop_remaining>0.000000001: return
 	if sprite_body.layout=="pose":
 		sprite_body.advance_shadow_pose(movement,movement.length_squared()>0.000001,delta,cast_active,dash_direction if is_dash_through() else facing)
+		if cast_active:
+			var column = null
+			if is_dash_through():
+				if not dash_through_active: column = config.get("Finish_col")
+			elif is_sweep():
+				if clock-cast_started_at<float(attack.Windup_sec): column = config.get("Prep_col")
+			elif not hit_done: column = config.get("Prep_col")
+			if column!=null: sprite_body.frame_column = clampi(int(column),0,sprite_body.columns-1)
 		return
 	if is_dash_through():
 		var after := float(config.Attack_after_frame_sec)
@@ -564,6 +592,7 @@ func update_dash_trail(previous: Vector2, delta: float, was_active: bool) -> voi
 			pose.sprite_pose.frame_row = 0 if sprite_body.layout=="pose" else 2
 			pose.sprite_pose.frame_column = 1 if sprite_body.layout=="pose" or dash_trail_next_age<float(config.Attack_after_frame_sec)-0.000000001 else 2
 			pose.sprite_pose.flip_h = dash_direction.x<0.0
+			if int(presentation.get("Shadow_attack_fx_enabled",1))!=0: pose.sprite_pose.sprite_tint *= Color(String(presentation.get("Beru_trail_color","#8a6bff")))
 			var copy: Node2D = manager.leave_afterimage(departure.lerp(global_position,fraction),pose,life,float(presentation.Trail_alpha))
 			copy.set_meta("beru_dash_trail",true)
 			copy._physics_process(age)
@@ -572,7 +601,7 @@ func update_dash_trail(previous: Vector2, delta: float, was_active: bool) -> voi
 func _draw() -> void:
 	if is_dash_through():
 		var circle := dash_visual_state()
-		if not circle.is_empty(): Visual.draw_circle_attack(self,circle)
+		if not circle.is_empty() and debug_ranges_visible(): Visual.draw_circle_attack(self,circle)
 		return
 	if is_sweep():
 		var sweep := sweep_visual_state()
@@ -581,10 +610,10 @@ func _draw() -> void:
 				if sweep.has("hand"): Visual.draw_belion_hand_windup(self,sweep.hand,body_radius)
 				else: Visual.draw_belion_windup(self,facing,body_radius)
 			else: Visual.draw_belion_chain(self,sweep,int(float(presentation.Belion_chain_segments)))
-		draw_belion_effects()
+		if int(presentation.get("Shadow_attack_fx_enabled",1))==0: draw_belion_effects()
 		return
 	var sector := attack_visual_state()
-	if not sector.is_empty(): Visual.draw_sector(self,sector)
+	if not sector.is_empty() and debug_ranges_visible(): Visual.draw_sector(self,sector)
 
 func draw_body(canvas: Node2D) -> void:
 	if sprite_body==null:
@@ -627,3 +656,17 @@ func draw_belion_effects() -> void:
 	for particle in sweep_particles:
 		var alpha := 1.0-float(particle.age)/float(particle.life)
 		draw_circle(to_local(Vector2(particle.point)),2.5,Color(0.82,0.55,1.0,0.8*alpha))
+
+func debug_ranges_visible() -> bool:
+	if int(presentation.get("Shadow_attack_fx_enabled",1))==0: return true
+	var node: Node = self
+	while node!=null:
+		if node.has_method("set_debug_visible"): return bool(node.get("debug_visible"))
+		node = node.get_parent()
+	return false
+
+func record_visual_hit(point: Vector2) -> void:
+	if not is_instance_valid(attack_fx): return
+	visual_hitstop_remaining = float(presentation.get("Shadow_hitstop_sec",0.04))
+	visual_hitstop_fresh = true
+	attack_fx.hit(point)

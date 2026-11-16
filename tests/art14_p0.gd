@@ -98,14 +98,14 @@ func basic(t: SceneTree) -> void:
 	enemy.hp = 1000
 	var damage: int = n.player._attack_data.Damage
 	n.player.update_basic_attack(0,[enemy])
-	t.check(n.player.sprite_body.frame_column==3 and enemy.hp==1000-damage,"ART14 first basic hit pose3 and unchanged damage")
+	t.check(n.player.sprite_body.frame_column==23 and enemy.hp==1000-damage,"ART14 first basic hit pose3 and unchanged damage")
 	Input.action_press("move_right")
 	n.player._physics_process(0.05)
-	t.check(n.player.sprite_body.frame_column==3 and n.player.sprite_body._pose_walk_elapsed>0,"ART14 basic pose spans hit gap while walk time advances")
+	t.check(n.player.sprite_body.frame_column==23 and n.player.sprite_body._pose_walk_elapsed>0,"ART14 basic pose spans hit gap while walk time advances")
 	n.player.update_basic_attack(0.15,[enemy])
-	t.check(n.player.sprite_body.frame_column==3 and enemy.hp==1000-2*damage,"ART14 second basic hit pose3 and unchanged .15 hit time")
+	t.check(n.player.sprite_body.frame_column==24 and enemy.hp==1000-2*damage,"ART14 second basic hit pose3 and unchanged .15 hit time")
 	n.player._physics_process(0.079)
-	t.check(n.player.sprite_body.frame_column==3,"ART14 pose holds until .08 after last hit")
+	t.check(n.player.sprite_body.frame_column==24,"ART14 pose holds until .08 after last hit")
 	n.player._physics_process(0.002)
 	var image: SpriteBody = n.player.sprite_body
 	t.check(image.frame_column==5+floori((image._pose_walk_elapsed+0.000000001)*12)%8,"ART14 basic end resumes continuous walking frame")

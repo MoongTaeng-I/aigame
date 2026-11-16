@@ -6,7 +6,7 @@ func run(t: SceneTree) -> void:
 	var row: Dictionary = store.get_row("player.csv","player_01")
 	var view := SpriteBody.new()
 	view.configure(row,16,Color.WHITE,Color.WHITE)
-	t.check(view.texture.get_size()==Vector2(5083,221) and view.columns==23 and view.rows==1 and view.source_rect().size==Vector2(221,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-13 player21 columns retains original five poses")
+	t.check(view.texture.get_size()==Vector2(6500,221) and view.columns==25 and view.rows==1 and view.source_rect().size==Vector2(260,221) and view.cell_height==110 and view.baseline==202 and view.anchor_x==101,"ART-13 player21 columns retains original five poses")
 	t.check(view.texture.get_image().detect_alpha()!=Image.ALPHA_NONE and view.texture.get_image().has_mipmaps(),"ART-11 player alpha and mipmaps")
 	var dragon: Texture2D = load("res://assets/art/fx/fx_dragon_head.png")
 	t.check(dragon.get_size()==Vector2(496,640) and dragon.get_image().detect_alpha()!=Image.ALPHA_NONE and dragon.get_image().has_mipmaps(),"ART-11 dragon496x640 alpha mipmaps")
@@ -39,7 +39,7 @@ func run(t: SceneTree) -> void:
 	enemy.position = n.player.position+Vector2(50,0)
 	var origin: Vector2 = n.player.position
 	n.player.update_basic_attack(0,[enemy])
-	var slashes: Array = n.map.get_children().filter(func(node: Node) -> bool: return node.get_script()==preload("res://scripts/basic_slash_fx.gd"))
+	var slashes: Array = n.map.get_children().filter(func(node: Node) -> bool: return node.get_script()==preload("res://scripts/basic_slash_fx.gd") and node.visible)
 	t.check(slashes.size()==1 and n.player.position==origin,"ART-11 basic effect/step preserve physical position")
 	var fx: Node2D = slashes[0]
 	var inside := true

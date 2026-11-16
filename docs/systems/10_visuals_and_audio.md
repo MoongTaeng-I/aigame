@@ -510,3 +510,122 @@ HUD는 위쪽 전체 폭 경험치 바·왼쪽 위 Lv N,기존 오른쪽 위 시
 | Aura_noise_scale | 0.09 | 아우라: 화면 좌표에 곱하는 노이즈 입도 |
 | Aura_core_spread_ratio | 0.5 | 아우라: 안쪽 색의 윤곽 반경 / Aura_px |
 | Aura_core_flame_ratio | 0.3 | 아우라: 안쪽 색의 불꽃 길이 / 바깥 불꽃 길이 |
+
+
+## 2026-11-16 FX-04 + ART-15 — 공격 FX·피해 숫자·준비/마무리 포즈
+
+그림자 공격은 실제 피해/돌진/쓸기 사건에서만 표시를 생성한다. 벨리온 사슬·준비 빛과 기존 전투 수치/번갈아 방향은 유지한다. 일반 공격은 한 공격 안의 타격 순서로 베기/찌르기를 고르고, 플레이어/그림자 타격 정지는 그림의 칸·변형만 멈춘다. 효과·숫자는 고정 풀을 재사용하고 일시정지 시 멈추며 제거 시 정리한다. 양수 피해가 수락되면 실제 HP 감소량을 월드 숫자로 한 번 표시한다(과잉 피해는 남은 HP). 시각 난수는 전투 RNG와 분리한다.
+
+| 파일·열 | 형식 | 예시 | 설명 |
+|---|---|---|---|
+| shadow.csv Prep_col | Optional Int | igrit=10, belion=2 | pose 준비 칸(0기준). 이그리트는 Hit_time_sec 전, 벨리온은 Windup_sec 동안. 빈칸이면 기존 공격 칸1 |
+| shadow.csv Finish_col | Optional Int | charger_test=2 | pose 돌진 후 cast_active 후딜 칸(0기준). 빈칸이면 기존 공격 칸1 |
+
+새 시트는 플레이어25칸(23 베기/24 찌르기), 이그리트11칸(10 준비), 벨리온/베르3칸(2 준비/마무리)을 사용한다. 화면 높이는110/165/158/144, baseline202/323/297/269, anchor_x101/155/255/224이며 기존 손 좌표·발 위치·걷기 칸 범위는 유지한다. 새 포즈에서도 반전·아우라·잔상 스냅샷이 같은 칸과 변형을 따른다.
+
+combat_presentation.csv 추가 키(모든 단위는 표시 전용):
+
+| 키 | 예시 | 설명 |
+|---|---|---|
+| Shadow_fx_outline | #1a1240 | 그림자 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Player_fx_outline | #16265a | 플레이어 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Shadow_fx_color | #7a5cff | 그림자 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Player_fx_color | #5ad4ff | 플레이어 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Shadow_fx_core | #ece6ff | 그림자 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Player_fx_core | #ffffff | 플레이어 팔레트: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Belion_burst_sec | 0.3 | 벨리온: 시간초(수명/유지/그리기/소멸) |
+| Belion_shard_count | 7 | 벨리온: 생성/표시 개수 |
+| Belion_shard_min_px | 18 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_shard_max_px | 34 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_stone_count | 5 | 벨리온: 생성/표시 개수 |
+| Belion_stone_px | 5 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_stone_gravity | 350 | 벨리온: 하향 가속도px/초² |
+| Belion_star_px | 12 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Beru_mark_width | 9 | 베르: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_stone_color | #5f6480 | 벨리온: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Shadow_spark_width | 3 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Damage_number_max | 60 | 월드 숫자 고정 풀 개수; 초과 시 가장 오래된 슬롯 재사용 |
+| Damage_number_jitter_px | 8 | 월드 가로 위치 무작위 ±px; 전투 RNG와 별도 |
+| Damage_number_head_gap | 6 | 스프라이트 표시 영역 상단과 숫자 사이 px; 도형은 몸 반지름 기준 |
+| Damage_number_kill_color | #ffd84a | 피해 숫자: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Damage_number_shadow_color | #d6c8ff | 피해 숫자: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Damage_number_player_color | #ffffff | 피해 숫자: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Damage_number_sec | 0.55 | 피해 숫자: 시간초(수명/유지/그리기/소멸) |
+| Damage_number_size | 18 | 기본 폰트 크기px |
+| Damage_number_pop_scale | 1.4 | 생성 순간 배율 →1 |
+| Damage_number_pop_sec | 0.08 | 팝 배율 복귀 시간초 |
+| Damage_number_kill_scale | 1.2 | 처치 숫자 추가 배율 |
+| Damage_number_rise_px | 28 | 수명 동안 위로 이동px |
+| Damage_number_outline_px | 3 | 숫자 남색 외곽선px |
+| Damage_number_bold_px | 0.5 | 기본 폰트 숫자를 겹쳐 굵게 그리는 가로 간격px |
+| Shadow_arc_pool | 4 | 그림자당 고정 초승달 슬롯 개수 |
+| Belion_band_pool | 64 | 벨리온 고정 각도 띠 슬롯 개수 |
+| Shadow_impact_pool_max | 512 | 그림자당 고정 별/불티/파편 슬롯 개수; 초과 시 순환 재사용 |
+| Igris_diagonal_tilt_deg | -25 | 대각 궤적 공격 방향 추가 각도° |
+| Igris_radius_ratio | 0.85 | 공격 Range 대비 쓸기 궤적 반경 |
+| Igris_diagonal_radius_mult | 0.75 | 대각 궤적 반경/쓸기 반경 |
+| Igris_diagonal_arc_mult | 0.65 | 대각 궤적 각도 폭/기본 Arc_deg |
+| Igris_arc_width | 36 | 이그리트: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Igris_diagonal_width_mult | 0.8 | 대각 궤적 굵기/쓸기 굵기 |
+| Beru_mark_length | 44 | 베르: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Beru_mark_sec | 0.2 | 베르: 시간초(수명/유지/그리기/소멸) |
+| Igris_star_max | 4 | 실제로 피해를 받은 적 중 별을 표시할 최대 마릿수/타격 |
+| Igris_star_px | 18 | 이그리트: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Igris_star_sec | 0.12 | 이그리트: 시간초(수명/유지/그리기/소멸) |
+| Igris_spark_count | 6 | 이그리트: 생성/표시 개수 |
+| Shadow_spark_px | 8 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Shadow_spark_speed | 70 | 일반 공격: 속도px/초 |
+| Belion_stripe_deg | 6 | 실제 쓸기 각도를 분할하는 줄무늬 각도°; 기존 번갈아 방향 보존 |
+| Igris_arc_life_sec | 0.18 | 이그리트: 시간초(수명/유지/그리기/소멸) |
+| Belion_band_sec | 0.25 | 벨리온: 시간초(수명/유지/그리기/소멸) |
+| Beru_claw_life_sec | 0.3 | 베르: 시간초(수명/유지/그리기/소멸) |
+| Igris_arc_draw_sec | 0.05 | 이그리트: 시간초(수명/유지/그리기/소멸) |
+| Shadow_fx_y_scale | 0.62 | 그림자 궤적 바닥 원근의 세로 비율 |
+| Beru_claw_gap | 14 | 실제 돌진 시작점→현재 위치에 평행한 발톱3줄 간격px |
+| Beru_claw_width | 9 | 베르: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_band_inner_ratio | 0.78 | 띠 안쪽 반경/판정 Range; 바깥 반경은 Range |
+| Belion_band_dark | #3c1470 | 벨리온: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Belion_band_light | #9646ff | 벨리온: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Belion_band_outline | #1e0832 | 벨리온: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Belion_tip_width | 8 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_prep_star_px | 10 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_prep_star_hz | 8 | 벨리온: 점멸 주파수Hz |
+| Basic_fx_enabled | 1 | 1=공격 내 홀수 베기·짝수 찌르기, 0=이전 초승달; 판정 삼각형/Timer 수명 유지 |
+| Basic_thrust_length_mult | 1.2 | 찌르기 표시 길이/판정 Range |
+| Basic_draw_sec | 0.04 | 베기/찌르기가 그어지는 시간초 |
+| Basic_thrust_width | 22 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_thrust_rays | 5 | 일반 공격: 생성/표시 개수 |
+| Basic_thrust_ray_px | 30 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_slash_arc_deg | 130 | 일반 공격 베기 궤적 각도 폭°; 판정에는 사용하지 않음 |
+| Basic_slash_radius_mult | 1.05 | 베기 표시 반경/판정 Range |
+| Basic_slash_width | 22 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_slash_y_scale | 0.8 | 베기 궤적 세로 원근 비율 |
+| Shadow_attack_fx_enabled | 1 | 1=새 그림자 공격 FX, 0=기존 범위/궤적; F3에서만 새 모드 범위 도형 표시 |
+| Shadow_hitstop_sec | 0.04 | 피해를 준 그림자의 그림 칸·변형만 멈추는 초; 논리 시계/이동 계속 |
+| Beru_trail_color | #8a6bff | 베르: HTML 색(숫자는 출처/처치 색, 잔상은 기존 색에 곱함) |
+| Basic_fx_pool | 8 | 플레이어 고정 베기/찌르기 노드·Timer 개수; 초과 시 가장 오래된 효과 재사용 |
+| Basic_impact_pool | 32 | 플레이어 고정 타격 별 슬롯 개수 |
+| Basic_hitstop_sec | 0.03 | 플레이어 그림만 멈추는 초; 이동·공격·걷기 위상 계속 |
+| Basic_star_max | 3 | 실제로 피해를 받은 적 중 별을 표시할 최대 마릿수/타격 |
+| Basic_star_px | 18 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_star_sec | 0.12 | 일반 공격: 시간초(수명/유지/그리기/소멸) |
+| Basic_slash_col | 23 | 베기 포즈 0기준 칸 번호 |
+| Basic_thrust_col | 24 | 찌르기 포즈 0기준 칸 번호; 기존 Basic_pose_col은 대체 기본값으로 보존 |
+| Damage_number_enabled | 1 | 0=숫자 노드/풀 생성 안 함, 플레이어 피격 숫자는 항상 없음 |
+| Basic_thrust_ray_width | 4 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_rear_lines | 3 | 일반 공격: 생성/표시 개수 |
+| Basic_rear_gap | 8 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_rear_length | 25 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_rear_width | 3 | 일반 공격: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Belion_shard_angle_margin | 0.15 | 위쪽 방사 조각의 수평선 각도 여유값rad |
+| Belion_shard_speed_min | 60 | 벨리온: 속도px/초 |
+| Belion_shard_speed_max | 120 | 벨리온: 속도px/초 |
+| Belion_stone_speed_x | 80 | 벨리온: 속도px/초 |
+| Belion_stone_speed_y_max | 120 | 벨리온: 속도px/초 |
+| Belion_stone_speed_y_min | 70 | 벨리온: 속도px/초 |
+| Damage_number_fade_fraction | 0.4 | 수명 끝에서 알파가 감소하는 비율 |
+| Belion_prep_stars | 3 | 벨리온: 생성/표시 개수 |
+| Belion_prep_star_min | 0.15 | 손→칼끝 선 위 무작위 위치 최소 비율 |
+| Belion_prep_star_max | 0.9 | 손→칼끝 선 위 무작위 위치 최대 비율 |
+| Belion_band_outline_px | 2 | 벨리온: 화면px(폭·길이·크기·간격); 판정에는 사용하지 않음 |
+| Basic_thrust_step_px | 6 | 찌르기 그림 내딛기px; 몸 위치는 그대로 |

@@ -19,6 +19,13 @@ var last_hit_direction := Vector2.RIGHT
 var basic_pose_remaining := 0.0
 var basic_pose_started := false
 var basic_pose_direction := Vector2.RIGHT
+var basic_visual_hit_index := 1
+var basic_attack_thrust := false
+var visual_hitstop_remaining := 0.0
+var basic_fx_pool: Array = []
+var current_basic_fx: Node2D
+var basic_impacts: Node2D
+var basic_stars_this_hit := 0
 var managed_results := false
 var run_finished := false
 var level: int = 1
@@ -166,6 +173,7 @@ func update_basic_attack(now: float, enemies: Array) -> void:
         cancel_basic_attack()
         return
     while not run_finished and _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
+        basic_visual_hit_index = int(_attack_data["Hits_per_attack"])-_remaining_hits+1
         var target: Variant = choose_target(enemies,_attack_cast_range)
         if target != null:
             _apply_basic_triangle(target,enemies)
@@ -176,6 +184,7 @@ func update_basic_attack(now: float, enemies: Array) -> void:
     if not is_frozen() and _remaining_hits == 0 and now + 0.000000001 >= _attack_ready_at:
         var first_target: Variant = choose_target(enemies)
         if first_target != null:
+            basic_visual_hit_index = 1
             _attack_cast_range = float(_attack_data["Range"])
             _apply_basic_triangle(first_target,enemies)
             _remaining_hits = int(_attack_data["Hits_per_attack"]) - 1
@@ -219,6 +228,8 @@ func heal_percent(percent: float) -> void:
 func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var facing: Vector2 = global_position.direction_to(target.global_position)
     if facing==Vector2.ZERO: facing = last_move_direction
+    basic_attack_thrust = basic_visual_hit_index%2==0
+    basic_stars_this_hit = 0
     basic_pose_started = true
     basic_pose_remaining = float(presentation.get("Basic_pose_after_sec",0.08))
     basic_pose_direction = facing
@@ -226,7 +237,9 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     var base := global_position+facing*body_radius
     var width := _attack_cast_range*float(_attack_data.get("Tri_width_ratio",0.381))
     if visuals_enabled:
-        var effect := preload("res://scripts/basic_slash_fx.gd").new()
+        var effect: Node2D = acquire_basic_fx()
+        current_basic_fx = effect
+        effect.thrust = basic_attack_thrust
         effect.top_level = true
         effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
         effect.color = Color.TRANSPARENT
@@ -237,14 +250,9 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
         effect.life = float(_attack_data["Hit_effect_sec"])
         effect.settings = presentation
         effect.debug_source = get_parent() if get_parent().has_method("set_debug_visible") else null
-        if sprite_body!=null: sprite_body.trigger_basic_step(facing,float(presentation.get("Basic_step_px",2)),float(presentation.get("Basic_step_sec",0.1)))
-        get_parent().add_child(effect)
-        var timer := Timer.new()
-        timer.one_shot = true
-        timer.wait_time = float(_attack_data["Hit_effect_sec"])
-        effect.add_child(timer)
-        timer.timeout.connect(effect.queue_free)
-        timer.start()
+        var step_px := float(presentation.get("Basic_thrust_step_px",6)) if basic_attack_thrust and int(presentation.get("Basic_fx_enabled",1))!=0 else float(presentation.get("Basic_step_px",2))
+        if sprite_body!=null: sprite_body.trigger_basic_step(facing,step_px,float(presentation.get("Basic_step_sec",0.1)))
+        effect.activate()
     var struck: Array = []
     # Snapshot the target set before damage signals/knockback can alter it.
     for enemy in enemies:
@@ -253,6 +261,7 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     for enemy in struck: _apply_basic_hit(enemy)
 
 func _apply_basic_hit(enemy: Variant) -> void:
+    if enemy.has_method("record_damage_presentation"): enemy.record_damage_presentation("player",self)
     enemy.apply_damage(int(_attack_data["Damage"]))
     enemy.start_knockback(global_position, float(_attack_data["Knockback_distance"]), float(_attack_data["Knockback_sec"]))
 
@@ -312,11 +321,15 @@ func _physics_process(delta: float) -> void:
         var locked := is_frozen() or is_fear_casting()
         var moved := global_position.distance_squared_to(before)>0.000001
         var slash_active: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
-        sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
-        apply_basic_pose()
-        if dash_pass_through and dash_remaining<=0: dash_land_remaining = float(presentation.get("Dash_land_sec",0.08))
-        elif not dash_pass_through: dash_land_remaining = maxf(0,dash_land_remaining-delta)
-        if fear_cast_remaining<=0: sprite_body.apply_dash_stretch(dash_direction,dash_pass_through,dash_land_remaining,presentation)
+        if visual_hitstop_remaining>0.000000001:
+            visual_hitstop_remaining = maxf(0,visual_hitstop_remaining-delta)
+            sprite_body.advance_frozen_walk_time(moved and not locked,delta)
+        else:
+            sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
+            apply_basic_pose()
+            if dash_pass_through and dash_remaining<=0: dash_land_remaining = float(presentation.get("Dash_land_sec",0.08))
+            elif not dash_pass_through: dash_land_remaining = maxf(0,dash_land_remaining-delta)
+            if fear_cast_remaining<=0: sprite_body.apply_dash_stretch(dash_direction,dash_pass_through,dash_land_remaining,presentation)
     if dash_pass_through and visuals_enabled:
         var at := trail_elapsed
         while at<=dash_step+0.000000001:
@@ -373,7 +386,7 @@ func apply_basic_pose() -> void:
     var slash: bool = is_instance_valid(skill_presentation) and skill_presentation.skills.has("skill_rapid_slash") and skill_presentation.skills.skill_rapid_slash.active
     if fear_cast_remaining>0 or dash_remaining>0 or slash: return
     sprite_body.frame_row = 0
-    sprite_body.frame_column = clampi(int(presentation.get("Basic_pose_col",3)),0,sprite_body.columns-1)
+    sprite_body.frame_column = clampi(int(presentation.get("Basic_thrust_col" if basic_attack_thrust else "Basic_slash_col",presentation.get("Basic_pose_col",3))),0,sprite_body.columns-1)
     if basic_pose_direction.x!=0: sprite_body.flip_h = basic_pose_direction.x<0
     sprite_body.queue_redraw()
 
@@ -384,3 +397,47 @@ func update_dash_trail_alpha() -> void:
         var trail: Node2D = dash_trails[i]
         trail.opacity = float(presentation.Trail_alpha)*lerpf(float(presentation.get("Dash_trail_back_alpha_ratio",0.25)),1,float(i)/maxi(1,dash_trails.size()-1))
         trail.modulate.a = trail.opacity*maxf(0,1-trail.elapsed/trail.lifetime)
+
+func acquire_basic_fx() -> Node2D:
+    var enabled := int(presentation.get("Basic_fx_enabled",1))!=0
+    if enabled and basic_fx_pool.is_empty():
+        for i in range(int(presentation.get("Basic_fx_pool",8))):
+            var item = preload("res://scripts/basic_slash_fx.gd").new()
+            item.pooled = true
+            item.top_level = true
+            item.z_index = 40
+            get_parent().add_child(item)
+            tree_exiting.connect(item.queue_free)
+            item.finish()
+            var timer := Timer.new()
+            timer.one_shot = true
+            item.add_child(timer)
+            item.life_timer = timer
+            timer.timeout.connect(item.finish)
+            basic_fx_pool.append(item)
+        basic_impacts = preload("res://scripts/combat_impact_pool.gd").new()
+        add_child(basic_impacts)
+        basic_impacts.configure(presentation,int(presentation.get("Basic_impact_pool",32)),false)
+    if enabled:
+        for item in basic_fx_pool:
+            if not item.active: return item
+        var oldest: Node2D = basic_fx_pool[0]
+        for item in basic_fx_pool:
+            if item.age>oldest.age: oldest = item
+        return oldest
+    var item = preload("res://scripts/basic_slash_fx.gd").new()
+    item.top_level = true
+    get_parent().add_child(item)
+    var timer := Timer.new()
+    timer.one_shot = true
+    item.add_child(timer)
+    item.life_timer = timer
+    timer.timeout.connect(item.finish)
+    return item
+
+func record_visual_hit(point: Vector2) -> void:
+    if int(presentation.get("Basic_fx_enabled",1))==0: return
+    visual_hitstop_remaining = float(presentation.get("Basic_hitstop_sec",0.03))
+    if is_instance_valid(basic_impacts) and basic_stars_this_hit<int(presentation.get("Basic_star_max",3)):
+        basic_stars_this_hit+=1
+        basic_impacts.spawn("star",point,float(presentation.get("Basic_star_px",18)),float(presentation.get("Basic_star_sec",0.12)))

@@ -70,6 +70,7 @@ func _run() -> void:
 	await preload("res://tests/art14_p0.gd").new().run(self)
 	await preload("res://tests/fx02_p0.gd").new().run(self)
 	await preload("res://tests/fx03_p0.gd").new().run(self)
+	await preload("res://tests/fx04_p0.gd").new().run(self)
 	await preload("res://tests/art04_p0.gd").new().run(self)
 	await preload("res://tests/shadow_regions_dash_p0.gd").new().run(self)
 	await preload("res://tests/hit_fx_p0.gd").new().run(self)
@@ -230,7 +231,7 @@ func _test_targeting() -> void:
 func _effects(host: Node) -> int:
 	var count := 0
 	for child in host.get_children():
-		if child is Polygon2D:
+		if child is Polygon2D and child.visible:
 			count += 1
 	return count
 

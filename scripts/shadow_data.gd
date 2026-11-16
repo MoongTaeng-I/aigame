@@ -16,6 +16,9 @@ static func register_schemas(store: CsvDataStore) -> void:
 	for column in ["Bob_px","Step_hz","Squash","Tilt_deg","Breath"]:
 		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Float"}
 
+	for column in ["Prep_col","Finish_col"]:
+		store.schemas["shadow.csv"][column] = {"type":"Optional","inner":"Int"}
+
 static func validate(store: CsvDataStore) -> String:
 	if store.tables.has("combat_presentation.csv"):
 		var width := store.get_row("combat_presentation.csv","Belion_chain_width")

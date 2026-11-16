@@ -3,6 +3,9 @@ class_name EnemyActor
 
 signal died(enemy: EnemyActor)
 signal damaged(world_position: Vector2)
+signal damage_presented(enemy: Node2D, amount: int, source: String, owner: Node, killed: bool)
+var damage_visual_source := "player"
+var damage_visual_owner: Node
 
 const ENEMY_COLOR := Color("#ff7d68")
 const OUTLINE_COLOR := Color("#ffe4df")
@@ -111,12 +114,23 @@ func deactivate_to_pool() -> void:
 	if is_node_ready():
 		collision_shape.set_deferred("disabled", true)
 
+func record_damage_presentation(source: String, owner: Node = null) -> void:
+	damage_visual_source = source
+	damage_visual_owner = owner
+
 func apply_damage(amount: int) -> bool:
 	if not is_active or is_logically_dead or amount <= 0:
+		damage_visual_source = "player"
+		damage_visual_owner = null
 		return false
 	hit_flash_remaining = 0.08
 	update_hit_flash_material()
+	var previous_hp := hp
 	hp = maxi(0, hp - amount)
+	var owner: Node = damage_visual_owner if is_instance_valid(damage_visual_owner) else null
+	damage_presented.emit(self,previous_hp-hp,damage_visual_source,owner,hp==0)
+	damage_visual_source = "player"
+	damage_visual_owner = null
 	damaged.emit(global_position)
 	if hp == 0:
 		begin_death()

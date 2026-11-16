@@ -16,7 +16,7 @@ func run(t: SceneTree) -> void:
 	var texture: Texture2D = belion.sprite_body.texture
 	t.check(texture.get_size()==Vector2(1816,1131) and belion.sprite_body.source_rect().size==Vector2(454,377),"ART-04 Belion1816x1131 4x3 cells454x377")
 	t.check(texture.get_image().detect_alpha()!=Image.ALPHA_NONE and texture.get_image().has_mipmaps(),"ART-04 Belion transparency and mipmaps retained")
-	for entry in [[igrit,143.0,Vector2(56,20)],[belion,195.0,Vector2(60,22)]]:
+	for entry in [[igrit,165.0,Vector2(56,20)],[belion,195.0,Vector2(60,22)]]:
 		var actor: Node2D = entry[0]
 		var view: Node2D = actor.sprite_body
 		t.check(absf(view.display_rect().size.y-float(entry[1]))<=1.0,"ART-04 approved display height "+actor.config.Id)
