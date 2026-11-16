@@ -6,6 +6,7 @@ const BLACK = preload("res://assets/fonts/NotoSansKR-Black-subset.otf")
 const CREST = preload("res://assets/ui/ui_window_crest.png")
 const FRAME = preload("res://assets/ui/ui_icon_frame.png")
 const NOTICE = "본 게임은 웹툰 ‘나 혼자만 레벨업’의 비상업적 팬 게임(포트폴리오)입니다. 원작의 저작권은 각 권리자에게 있습니다. 글꼴: Noto Sans CJK(SIL OFL 1.1)"
+const SOUND_NOTICE = "사운드: Google Gemini·OpenAI ChatGPT 생성, YouTube 저작권 없는 효과음 가공"
 const ICONS = {
 	"skill_dash":preload("res://assets/ui/icon_dash.png"),"skill_rapid_slash":preload("res://assets/ui/icon_rapid_slash.png"),
 	"skill_stealth":preload("res://assets/ui/icon_stealth.png"),"skill_dragon_fear":preload("res://assets/ui/icon_dragon_fear.png"),

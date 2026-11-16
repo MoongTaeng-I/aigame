@@ -18,7 +18,7 @@ var paused_before := false
 var choice_before := false
 var bgm_db := -6.0
 var sfx_db := 0.0
-var credits := ""
+var levels := {"BGM":100.0,"SFX":100.0}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -37,7 +37,6 @@ func _ready() -> void:
 		if stream is AudioStreamOggVorbis: stream.loop = true
 		sounds[row[0]] = {"stream":stream,"volume":float(row[2]),"max":int(row[3]),"interval":float(row[4]),"pitch":float(row[5])}
 	file.close()
-	credits = FileAccess.get_file_as_string("res://assets/audio/CREDITS.txt")
 	for i in range(16):
 		var voice := AudioStreamPlayer.new()
 		voice.bus = "BGM" if i<2 else "SFX"
@@ -97,9 +96,20 @@ func set_volume(bus: String, db: float) -> void:
 	elif bus=="SFX": sfx_db = db
 	update_buses(get_tree().paused)
 
+# 0 mutes the bus; 100 is the CSV default volume (Sound_bgm_db / Sound_sfx_db).
+func set_level(bus: String, level: float) -> void:
+	if not levels.has(bus): return
+	levels[bus] = clampf(level,0,100)
+	var default_db := float(settings.Sound_bgm_db if bus=="BGM" else settings.Sound_sfx_db)
+	set_volume(bus,default_db+linear_to_db(maxf(levels[bus],0.0001)/100.0))
+
 func update_buses(paused: bool) -> void:
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("BGM"),bgm_db+(linear_to_db(float(settings.Sound_pause_bgm_ratio)) if paused else 0))
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("SFX"),sfx_db)
+	var bgm := AudioServer.get_bus_index("BGM")
+	var sfx := AudioServer.get_bus_index("SFX")
+	AudioServer.set_bus_volume_db(bgm,bgm_db+(linear_to_db(float(settings.Sound_pause_bgm_ratio)) if paused else 0))
+	AudioServer.set_bus_volume_db(sfx,sfx_db)
+	AudioServer.set_bus_mute(bgm,float(levels.BGM)<=0)
+	AudioServer.set_bus_mute(sfx,float(levels.SFX)<=0)
 
 func choice_pause() -> bool:
 	for view in get_tree().get_nodes_in_group("audio_choice_ui"):

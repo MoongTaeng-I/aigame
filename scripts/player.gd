@@ -5,6 +5,10 @@ const Geometry = preload("res://scripts/combat_geometry.gd")
 const Afterimage = preload("res://scripts/shadow_afterimage.gd")
 const SpriteBodyScript = preload("res://scripts/sprite_body.gd")
 var presentation: Dictionary = Afterimage.compiled_presentation().duplicate()
+var basic_windup_sec := maxf(float(presentation.get("Basic_windup_sec",0.04)),0.000001)
+var basic_windup_px := float(presentation.get("Basic_windup_px",2))
+var basic_hand := Vector2(float(presentation.get("Basic_hand_x",18)),float(presentation.get("Basic_hand_y",-40)))
+var basic_push_pending := false
 var visuals_enabled := true
 var trail_elapsed := 0.0
 var dash_land_remaining := 0.0
@@ -91,6 +95,7 @@ func configure_visual(record: Dictionary) -> void:
     sprite_body.name = "SpriteBody"
     add_child(sprite_body)
     sprite_body.configure(record,body_radius,PLAYER_COLOR,Color("#eee6ff"))
+    sprite_body.dust_every = 1
     if is_instance_valid(character_view): sprite_body.reparent(character_view,false)
     queue_redraw()
 
@@ -135,7 +140,6 @@ func add_experience(amount: int) -> void:
         level += 1
         if level%_skill_point_every_levels==0:
             enhancement_points += 1
-        preload("res://scripts/audio_events.gd").sfx(self,"level_up")
         leveled_up.emit(level)
 
 func apply_damage(amount: int) -> void:
@@ -171,9 +175,11 @@ func finish_death_presentation() -> void:
 
 func update_basic_attack(now: float, enemies: Array) -> void:
     if is_dead or run_finished or _attack_data.is_empty():
+        _update_basic_windup(now,[])
         return
     if is_stealthed():
         cancel_basic_attack()
+        _update_basic_windup(now,[])
         return
     while not run_finished and _remaining_hits > 0 and now + 0.000000001 >= _next_hit_at:
         basic_visual_hit_index = int(_attack_data["Hits_per_attack"])-_remaining_hits+1
@@ -193,6 +199,24 @@ func update_basic_attack(now: float, enemies: Array) -> void:
             _remaining_hits = int(_attack_data["Hits_per_attack"]) - 1
             _next_hit_at = now + float(_attack_data["Hit_gap_sec"])
             _attack_ready_at = now + _remaining_hits * float(_attack_data["Hit_gap_sec"]) + float(_attack_data["Hit_effect_sec"]) + float(_attack_data["Interval_sec"])
+    _update_basic_windup(now,enemies)
+
+# Image-only anticipation before an already-scheduled strike; never moves timing.
+func _update_basic_windup(now: float, enemies: Array) -> void:
+    if sprite_body==null: return
+    var offset := Vector2.ZERO
+    if visuals_enabled and not run_finished and not is_dead and not is_stealthed() and not _attack_data.is_empty():
+        var strike_at := _next_hit_at if _remaining_hits>0 else _attack_ready_at
+        var lead := strike_at-now
+        if lead>0.000000001 and lead<=basic_windup_sec and (_remaining_hits>0 or not is_frozen()):
+            var direction := basic_pose_direction
+            if _remaining_hits==0:
+                var target: Variant = choose_target(enemies)
+                direction = global_position.direction_to(target.global_position) if target!=null else Vector2.ZERO
+            offset = -direction.normalized()*basic_windup_px*(1-lead/basic_windup_sec)
+    if sprite_body.windup_offset!=offset:
+        sprite_body.windup_offset = offset
+        sprite_body.request_redraw()
 
 func choose_target(enemies: Array, range_override: float = -1.0) -> Variant:
     var chosen: Variant = null
@@ -240,6 +264,10 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
     apply_basic_pose()
     var base := global_position+facing*body_radius
     var width := _attack_cast_range*float(_attack_data.get("Tri_width_ratio",0.381))
+    if sprite_body!=null and sprite_body.windup_offset!=Vector2.ZERO:
+        sprite_body.windup_offset = Vector2.ZERO
+        sprite_body.request_redraw()
+    basic_push_pending = visuals_enabled
     if visuals_enabled:
         var effect: Node2D = acquire_basic_fx()
         current_basic_fx = effect
@@ -247,7 +275,9 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
         effect.top_level = true
         effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
         effect.color = Color.TRANSPARENT
-        effect.base = base
+        var foot := global_position+Vector2(0,sprite_body.foot_y if sprite_body!=null else 0.0)
+        var mirrored: bool = facing.x<0 or (facing.x==0 and sprite_body!=null and sprite_body.flip_h)
+        effect.base = foot+Vector2(basic_hand.x*(-1.0 if mirrored else 1.0),basic_hand.y)
         effect.facing = facing
         effect.length = _attack_cast_range
         effect.width = width
@@ -266,8 +296,10 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
 
 func _apply_basic_hit(enemy: Variant) -> void:
     if enemy.has_method("record_damage_presentation"): enemy.record_damage_presentation("player",self)
-    enemy.apply_damage(int(_attack_data["Damage"]))
+    var landed: bool = enemy.apply_damage(int(_attack_data["Damage"]))
     enemy.start_knockback(global_position, float(_attack_data["Knockback_distance"]), float(_attack_data["Knockback_sec"]))
+    if visuals_enabled and landed and not enemy.is_logically_dead and not enemy.has_method("configure_boss") and enemy.get("sprite_body")!=null:
+        enemy.sprite_body.trigger_hit_squash()
 
 func _create_hud() -> void:
     _hud_layer = CanvasLayer.new()
@@ -331,6 +363,7 @@ func _physics_process(delta: float) -> void:
         else:
             sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
             apply_basic_pose()
+            sprite_body.advance_locomotion(Vector2.ZERO if locked else direction,moved and not locked,delta,dash_pass_through)
             if dash_pass_through and dash_remaining<=0: dash_land_remaining = float(presentation.get("Dash_land_sec",0.08))
             elif not dash_pass_through: dash_land_remaining = maxf(0,dash_land_remaining-delta)
             if fear_cast_remaining<=0: sprite_body.apply_dash_stretch(dash_direction,dash_pass_through,dash_land_remaining,presentation)
@@ -441,6 +474,9 @@ func acquire_basic_fx() -> Node2D:
 
 func record_visual_hit(point: Vector2) -> void:
     if int(presentation.get("Basic_fx_enabled",1))==0: return
+    if basic_push_pending and is_instance_valid(skill_presentation) and skill_presentation.screen_fx!=null:
+        basic_push_pending = false
+        skill_presentation.screen_fx.push(basic_pose_direction,float(presentation.get("Basic_push_px",1)),float(presentation.get("Basic_push_sec",0.05)))
     visual_hitstop_remaining = float(presentation.get("Basic_hitstop_sec",0.03))
     if is_instance_valid(basic_impacts) and basic_stars_this_hit<int(presentation.get("Basic_star_max",3)):
         basic_stars_this_hit+=1

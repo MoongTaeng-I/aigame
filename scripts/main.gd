@@ -89,6 +89,10 @@ func _create_game(data_store: CsvDataStore) -> void:
 	player.configure_progression(data_store.get_table("level.csv"),float(player_record["Pickup_radius"]),int(xp_rule["Skill_point_every_levels"]))
 	map.add_child(player)
 	player.position = Vector2.ZERO
+	var dust := preload("res://scripts/motion_dust.gd").new()
+	dust.name = "MotionDust"
+	dust.configure(preload("res://scripts/shadow_afterimage.gd").compiled_presentation())
+	map.add_child(dust)
 	var enemy_manager = EnemyManagerScript.new()
 	enemy_manager.configure(
 		player,

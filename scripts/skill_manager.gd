@@ -187,6 +187,7 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 		wave.z_index = 10
 		get_parent().add_child(wave)
 		wave.global_position = player.global_position
+		wave.attach_ground()
 		var head := preload("res://scripts/dragon_fear_fx.gd").new()
 		head.settings = presentation
 		head.duration = float(stats.Cast_sec)

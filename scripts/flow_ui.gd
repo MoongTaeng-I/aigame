@@ -37,6 +37,7 @@ var art_locked: ShaderMaterial
 var logo_material: ShaderMaterial
 var closing_modals: Array[Control] = []
 var sound_sliders: Dictionary = {}
+var transition: CanvasLayer
 
 func configure(flow: Node) -> void:
 	owner_flow = flow
@@ -111,7 +112,7 @@ func _ready() -> void:
 	region_title = text("",Rect2(350,500,580,44),34,true)
 	best_label = text("",Rect2(390,544,500,30),24,true)
 	locked_label = text("",Rect2(390,574,500,26),22,true)
-	start_button = button("게임 시작",Rect2(440,610,400,68),owner_flow.start_region)
+	start_button = button("게임 시작",Rect2(440,610,400,68),begin_start)
 	locked_click = Control.new()
 	locked_click.position = start_button.position
 	locked_click.size = start_button.size
@@ -124,21 +125,23 @@ func _ready() -> void:
 	settings = PanelContainer.new()
 	settings.z_index = 5
 	settings.position = Vector2(760,60)
-	settings.size = Vector2(492,610)
+	settings.size = Vector2(492,0)
 	add_child(settings)
 	var quit := Button.new()
 	quit.text = "게임 종료"
 	quit.pressed.connect(func() -> void: get_tree().quit())
 	var settings_column := VBoxContainer.new()
+	settings_column.add_theme_constant_override("separation",14)
 	settings.add_child(settings_column)
-	var settings_notice := Label.new()
-	settings_notice.text = UI.NOTICE
-	settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	settings_notice.custom_minimum_size.x = 400
-	settings_notice.add_theme_font_size_override("font_size",14)
-	settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
-	settings_column.add_child(settings_notice)
 	add_sound_settings(settings_column)
+	for line in [UI.NOTICE,UI.SOUND_NOTICE]:
+		var settings_notice := Label.new()
+		settings_notice.text = line
+		settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		settings_notice.custom_minimum_size.x = 400
+		settings_notice.add_theme_font_size_override("font_size",14)
+		settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
+		settings_column.add_child(settings_notice)
 	settings_column.add_child(quit)
 	UI.animate_button(quit)
 	UI.animate_window(settings)
@@ -147,7 +150,18 @@ func _ready() -> void:
 	hint = text("",Rect2(340,680,600,24),22,true)
 	hint.add_theme_color_override("font_color",Color("#c8e1ff"))
 	hint.hide()
+	transition = preload("res://scripts/stage_transition.gd").new()
+	add_child(transition)
 	show_screen("loading")
+
+func begin_start() -> void:
+	if transition.busy(): return
+	transition.cover(func() -> void:
+		owner_flow.start_region()
+		if transition.mode=="covered": transition.reveal())
+
+func reveal_stage() -> void:
+	transition.reveal()
 
 func text(value: String, box: Rect2, font_size: int, centered: bool = false) -> Label:
 	var label := Label.new()
@@ -222,32 +236,32 @@ func add_sound_settings(column: VBoxContainer) -> void:
 	var audio := preload("res://scripts/audio_events.gd").manager(self)
 	if audio==null: return
 	for bus in ["BGM","SFX"]:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation",12)
 		var label := Label.new()
-		label.add_theme_font_size_override("font_size",16)
+		label.text = "배경음악" if bus=="BGM" else "효과음"
+		label.custom_minimum_size.x = 84
+		label.add_theme_font_size_override("font_size",18)
 		var slider := HSlider.new()
-		slider.min_value = float(values.Sound_slider_min_db)
-		slider.max_value = float(values.Sound_slider_max_db)
+		slider.min_value = 0
+		slider.max_value = 100
 		slider.step = 1
-		slider.value = audio.bgm_db if bus=="BGM" else audio.sfx_db
-		slider.custom_minimum_size = Vector2(400,28)
-		label.text = ("배경음악" if bus=="BGM" else "효과음")+" %d dB" % slider.value
-		slider.value_changed.connect(func(db: float) -> void:
-			audio.set_volume(bus,db)
-			label.text = ("배경음악" if bus=="BGM" else "효과음")+" %d dB" % db)
-		column.add_child(label); column.add_child(slider)
+		slider.value = float(audio.levels[bus])
+		slider.custom_minimum_size = Vector2(0,28)
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		var number := Label.new()
+		number.name = "Value"
+		number.text = "%d" % slider.value
+		number.custom_minimum_size.x = 44
+		number.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		number.add_theme_font_size_override("font_size",18)
+		slider.value_changed.connect(func(level: float) -> void:
+			audio.set_level(bus,level)
+			number.text = "%d" % level)
+		row.add_child(label); row.add_child(slider); row.add_child(number)
+		column.add_child(row)
 		sound_sliders[bus] = slider
-	var scroll := ScrollContainer.new()
-	scroll.name = "SoundCredits"
-	scroll.custom_minimum_size = Vector2(400,150)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	column.add_child(scroll)
-	var credit_text := Label.new()
-	credit_text.text = audio.credits
-	credit_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	credit_text.custom_minimum_size.x = 380
-	credit_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	credit_text.add_theme_font_size_override("font_size",14)
-	scroll.add_child(credit_text)
 
 func _locked_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:

@@ -926,3 +926,76 @@ GameAudio Autoload 하나와 Master/BGM/SFX 버스를 사용한다. AudioStreamP
 | Toast_screen_margin | 80 | 최대너비 계산용 화면 여백px |
 | Toast_min_font_size | 16 | 긴 한 줄 토스트 최소글씨px |
 | Xp_bar_glow_alpha | 0.3 | 바 바깥빛 알파(기존 XP 결정 키와 별개) |
+
+## 2026-11-17 FX-06 — 드래곤 피어·이동/공격 모션·설정/선택 창·진입 연출
+
+표시·소리 연결만 바꾼다. 판정·피해·시점·이동 속도/거리·AI·생성·전투 RNG·로딩 시간·결과는 유지한다. 새 연출 값은 typed 캐시로 읽고, 빛 더하기 재질(CanvasItemMaterial ADD)은 1개를 공유하며, 눈먼지는 라운드당 고정 풀 1개(활성 없으면 처리·redraw 없음)를 쓴다.
+
+- 드래곤 피어: 굵은 선 파장·할퀴기를 fx_soft_ring 3겹(바깥 Fear_ring_outer_color→안쪽 Fear_ring_inner_color, 세로 Fear_wave_y_scale, 마지막 겹 Fear_wave_max_px)과 각 겹 바깥 fx_thin_ring 가장자리선으로 바꾼다. 실제 공포 범위(Range)는 fx_soft_disk를 캐릭터 아래 바닥에 깔아 Cast_sec+Fear_disk_tail_sec 동안 흐리게 한다. 할퀴기 Fear_claw_count개는 Fear_scratch_width 이하 뾰족한 선+흰 중심선, 불씨 Fear_ember_count개는 fx_soft_dot로 바깥·위로 퍼진다. Fear_bat_count는 40→20으로 바꿨다. 비네트·흔들림은 유지한다. 더 이상 읽지 않는 키: Fear_range_alpha, Fear_range_width, Fear_wave_start_width, Fear_wave_end_width, Fear_outline_color, Fear_claw_width, Fear_claw_sec.
+- 이동 모션(그림만): 플레이어는 이동 방향 기울기·출발 눌림·정지 늘어남·좌우 전환 좁아짐을 쓴다(질주 중에는 기울기만). 걷기 칸 구간의 첫 칸과 가운데 칸(플레이어 앞 5·9, 뒤 13·17)에 들어설 때 발밑 눈먼지를 낸다. 그림자 병사·일반 적은 눈먼지만 Move_dust_npc_every 번째 접지마다 낸다.
+- 일반 공격 모션(그림만): 예정된 타격 Basic_windup_sec 전부터 반대 방향으로 Basic_windup_px까지 당긴 뒤 기존 내딛기를 쓴다. 칼빛 시작점은 발 기준 손 위치(Basic_hand_x는 좌우 반전, Basic_hand_y)다. 판정 삼각형은 그대로다. 실제로 맞은 첫 타격에 화면을 공격 방향으로 Basic_push_px 민다(Shake_enabled=0이면 생략). 맞고 살아 있는 일반 적(보스 제외)은 그림이 눌렸다 돌아온다.
+- 설정 창: 배경음악·효과음 슬라이더는 0~100 숫자를 표시한다. 100은 Sound_bgm_db/Sound_sfx_db, 0은 버스 음소거, 그 사이는 기본dB+linear_to_db(값/100)이다. 남은 문구는 팬 공지와 사운드 출처 한 줄뿐이며 CREDITS 스크롤은 없앴다(CREDITS.txt 파일은 유지). Sound_slider_min_db/Sound_slider_max_db는 더 이상 읽지 않는다.
+- 레벨업 선택 창: 창이 열릴 때 level_up 소리를 내지 않는다(카드 선택 ui_click 유지). 제목·카드·다시 뽑기를 창 안에서 같은 간격으로, 카드 안 아이콘·이름·설명·레벨 칸도 같은 간격으로 두며 아이콘 없는 카드도 같은 기준선을 쓴다.
+- 진입 연출: 지역 선택의 게임 시작 버튼은 Stage_cover_sec 동안 가장자리부터 그림자로 덮은 뒤 기존 start_region을 호출하고, 라운드가 준비되면 Stage_reveal_sec 동안 가운데부터 걷는다(사용자 승인 2026-11-17: 버튼 입장은 덮기 뒤에 라운드 생성). 다시 하기·메뉴 복귀는 흐름을 그대로 진행하고 걷힘만 쓴다. 전체 화면 ColorRect 셰이더 1개이며 입력을 막지 않고 끝나면 숨긴다. Ui_fx_enabled=0이면 즉시 전환한다.
+
+| combat_presentation.csv 키 | 예시 | 설명 |
+|---|---|---|
+| Fear_ring_outer_color | #ff2a3c | 첫(바깥) 고리 색 |
+| Fear_ring_inner_color | #7a0010 | 마지막(안쪽) 고리 색 |
+| Fear_ring_alpha | 0.9 | 고리 최대 알파 |
+| Fear_ring_tex_peak | 0.85 | fx_soft_ring 가장 밝은 반경 비율 |
+| Fear_edge_color | #ffb3ba | 가장자리선 색 |
+| Fear_edge_alpha | 0.6 | 가장자리선 알파 |
+| Fear_edge_tex_peak | 0.88 | fx_thin_ring 가장 밝은 반경 비율 |
+| Fear_edge_offset | 1.04 | 고리 반경 대비 가장자리선 반경 |
+| Fear_disk_color | #5a0010 | 실제 범위 바닥 원 색 |
+| Fear_disk_alpha | 0.45 | 바닥 원 시작 알파 |
+| Fear_disk_tail_sec | 0.6 | Cast_sec 뒤 바닥 원이 사라지는 초 |
+| Fear_scratch_width | 4 | 할퀴기 최대 굵기px |
+| Fear_scratch_sec | 0.15 | 할퀴기 수명초 |
+| Fear_scratch_draw_ratio | 0.4 | 수명 중 긋는 구간 비율 |
+| Fear_scratch_core_color | #ffffff | 할퀴기 중심선 색 |
+| Fear_ember_count | 40 | 불씨 수 |
+| Fear_ember_min_px | 8 | 불씨 최소 크기px |
+| Fear_ember_max_px | 16 | 불씨 최대 크기px |
+| Fear_ember_sec | 0.8 | 불씨 수명초 |
+| Fear_ember_color | #ff3a2e | 불씨 색 |
+| Fear_ember_start_px | 36 | 플레이어 주변 시작 반경px |
+| Fear_ember_travel_px | 150 | 바깥으로 퍼지는 거리px |
+| Fear_ember_rise_px | 90 | 위로 오르는 거리px |
+| Move_lean_deg | 6 | 이동 방향 최대 기울기 |
+| Move_lean_sec | 0.12 | 최대 기울기까지 따라가는 초 |
+| Move_start_sec | 0.08 | 출발 눌림초 |
+| Move_start_scale_x | 1.06 | 출발 눌림 가로 배율 |
+| Move_start_scale_y | 0.94 | 출발 눌림 세로 배율 |
+| Move_stop_sec | 0.1 | 정지 늘어남초 |
+| Move_stop_scale_x | 0.96 | 정지 가로 배율 |
+| Move_stop_scale_y | 1.04 | 정지 세로 배율 |
+| Move_turn_sec | 0.08 | 좌우 전환 좁아짐초 |
+| Move_turn_scale_x | 0.92 | 좌우 전환 가로 배율 |
+| Move_dust_count | 3 | 접지 1회 눈먼지 수 |
+| Move_dust_sec | 0.3 | 눈먼지 수명초 |
+| Move_dust_min_px | 8 | 눈먼지 최소 크기px |
+| Move_dust_max_px | 12 | 눈먼지 최대 크기px |
+| Move_dust_alpha | 0.5 | 눈먼지 알파 |
+| Move_dust_color | #ffffff | 눈먼지 색 |
+| Move_dust_spread_px | 10 | 좌우 퍼짐px |
+| Move_dust_rise_px | 6 | 위로 오름px |
+| Move_dust_pool | 96 | 라운드당 고정 풀 크기 |
+| Move_dust_npc_every | 2 | 그림자·일반 적 접지 간격 배수 |
+| Basic_windup_sec | 0.04 | 타격 전 당김초 |
+| Basic_windup_px | 2 | 당김 거리px |
+| Basic_hand_x | 18 | 발 기준 손 가로px(좌우 반전) |
+| Basic_hand_y | -40 | 발 기준 손 세로px |
+| Basic_push_px | 1 | 타격 화면 밀기px |
+| Basic_push_sec | 0.05 | 화면 밀기초 |
+| Enemy_hit_squash_sec | 0.08 | 맞은 일반 적 눌림초 |
+| Enemy_hit_squash_x | 1.1 | 눌림 가로 배율 |
+| Enemy_hit_squash_y | 0.9 | 눌림 세로 배율 |
+| Stage_cover_sec | 0.5 | 진입 덮기초 |
+| Stage_reveal_sec | 0.6 | 걷힘초 |
+| Stage_shade_color | #0b0618 | 그림자 색 |
+| Stage_glow_color | #7a5cff | 경계 빛 색 |
+| Stage_noise_scale | 6 | 노이즈 크기 |
+| Stage_noise_mix | 0.35 | 원형 대비 노이즈 섞음 |
+| Stage_glow_band | 0.08 | 경계 빛 폭(임계값 단위) |

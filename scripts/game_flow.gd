@@ -82,6 +82,7 @@ func fail_loading(message: String) -> void:
 	Main.show_data_error(self,message)
 
 func show_menu() -> void:
+	var returning := is_instance_valid(session)
 	_dispose_round()
 	state = "menu"
 	preload("res://scripts/audio_events.gd").music(self,"bgm_title")
@@ -89,6 +90,7 @@ func show_menu() -> void:
 	ui.close_modal()
 	ui.show_screen("menu")
 	refresh_region()
+	if returning: ui.reveal_stage()
 
 func refresh_region() -> void:
 	var row: Dictionary = regions[region_index]
@@ -121,6 +123,7 @@ func start_region() -> void:
 	session.process_mode = Node.PROCESS_MODE_PAUSABLE
 	session.round_ended.connect(_on_round_ended)
 	add_child(session)
+	ui.reveal_stage()
 
 func _dispose_round() -> void:
 	if is_instance_valid(session):

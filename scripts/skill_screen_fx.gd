@@ -19,6 +19,18 @@ var white_strength := 0.0
 var vignette_remaining := 0.0
 var vignette_duration := 0.0
 var player_hit_remaining := 0.0
+var push_direction := Vector2.ZERO
+var push_px := 0.0
+var push_remaining := 0.0
+var push_duration := 0.0
+
+func push(direction: Vector2, px: float, seconds: float) -> void:
+	if int(settings.get("Shake_enabled",1))==0 or seconds<=0 or direction==Vector2.ZERO: return
+	push_direction = direction.normalized()
+	push_px = px
+	push_duration = seconds
+	push_remaining = seconds
+	_process(0)
 
 func set_slash_active(active: bool) -> void:
 	slash_active = active
@@ -67,6 +79,7 @@ func _process(delta: float) -> void:
 	flash_remaining = maxf(0,flash_remaining-delta)
 	white_remaining = maxf(0,white_remaining-delta)
 	vignette_remaining = maxf(0,vignette_remaining-delta)
+	push_remaining = maxf(0,push_remaining-delta)
 	var target := float(settings.get("Slash_dim_alpha",0.12)) if slash_active else 0.0
 	var fade := float(settings.get("Slash_dim_in_sec",0.05)) if slash_active else float(settings.get("Slash_dim_out_sec",0.15))
 	slash_alpha = move_toward(slash_alpha,target,float(settings.get("Slash_dim_alpha",0.12))*maxf(delta,0)/maxf(fade,0.000001))
@@ -74,6 +87,9 @@ func _process(delta: float) -> void:
 	if int(settings.get("Shake_enabled",1))!=0 and remaining>0:
 		var phase := elapsed*TAU*float(settings.get("Shake_hz",38))
 		shake_offset = Vector2(sin(phase),cos(phase*1.31))*strength*remaining/duration
+	if int(settings.get("Shake_enabled",1))!=0 and push_remaining>0:
+		# The shader samples at UV+offset, so the picture moves opposite the offset.
+		shake_offset -= push_direction*push_px*push_remaining/push_duration
 	shake_offset = shake_offset.limit_length(float(settings.get("Shake_max_px",8)))
 	if screen==null: return
 	screen.visible = shake_offset!=Vector2.ZERO

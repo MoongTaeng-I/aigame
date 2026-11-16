@@ -26,7 +26,10 @@ func run(tree: SceneTree) -> void:
 	t.check(flow.session==null and flow.ui.hint.text=="추후 업데이트 예정" and flow.ui.hint.visible,"S9 locked entry rejected and toast shown")
 	flow.change_region(-1)
 	flow.ui.start_button.pressed.emit()
+	t.check(flow.state=="menu" and flow.session==null and flow.ui.transition.busy() and flow.ui.transition.rect.visible,"FX06 start button covers before round creation")
+	flow.ui.transition._process(flow.ui.transition.cover_sec)
 	t.check(flow.state=="playing" and is_instance_valid(flow.session),"S9 actual start button enters region1")
+	t.check(flow.ui.transition.mode=="reveal" and flow.ui.transition.rect.visible,"FX06 round ready starts reveal")
 	var n: Dictionary = flow.session.round_nodes
 	fresh(n)
 	n.player.configure_combat(100000,{})

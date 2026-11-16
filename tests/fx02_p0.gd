@@ -107,7 +107,7 @@ func fear(t: SceneTree) -> void:
 	cast.start(0)
 	var waves: Array = n.map.get_children().filter(func(node: Node) -> bool: return node.get_script()==preload("res://scripts/dragon_fear_fx.gd"))
 	var wave: Node2D = waves[0]
-	t.check(waves.size()==1 and wave.waves.size()==3 and wave.claws.size()==8 and wave.bats.size()==40,"FX02 fear one batch with three waves eight claws forty bats")
+	t.check(waves.size()==1 and wave.waves.size()==3 and wave.claws.size()==8 and wave.bats.size()==20,"FX02 fear one batch with three waves eight claws twenty bats (FX06)")
 	t.check(inside.is_feared() and not outside.is_feared() and wave.radius==float(stats.Range) and n.manager._random.state==combat_rng,"FX02 fear Range duration and combat RNG unchanged")
 	t.check(wave.wave_radius(float(stats.Cast_sec))==900 and is_equal_approx(float(wave.waves[2].delay),0.16),"FX02 visual waves900 delayed .08 independently of Range")
 	var sizes := true

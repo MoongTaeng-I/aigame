@@ -5,17 +5,27 @@ const UI = preload("res://scripts/system_ui.gd")
 const LAYER := 100
 const CARD_SIZE := Vector2(280,380)
 const CARD_GAP := 28.0
-const CARD_TOP := 190.0
+const WINDOW_TOP := 62.0
+const WINDOW_HEIGHT := 612.0
 const TITLE_SIZE := Vector2(920,64)
-const TITLE_TOP := 72.0
+const REROLL_SIZE := Vector2(500,64)
+# Title, cards and reroll share equal vertical gaps inside the window.
+const SECTION_GAP := (WINDOW_HEIGHT-TITLE_SIZE.y-CARD_SIZE.y-REROLL_SIZE.y)/4.0
+const TITLE_TOP := WINDOW_TOP+SECTION_GAP
+const CARD_TOP := TITLE_TOP+TITLE_SIZE.y+SECTION_GAP
+const REROLL_TOP := CARD_TOP+CARD_SIZE.y+SECTION_GAP
 const RIBBON_CUT := 22.0
 const NAME_HEIGHT := 48.0
-const ICON_BOX := Rect2(90,66,100,100)
+const ICON_SIZE := 100.0
+const DESCRIPTION_HEIGHT := 78.0
+const LEVEL_HEIGHT := 60.0
+# Icon, name, description and level slots share equal gaps; icon-less cards keep the same baselines.
+const SLOT_GAP := (CARD_SIZE.y-ICON_SIZE-NAME_HEIGHT-DESCRIPTION_HEIGHT-LEVEL_HEIGHT)/5.0
+const ICON_TOP := SLOT_GAP
+const NAME_TOP := ICON_TOP+ICON_SIZE+SLOT_GAP
+const DESCRIPTION_TOP := NAME_TOP+NAME_HEIGHT+SLOT_GAP
+const LEVEL_TOP := DESCRIPTION_TOP+DESCRIPTION_HEIGHT+SLOT_GAP
 const ICON_RADIUS := 32.0
-const DESCRIPTION_BOX := Rect2(18,186,244,100)
-const LEVEL_BOX := Rect2(18,306,244,60)
-const REROLL_SIZE := Vector2(500,64)
-const REROLL_TOP := 578.0
 const PADDING := 12.0
 const FONT_SIZE := 20
 const TITLE_FONT_SIZE := 28
@@ -150,7 +160,7 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 		var scale_y := lerpf(float(values.Ui_open_scale_y),1,p)
 		var x := sin(p*TAU*int(values.Ui_flicker_count))*float(values.Ui_jitter_px)*(1-p)
 		node.draw_set_transform(Vector2(x,size.y*(1-scale_y)/2),0,Vector2(1,scale_y))
-	UI.panel(node,Rect2((size.x-1000)/2,62,1000,612),true)
+	UI.panel(node,Rect2((size.x-1000)/2,WINDOW_TOP,1000,WINDOW_HEIGHT),true)
 	centered(node,"! 레벨 업 !",Rect2((size.x-TITLE_SIZE.x)/2,TITLE_TOP,TITLE_SIZE.x,TITLE_SIZE.y),TITLE_FONT_SIZE,UI.BLACK)
 	for i in range(states.size()):
 		var state: Dictionary = states[i]
@@ -158,11 +168,11 @@ func paint(node: Control, states: Array, caption: String, can_reroll: bool, anim
 		var factor := float(hover_scales[i]) if animate else 1.0
 		box = Rect2(box.get_center()-box.size*factor/2,box.size*factor)
 		UI.panel(node,box)
-		var has_icon := UI.icon(state.id)!=null
-		centered(node,state.name,Rect2(box.position+Vector2(40,32 if has_icon else 110),Vector2(box.size.x-80,NAME_HEIGHT)),FONT_SIZE,UI.BLACK)
-		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+ICON_BOX.position,ICON_BOX.size))
-		wrapped(node,state.description,Rect2(box.position+Vector2(40,195 if has_icon else 174),Vector2(box.size.x-80,78)))
-		var level_box := Rect2(box.position+Vector2(40,280),Vector2(box.size.x-80,60))
+		var inset := 40.0*factor
+		UI.icon_draw(node,UI.icon(state.id),Rect2(box.position+Vector2((box.size.x-ICON_SIZE*factor)/2,ICON_TOP*factor),Vector2.ONE*ICON_SIZE*factor))
+		centered(node,state.name,Rect2(box.position+Vector2(inset,NAME_TOP*factor),Vector2(box.size.x-inset*2,NAME_HEIGHT*factor)),FONT_SIZE,UI.BLACK)
+		wrapped(node,state.description,Rect2(box.position+Vector2(inset,DESCRIPTION_TOP*factor),Vector2(box.size.x-inset*2,DESCRIPTION_HEIGHT*factor)))
+		var level_box := Rect2(box.position+Vector2(inset,LEVEL_TOP*factor),Vector2(box.size.x-inset*2,LEVEL_HEIGHT*factor))
 		if state.heal:
 			centered(node,"체력 %d → %d / %d" % [state.hp_before,state.hp_after,state.max_hp],level_box,SMALL_FONT_SIZE)
 		elif state.get("summon",false):

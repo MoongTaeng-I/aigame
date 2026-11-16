@@ -54,14 +54,16 @@ func run(t: SceneTree) -> void:
 	n.host.free(); t.paused = false; await t.process_frame
 	var flow := preload("res://scripts/game_flow.gd").new(); t.root.add_child(flow)
 	while flow.state=="loading": await t.process_frame
-	flow.ui.sound_sliders.BGM.value = -12
-	flow.ui.sound_sliders.SFX.value = -4
-	t.check(audio.bgm_db==-12 and audio.sfx_db==-4 and AudioServer.get_bus_volume_db(AudioServer.get_bus_index("SFX"))==-4,"SND01 sliders update separate buses")
-	t.check(flow.ui.settings.find_child("SoundCredits",true,false)!=null and audio.credits==FileAccess.get_file_as_string("res://assets/audio/CREDITS.txt"),"SND01 settings scroll displays verbatim sound credits")
+	flow.ui.sound_sliders.BGM.value = 50
+	flow.ui.sound_sliders.SFX.value = 0
+	var sfx_bus := AudioServer.get_bus_index("SFX")
+	t.check(is_equal_approx(audio.bgm_db,float(audio.settings.Sound_bgm_db)+linear_to_db(0.5)) and AudioServer.is_bus_mute(sfx_bus) and not AudioServer.is_bus_mute(AudioServer.get_bus_index("BGM")),"SND01 sliders update separate buses (FX06 0-100 levels, 0 mutes)")
+	var texts: Array = flow.ui.settings.find_children("*","Label",true,false).filter(func(label: Label) -> bool: return label.name!="Value" and not (label.text in ["배경음악","효과음"])).map(func(label: Label) -> String: return label.text)
+	t.check(flow.ui.settings.find_child("SoundCredits",true,false)==null and texts==[preload("res://scripts/system_ui.gd").NOTICE,preload("res://scripts/system_ui.gd").SOUND_NOTICE],"SND01 settings keep only copyright notice and one sound credit line (FX06)")
 	flow.start_region(); flow.toggle_pause(); audio._process(0)
 	t.check(not audio.choice_pause() and not audio.request("ui_click") and audio.pool.slice(2).all(func(p: AudioStreamPlayer) -> bool: return not p.playing),"SND01 ESC pause stops all SFX")
 	flow.free();t.paused = false
-	audio.set_volume("BGM",float(audio.settings.Sound_bgm_db));audio.set_volume("SFX",float(audio.settings.Sound_sfx_db));audio.music("bgm_title")
+	audio.set_level("BGM",100);audio.set_level("SFX",100);audio.music("bgm_title")
 	await t.process_frame
 	await event_paths(t,audio)
 	await preload("res://tests/ui_glyph_p0.gd").new().run(t)
