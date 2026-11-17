@@ -23,9 +23,9 @@ func run(tree: SceneTree) -> void:
 	# BAL-02: menu input is blocked until the loading -> menu entry reveal has finished.
 	while flow.ui.menu_locked(): await t.process_frame
 	flow.change_region(1)
-	t.check(flow.ui.start_button.disabled and flow.ui.locked_click.visible and flow.ui.locked_label.text=="추후 업데이트 예정","S9 locked region dark/lock/disabled start with notice target")
+	t.check(flow.ui.start_button.disabled and flow.ui.locked_click.visible and flow.ui.locked_label.text=="","S9 locked region dark/lock/disabled start with no card text (FIX03)")
 	flow.start_region()
-	t.check(flow.session==null and flow.ui.hint.text=="추후 업데이트 예정" and flow.ui.hint.visible,"S9 locked entry rejected and toast shown")
+	t.check(flow.session==null and flow.ui.hint.text=="" and not flow.ui.hint.visible,"S9 locked entry rejected without a notice (FIX03)")
 	flow.change_region(-1)
 	flow.ui.start_button.pressed.emit()
 	t.check(flow.state=="menu" and flow.session==null and flow.ui.transition.busy() and flow.ui.transition.rect.visible,"FX06 start button covers before round creation")
@@ -194,7 +194,7 @@ func data_errors() -> void:
 		t.check(not preload("res://scripts/flow_data.gd").validate(store).is_empty(),"S9 invalid Loading_sec rejected "+value)
 	row.Value = "1.5"
 	store.get_row("region.csv","region_02").Locked_text = ""
-	t.check(not preload("res://scripts/flow_data.gd").validate(store).is_empty(),"S9 missing locked notice rejected")
+	t.check(preload("res://scripts/flow_data.gd").validate(store).is_empty(),"S9 empty locked notice accepted (FIX03)")
 	var output: Array = []
 	var log := "res://.local/godot_logs/s9-impl-01-error-"+str(Time.get_ticks_usec())+".log"
 	var code := preload("res://tests/godot_probe_process.gd").execute(PackedStringArray(["--headless","--path",ProjectSettings.globalize_path("res://"),"--script","tests/flow_error_probe.gd","--log-file",ProjectSettings.globalize_path(log)]),output,log)

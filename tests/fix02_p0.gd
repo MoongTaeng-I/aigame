@@ -66,7 +66,7 @@ func flow(t: SceneTree) -> void:
 	var settings_check := content_inside(ui.settings)
 	t.check(settings_check.ok,"FIX02 menu settings text sliders numbers button inside window padding %s" % [settings_check.bad])
 	var labels: Array = ui.settings.find_children("*","Label",true,false).filter(func(label: Label) -> bool: return label.name!="Value" and not (label.text in ["배경음악","효과음"])).map(func(label: Label) -> String: return label.text)
-	t.check(labels==[UI.NOTICE],"FIX02 settings keep only the fan notice")
+	t.check(labels==[],"FIX02 settings show no notice or credit text (FIX03)")
 	var gear: Button = ui.find_child("SettingsButton",true,false)
 	t.check(gear!=null and gear.get_theme_font_size("font_size")==16 and text_fits(gear),"FIX02 settings button text 16px fits inside the button face")
 	ui.toggle_settings()

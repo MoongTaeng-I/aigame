@@ -67,7 +67,7 @@ func dash_checks() -> void:
 	var b: Variant = f.boss
 	f.player.global_position = Vector2(250,0)
 	baruka.start(f,"baruka_basic")
-	baruka.step(f,0.23)
+	baruka.step(f,0.184)
 	f.player.global_position = Vector2(40,0)
 	var hp: int = f.player.hp
 	# BAL-02: speed 2340 -> 1560, so the same 46.8px of travel takes 0.03s instead of 0.02s.
@@ -204,7 +204,9 @@ func toast_checks() -> void:
 		t.check(frame.x<=view.size.x-80+0.01 and frame.x>=420 and is_equal_approx(frame.y,Toast.visible_height(view.presentation,label.get_theme_font_size("font_size"))) and label.get_line_count()==1 and label.get_theme_font_size("font_size")>=16,"S8-I3-C toast one line auto width and minimum16px (FIX02 frame 420..screen-80, padded height)")
 		t.check(label.position.y>=18 and label.position.y+label.size.y<=panel.size.y-18+0.01 and label.get_minimum_size().y<=label.size.y+0.01,"S8-I3-C long label fits panel padding")
 		if i>0:
-			t.check(panel.offset_top>=view.entries[i-1].panel.offset_bottom+8,"S8-I3-C actual heights stack without overlap")
+			# FIX-03: gap 4 and older toasts shrink from their top edge, so compare against the drawn bottom.
+			var above: PanelContainer = view.entries[i-1].panel
+			t.check(panel.offset_top>=above.offset_top+above.size.y*above.scale.x+4-0.01,"S8-I3-C actual heights stack without overlap")
 	t.check(view.entries[0].text.ends_with("3") and view.entries[3].text.ends_with("0"),"S8-I3-C newest toast on top")
 	view.queue_free()
 	await t.process_frame

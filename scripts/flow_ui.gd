@@ -87,7 +87,11 @@ func _ready() -> void:
 	loading_nodes.append(progress)
 	loading_caption = text("던전 입장 준비 중… 0%",Rect2(100,674,1080,26),18,true)
 	loading_nodes.append(loading_caption)
-	notice = text(UI.NOTICE,Rect2(50,704,1180,16),11,true)
+	# FIX-03: the text line (drawn at the top of the label) ends on the screen bottom; it grows upward with the font size.
+	var notice_size := int(values.Ui_notice_font_size)
+	var notice_height := ceilf(UI.BOLD.get_height(notice_size))
+	notice = text(UI.NOTICE,Rect2(50,720-notice_height,1180,notice_height),notice_size,true)
+	notice.autowrap_mode = TextServer.AUTOWRAP_OFF
 	notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
 	var header := Panel.new()
 	header.position = Vector2(440,12); header.size = Vector2(400,86)
@@ -144,14 +148,6 @@ func _ready() -> void:
 	settings_column.add_theme_constant_override("separation",14)
 	settings.add_child(settings_column)
 	add_sound_settings(settings_column)
-	var settings_notice := Label.new()
-	settings_notice.name = "Notice"
-	settings_notice.text = UI.NOTICE
-	settings_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	settings_notice.custom_minimum_size.x = inner_width(SETTINGS_WIDTH)
-	settings_notice.add_theme_font_size_override("font_size",14)
-	settings_notice.add_theme_color_override("font_color",Color(values.Ui_secondary_color,float(values.Ui_notice_alpha)))
-	settings_column.add_child(settings_notice)
 	settings_column.add_child(quit)
 	UI.animate_button(quit)
 	UI.animate_window(settings)
@@ -166,6 +162,7 @@ func _ready() -> void:
 
 # Loading -> region select: cover, switch to the menu, then reveal. Menu buttons stay blocked meanwhile.
 func enter_menu(action: Callable) -> void:
+	if transition.enabled: preload("res://scripts/audio_events.gd").sfx(self,"transition_menu")
 	transition.cover_blocking(func() -> void:
 		action.call()
 		if transition.mode=="covered": transition.reveal())
@@ -175,11 +172,15 @@ func menu_locked() -> bool:
 
 func begin_start() -> void:
 	if transition.busy() or menu_locked(): return
+	if transition.enabled: preload("res://scripts/audio_events.gd").sfx(self,"transition_stage")
 	transition.cover(func() -> void:
 		owner_flow.start_region()
 		if transition.mode=="covered": transition.reveal())
 
-func reveal_stage() -> void:
+# entering=true marks a stage entry. When no cover came first (retry), the reveal itself is the
+# entry effect and plays transition_stage; after a cover the sound has already started.
+func reveal_stage(entering: bool = false) -> void:
+	if entering and transition.enabled and transition.mode!="covered": preload("res://scripts/audio_events.gd").sfx(self,"transition_stage")
 	transition.reveal()
 
 func text(value: String, box: Rect2, font_size: int, centered: bool = false) -> Label:
@@ -304,6 +305,7 @@ func _locked_input(event: InputEvent) -> void:
 		owner_flow.locked_hint()
 
 func notify(message: String) -> void:
+	if message.strip_edges().is_empty(): return
 	hint.text = message
 	hint.modulate.a = 1
 	hint_remaining = float(owner_flow.data_store.get_row("combat_presentation.csv","Toast_sec").Value)

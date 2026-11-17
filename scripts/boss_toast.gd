@@ -16,6 +16,8 @@ var warning: Dictionary = {}
 var completion_label: Label
 var pause_with_game := false
 var result_keep_running := false
+# FIX-03: extra px added to the first toast top while the boss health bar occupies the top centre.
+var stack_offset := 0.0
 var presentation: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
 
 static func particle(word: String, consonant: String, vowel: String) -> String:
@@ -106,7 +108,10 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	copy.custom_minimum_size = Vector2(width,visible_height(presentation,font_size)+border()*2)
 	copy.size = copy.custom_minimum_size
 	copy.offset_left = -width/2; copy.offset_right = width/2
-	var entry := {"panel":copy,"text":text,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
+	# FIX-03: every toast already on screen steps back (dim, then shrink) when a new one arrives.
+	for item in entries:
+		if not item.retiring and float(item.demote)<0: item.demote = 0.0
+	var entry := {"panel":copy,"text":text,"demote":-1.0,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
 	entries.push_front(entry)
 	if is_warning:
 		warning = entry
@@ -123,6 +128,7 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 func _process(delta: float) -> void:
 	if pause_with_game and get_tree().paused and not result_keep_running: return
 	for entry in entries:
+		if float(entry.demote)>=0: entry.demote+=delta
 		if not entry.warning or entry.retiring or get_tree().paused:
 			entry.age+=delta
 			entry.remaining-=delta
@@ -134,25 +140,35 @@ func _refresh() -> void:
 		if float(entries[index].remaining)<=0:
 			entries[index].panel.queue_free()
 			entries.remove_at(index)
-	var top := first_top(presentation)
+	var top := first_top(presentation)+stack_offset
+	var fade_sec := float(presentation.Toast_old_fade_sec)
 	for entry in entries:
 		var view: PanelContainer = entry.panel
+		# Older toast: alpha first, then size, scaled from the top edge so its stacked position does not jump.
+		var demote := float(entry.demote)
+		var dim := 1.0
+		var factor := 1.0
+		if demote>=0:
+			dim = lerpf(1,float(presentation.Toast_old_alpha),clampf(demote/maxf(fade_sec,0.000001),0,1))
+			factor = lerpf(1,float(presentation.Toast_old_scale),clampf((demote-fade_sec)/maxf(float(presentation.Toast_old_shrink_sec),0.000001),0,1))
 		if not entry.retiring:
 			var height := maxf(view.custom_minimum_size.y,view.get_combined_minimum_size().y)
 			view.offset_top = top
 			view.offset_bottom = top+height
-			top = view.offset_bottom+float(presentation.Toast_gap_px)
+			top = view.offset_top+height*factor+float(presentation.Toast_gap_px)
 		view.modulate.a = minf(clampf(float(entry.age)/FADE_IN_SEC,0,1),clampf(float(entry.remaining)/FADE_OUT_SEC,0,1))
 		if int(presentation.Ui_fx_enabled)!=0:
 			var open := clampf(float(entry.age)/float(presentation.Ui_open_sec),0,1)
 			var close := clampf(float(entry.remaining)/float(presentation.Ui_close_sec),0,1)
-			view.pivot_offset = view.size/2
-			view.scale.y = minf(lerpf(float(presentation.Ui_open_scale_y),1,open),close)
+			view.pivot_offset = Vector2(view.size.x/2,0) if demote>=0 else view.size/2
+			view.scale = Vector2(factor,factor*minf(lerpf(float(presentation.Ui_open_scale_y),1,open),close))
 			view.position.x = (size.x-view.size.x)/2+sin(open*TAU*int(presentation.Ui_flicker_count))*float(presentation.Ui_jitter_px)*(1-open)
 			if open<1 and sin(open*TAU*int(presentation.Ui_flicker_count))<0: view.modulate.a*=float(presentation.Ui_flicker_alpha)
 		else:
-			view.scale = Vector2.ONE
+			view.pivot_offset = Vector2(view.size.x/2,0)
+			view.scale = Vector2.ONE*factor
 			view.modulate.a = 1
+		view.modulate.a *= dim
 	visible = not entries.is_empty() or is_instance_valid(completion_label)
 
 func show_completion(text: String) -> void:

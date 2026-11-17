@@ -1068,3 +1068,29 @@ combat_presentation.csv 새 키
 - 바루카 시트: sd_boss_baruka.png 4202×339, 1행 11칸(칸 382×339). 열0 대기, 열1 준비, 열2 공격, 열3~10 걷기 8칸(enemy.csv Walk_cols 3-10, Walk_fps 11).
 - 기본 공격 대상 선택지(choice_attack_targets)는 추가 대상마다 기존 베기/찌르기 이펙트를 같은 고정 풀(Basic_fx_pool)에서 꺼내 쓴다.
 - 로딩 → 지역 선택 진입은 FX-06 진입 연출(Stage_cover_sec·Stage_reveal_sec, 같은 셰이더 재질 1개)을 그대로 쓴다.
+
+## 2026-11-17 FIX-03 — 토스트 물러남·보스 HP 바·진입 효과음
+
+- 토스트: 쌓는 방향(최신이 맨 위, 이전 것이 아래)은 그대로다. 새 메시지가 들어오면 이미 보이던 메시지는 먼저 알파를 Toast_old_alpha까지 Toast_old_fade_sec 동안 낮추고, 이어서 크기를 Toast_old_scale까지 Toast_old_shrink_sec 동안 줄인다. 크기는 패널 위쪽 가장자리(가로 중앙)를 기준으로 줄여 위치가 튀지 않고, 줄어든 높이로 아래 메시지 위치를 다시 계산한다. 새 메시지는 100%다. 표시 시간(Toast_sec)·최대 개수(Toast_max)·페이드 인/아웃은 그대로다. Toast_gap_px는 패널 사각형 사이 간격이며, 창 그림의 투명 테두리(Ui_window_border_px)가 사각형 안에 있어 보이는 테두리 선 사이 간격은 이보다 크다.
+- 보스 HP 바: 화면 위 가운데, 경험치 바 아래 Boss_bar_top_px에 이름 한 줄과 바를 둔다. 노드는 Name(Label)·Frame(테마 ProgressBar 배경 9-slice)·Back(ColorRect)·Fill(ColorRect)로 나뉘며 Fill 너비만 hp/max_hp로 바꾼다. 갱신은 보스의 damaged·died 신호에서만 하고 매 프레임 처리·redraw가 없다. 바가 보이는 동안 첫 토스트는 바 아래 Boss_bar_toast_gap_px에서 시작한다. 이때 토스트가 레벨업 창 위쪽과 겹칠 수 있다(보스전 중 레벨업 시).
+- 진입 효과음: sound.csv에 transition_menu(sfx_transition_menu.wav), transition_stage(sfx_transition_stage.wav)를 추가했다(Volume_db 0, Max_concurrent 1, Min_interval_sec 0, Pitch_random 0, SFX 버스).
+
+combat_presentation.csv 새 키
+
+| Id | 예시 Value | 설명 |
+|---|---|---|
+| Toast_old_alpha | 0.6 | 새 메시지가 온 뒤 기존 토스트의 알파 |
+| Toast_old_fade_sec | 0.12 | 위 알파까지 낮추는 시간(초) |
+| Toast_old_scale | 0.85 | 알파가 낮아진 뒤 기존 토스트의 크기 배율 |
+| Toast_old_shrink_sec | 0.12 | 위 크기까지 줄이는 시간(초) |
+| Ui_notice_font_size | 13 | 메인 화면 하단 저작권 문구 글자 크기(이전 11의 1.2배 반올림) |
+| Boss_bar_width | 560 | 보스 HP 바 폭px |
+| Boss_bar_height | 18 | 보스 HP 바 높이px |
+| Boss_bar_color | #e0283c | 채움 색 |
+| Boss_bar_back_color | #1a1030 | 배경 색 |
+| Boss_bar_top_px | 18 | 화면 위에서 보스 이름 줄 위까지px |
+| Boss_bar_name_font_size | 20 | 보스 이름 글자 크기 |
+| Boss_bar_name_gap_px | 2 | 이름 줄과 바 테두리 사이px |
+| Boss_bar_toast_gap_px | 6 | 바 아래와 첫 토스트 테두리 선 사이px |
+
+값을 바꾼 기존 키: Toast_gap_px 8→4.

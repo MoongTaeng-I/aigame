@@ -168,6 +168,7 @@ func _end_round(cleared: bool) -> void:
 	round_result = {"cleared":cleared,"seconds":round_nodes.manager._elapsed_seconds,"level":player.level,"kills":kills,"shadows":names}
 	player.run_finished = true
 	round_nodes.director.result_locked = true
+	if is_instance_valid(round_nodes.director.boss_bar): round_nodes.director.boss_bar.release()
 	round_nodes.choices.result_locked = true
 	round_nodes.choices.active = false
 	round_nodes.choices.pending = 0

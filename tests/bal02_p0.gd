@@ -32,7 +32,7 @@ func data(t: SceneTree, store: CsvDataStore) -> void:
 	for i in range(1,11): ids.append("level_%02d" % i)
 	t.check(near(column(store,"level.csv",ids,"Xp_to_next"),[7,12,16,20,25,29,35,40,46,52]),"BAL02 Xp_to_next is 7 12 16 20 25 29 35 40 46 52")
 	var basic: Dictionary = store.get_row("boss_action.csv","baruka_basic")
-	t.check(is_equal_approx(float(basic.Telegraph_sec),0.23) and is_equal_approx(float(basic.Dash_speed),1560) and is_equal_approx(float(basic.Tri_width),160) and is_equal_approx(float(basic.Tri_length),140) and is_equal_approx(float(basic.Dash_distance),160),"BAL02 baruka_basic telegraph .23 speed 1560 with triangle and dash distance unchanged")
+	t.check(is_equal_approx(float(basic.Telegraph_sec),0.184) and is_equal_approx(float(basic.Dash_speed),1560) and is_equal_approx(float(basic.Tri_width),160) and is_equal_approx(float(basic.Tri_length),140) and is_equal_approx(float(basic.Dash_distance),160),"BAL02 baruka_basic telegraph .184 (FIX03) speed 1560 with triangle and dash distance unchanged")
 	var enemy: Dictionary = store.get_row("enemy.csv","boss_baruka")
 	t.check(int(enemy.Sprite_cols)==11 and String(enemy.Walk_cols)=="3-10" and is_equal_approx(float(enemy.Walk_fps),11),"BAL02 boss_baruka Sprite_cols 11 Walk_cols 3-10 Walk_fps 11")
 	for id in ["boss_ice_bear","boss_ice_elf"]:
@@ -110,7 +110,7 @@ func baruka(t: SceneTree, store: CsvDataStore) -> void:
 	var basic: Dictionary = store.get_row("boss_action.csv","baruka_basic")
 	boss.start_action(basic,n.player.position)
 	boss.update_boss_visual(0.1,true)
-	t.check(boss.phase=="telegraph" and body.frame_column==1 and is_equal_approx(boss.phase_end-boss.clock,0.23),"BAL02 telegraph pose 1 wins over walking and lasts .23")
+	t.check(boss.phase=="telegraph" and body.frame_column==1 and is_equal_approx(boss.phase_end-boss.clock,0.184),"BAL02 telegraph pose 1 wins over walking and lasts .184 (FIX03)")
 	var points: PackedVector2Array = boss.baruka.triangle_points()
 	var length: float = boss.dash_length
 	boss.clock = boss.phase_end

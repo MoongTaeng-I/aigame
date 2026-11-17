@@ -132,7 +132,7 @@ func start_region() -> void:
 	session.process_mode = Node.PROCESS_MODE_PAUSABLE
 	session.round_ended.connect(_on_round_ended)
 	add_child(session)
-	ui.reveal_stage()
+	ui.reveal_stage(true)
 
 func _dispose_round() -> void:
 	if is_instance_valid(session):

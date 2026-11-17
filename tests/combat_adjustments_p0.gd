@@ -16,7 +16,7 @@ func run(tree: SceneTree) -> void:
 	t.check(store.load_all().is_empty(),"S8-I3-B real data load")
 	var basic := store.get_row("boss_action.csv","baruka_basic")
 	var blink := store.get_row("boss_action.csv","baruka_blink")
-	t.check(basic.Cooldown_sec==0.63 and basic.Telegraph_sec==0.23 and basic.Dash_speed==1560 and basic.Dash_distance==160 and basic.Recovery_sec==0,"S8-I3-B exact fixed basic values (BAL02 telegraph .23 speed 1560)")
+	t.check(basic.Cooldown_sec==0.63 and basic.Telegraph_sec==0.184 and basic.Dash_speed==1560 and basic.Dash_distance==160 and basic.Recovery_sec==0,"S8-I3-B exact fixed basic values (FIX03 telegraph .184 speed 1560)")
 	t.check(blink.Strike_interval_sec==0.04 and blink.Dash_speed==8064 and blink.Cooldown_sec==10,"S8-I3-B blink changes interval rather than cooldown")
 	t.check(store.get_row("projectile.csv","elf_arrow").Speed==585 and store.get_row("projectile.csv","elf_burst_arrow").Speed==585 and store.get_row("projectile.csv","proj_test_01").Speed==300,"S8-I3-B only two projectile speeds changed")
 	await flee_checks()
@@ -147,7 +147,7 @@ func toast_and_visual_checks() -> void:
 	for i in range(5): view.push_message("message%d" % i)
 	var active: Array = view.entries.filter(func(entry: Dictionary) -> bool: return not entry.retiring)
 	t.check(active.size()==4 and active[0].text=="message4" and active[3].text=="message1","S8-I3-B newest first with oldest retiring at fifth")
-	t.check(active[1].panel.offset_top-active[0].panel.offset_bottom==8,"S8-I3-B toast gap8")
+	t.check(active[1].panel.offset_top-active[0].panel.offset_bottom==4,"S8-I3-B toast gap4 (FIX03)")
 	view._process(0.21)
 	t.check(view.entries.size()==4,"S8-I3-B overflow fade removes oldest")
 	d.timeline = [{"Id":"test_final","Time_mmss":0,"Boss_id":"boss_final"}]

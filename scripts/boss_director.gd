@@ -21,6 +21,7 @@ var toast_text := ""
 var gate_position := Vector2.ZERO
 var toast_view: Control
 var warning_started: float = 0
+var boss_bar: Control
 
 func configure(owner_manager: EnemyManager, records: Dictionary, action_rows: Dictionary, events: Dictionary, rules: Dictionary) -> void:
 	manager = owner_manager
@@ -39,6 +40,16 @@ func _ready() -> void:
 	toast_view = preload("res://scripts/boss_toast.gd").new()
 	layer.add_child(toast_view)
 	toast = toast_view.label
+	boss_bar = preload("res://scripts/boss_health_bar.gd").new()
+	layer.add_child(boss_bar)
+	layer.move_child(boss_bar,0)
+	boss_bar.visibility_changed.connect(_place_toasts)
+
+# Toasts keep their own stacking rule but start below the boss bar while it is shown.
+func _place_toasts() -> void:
+	if not is_instance_valid(toast_view): return
+	var values: Dictionary = toast_view.presentation
+	toast_view.stack_offset = boss_bar.bottom_px()+float(values.Boss_bar_toast_gap_px)-float(values.Toast_top_px) if boss_bar.visible else 0.0
 
 func player_target() -> Node2D:
 	return manager._player
@@ -62,6 +73,7 @@ func advance(now: float, _delta: float) -> void:
 		manager.activate_boss(actor)
 		actor.died.connect(_boss_died)
 		phase = "active"
+		if is_instance_valid(boss_bar) and not result_locked: boss_bar.show_boss(actor,String(manager._enemy_records[bosses[active_id].Enemy_id].Name_ko))
 		toast_text = ""
 	if is_instance_valid(toast_view):
 		var remaining := deadline-now+(float(rule.Emerge_sec) if phase=="warn" else 0.0)

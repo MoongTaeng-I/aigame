@@ -110,7 +110,7 @@ func baruka() -> void:
 	b.start_action(store.get_row("boss_action.csv","baruka_basic"),f.player.global_position)
 	step(f,0)
 	t.check(b.sprite_body.frame_column==1,"ART12 baruka telegraph1")
-	step(f,0.235)
+	step(f,0.19)
 	t.check(b.sprite_body.frame_column==2 and b.phase=="dash","ART12 baruka dash2")
 	b.baruka.interrupt()
 	b.start_action(store.get_row("boss_action.csv","baruka_ice"),f.player.global_position)

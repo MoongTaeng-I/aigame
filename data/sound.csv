@@ -20,6 +20,8 @@ belion_chain,res://assets/audio/sfx/sfx_belion_chain.wav,0,2,0,0.05
 boss_warning,res://assets/audio/sfx/sfx_boss_warning.wav,0,3,0,0.05
 gate_open,res://assets/audio/sfx/sfx_gate_open.wav,0,3,0,0.05
 boss_slam,res://assets/audio/sfx/sfx_boss_slam.wav,0,3,0,0.05
+transition_menu,res://assets/audio/sfx/sfx_transition_menu.wav,0,1,0,0
+transition_stage,res://assets/audio/sfx/sfx_transition_stage.wav,0,1,0,0
 bgm_title,res://assets/audio/bgm/bgm_title.ogg,0,1,0,0
 bgm_stage01,res://assets/audio/bgm/bgm_stage01.ogg,0,1,0,0
 bgm_boss,res://assets/audio/bgm/bgm_boss.ogg,0,1,0,0
