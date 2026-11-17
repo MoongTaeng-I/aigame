@@ -20,6 +20,9 @@ const PlayerScene = preload("res://scenes/player.tscn")
 signal round_ended(result: Dictionary)
 var supplied_data: CsvDataStore
 var managed_flow := false
+# REGION-01: the region this round plays (region.csv Id). Empty = the first open region.
+var region_id := ""
+var region: Dictionary = {}
 var round_finished := false
 var kills := 0
 var round_result: Dictionary = {}
@@ -77,8 +80,12 @@ func _create_game(data_store: CsvDataStore) -> void:
 	var spawn_rule: Dictionary = data_store.get_row("spawn_rule.csv","rule_01")
 	var xp_rule: Dictionary = data_store.get_row("xp_rule.csv","xp_rule_01")
 	var enemy_records: Dictionary = data_store.get_table("enemy.csv")
-	var spawn_records: Dictionary = data_store.get_table("spawn.csv")
+	var FlowData = preload("res://scripts/flow_data.gd")
+	if region_id.is_empty(): region_id = FlowData.default_region(data_store)
+	region = data_store.get_row("region.csv",region_id)
+	var spawn_records: Dictionary = FlowData.rows_for(data_store.get_table("spawn.csv"),region_id)
 	var map = MapScene.instantiate()
+	map.region = region
 	add_child(map)
 	var player = PlayerScene.instantiate()
 	player.managed_results = managed_flow
@@ -105,8 +112,10 @@ func _create_game(data_store: CsvDataStore) -> void:
 		data_store.get_row("basic_attack.csv", "attack_01"),
 		float(spawn_rule["Separation_gap"]),
 		int(spawn_rule["Push_iterations"]),
-		data_store.get_table("enemy_scaling.csv")
+		FlowData.rows_for(data_store.get_table("enemy_scaling.csv"),region_id)
 	)
+	enemy_manager.bgm_stage = String(region.get("Bgm_stage","bgm_stage01"))
+	enemy_manager.bgm_boss = String(region.get("Bgm_boss","bgm_boss"))
 	enemy_manager.name = "EnemyManager"
 	map.add_child(enemy_manager)
 	var hit_fx := HitFx.new()
@@ -131,7 +140,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 	choices.configure(player,data_store.get_table("choice.csv"),data_store.get_table("choice_level.csv"),data_store.get_row("choice_rule.csv","choice_rule_01"),shadows)
 	map.add_child(choices)
 	var boss_director := preload("res://scripts/boss_director.gd").new()
-	boss_director.configure(enemy_manager,data_store.get_table("boss.csv"),data_store.get_table("boss_action.csv"),data_store.get_table("stage_timeline.csv"),data_store.get_row("boss_rule.csv","boss_rule_01"))
+	boss_director.configure(enemy_manager,data_store.get_table("boss.csv"),data_store.get_table("boss_action.csv"),FlowData.rows_for(data_store.get_table("stage_timeline.csv"),region_id),data_store.get_row("boss_rule.csv","boss_rule_01"))
 	boss_director.managed_results = managed_flow
 	map.add_child(boss_director)
 	boss_director.toast_view.pause_with_game = managed_flow

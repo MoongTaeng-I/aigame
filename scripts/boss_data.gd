@@ -6,7 +6,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	store.schemas["boss.csv"]["Move_speed_ref_enemy"] = {"type":"Optional","inner":"String"}
 	store.schemas["boss.csv"]["Move_speed_mult"] = {"type":"Optional","inner":"Float"}
 	store.schemas["boss.csv"]["Outside_detect_speed"] = {"type":"Optional","inner":"Float"}
-	store.register_schema("stage_timeline.csv",{"Id":"String","Time_mmss":"Int","Boss_id":"String","Note":"String"})
+	store.register_schema("stage_timeline.csv",{"Id":"String","Time_mmss":"Int","Boss_id":"String","Note":"String","Region_id":"String"})
 	var action := {"Id":"String","Boss_id":"String","Kind":{"type":"Enum","values":{"basic":0,"dash":1,"slam":2,"ranged_basic":3,"push":4,"burst":5,"stealth":6,"tri_dash":7,"blink_strike":8,"chase":9,"ice_zone":10}},"Use_range":"Float","Damage":"Int","Telegraph_sec":"Float","Recovery_sec":"Float","Cooldown_sec":"Float","Note":"String"}
 	for field in ["Tri_width","Tri_length","Area_radius","Strike_interval_sec","Strike_min_distance","Zone_radius","Zone_life_sec","Freeze_sec","Flee_trigger_range","Flee_speed","Flee_distance"]:
 		action[field] = {"type":"Optional","inner":"Float"}

@@ -1,0 +1,2 @@
+﻿Id,Name_ko,Locked,Locked_text,Note,Card_image,Ground_texture,Ground_brightness,Props_texture,Props_cols,World_tint,Weather,Snow_alpha,Fog_strength,Bgm_stage,Bgm_boss,Forest_seed
+region_test,검사 지역,0,,REGION-01 검사 전용(출시 데이터 아님),res://assets/ui/region_ice.png,res://assets/art/env/snow_ground.png,0.93,res://assets/art/env/env_props.png,6,#c8d8ff,none,0.65,0.45,bgm_title,bgm_boss,11015

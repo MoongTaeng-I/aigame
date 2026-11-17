@@ -126,6 +126,18 @@ MVP 목표 플레이타임은 한 판 약 6분이며 자동 종료 시각은 없
 | combat_presentation.csv | Rapid_sfx_tail_sec, Rapid_sfx_fade_sec | FIX-06에서 난도 소리 줄여 멈춤 제거 |
 | sound.csv | rapid_slash_finish (assets/audio/sfx/sfx_rapid_slash_finish.wav) | FIX-06에서 난도 3구간 소리 제거. 파일은 내보내기에 포함된다 |
 
+## 지역 축 (REGION-01, 2026-11-17)
+
+지역별 콘텐츠·연출은 CSV 행으로 고른다. 새 지역은 코드 수정 없이 아래 행 추가만으로 들어간다.
+
+1. region.csv에 행 1개: Id(예 region_03), Name_ko, Locked 0, Locked_text, Note, Card_image, Ground_texture, Ground_brightness(0~1), Props_texture, Props_cols(4 이상), World_tint(HTML 색), Weather(snow/none), Snow_alpha(0~1), Fog_strength(0~1), Bgm_stage·Bgm_boss(sound.csv Id), Forest_seed(Int). 열 설명은 시스템 09.
+2. spawn.csv에 그 지역의 생성 행 1개 이상(Region_id = 새 Id).
+3. enemy_scaling.csv에 그 지역의 강화 행. Time_start 0인 행이 정확히 1개, 지역 안에서 시각 중복 금지.
+4. stage_timeline.csv에 그 지역의 보스 행. 최종 보스(boss.csv Is_final=1)를 고르는 행이 1개 이상. boss.csv·boss_action.csv·enemy.csv는 지역 열 없이 공유하고, 타임라인이 지역별로 보스 역할을 고른다.
+5. 새 그림·음악을 쓰면 파일과 sound.csv 행을 함께 추가한다.
+
+검증: 열린 지역(Locked 0)은 위 값이 모두 유효해야 하고 각 표의 Region_id는 region.csv에 있어야 한다. 경로 없음·참조 없음·범위 밖·필수 행 누락은 데이터 오류 화면이다. 잠긴 지역은 콘텐츠 열과 행을 비워도 된다(카드 그림이 비면 첫 그림 있는 지역 그림을 흑백·어둡게+자물쇠). 지역 선택 화면은 region.csv의 Id 순서대로 카드를 보인다. 지역을 고르고 시작하면 Region_id가 라운드 전체에 전달되고, 다시 하기는 같은 지역이며, 최고 클리어 타임은 지역별이다. 지역 없이 라운드를 만들면(main.tscn 단독) Id 순서상 첫 열린 지역을 쓴다. 현재 region_01과 region_02 행은 필수다.
+
 ## 비주얼·사운드 방향
 
 - 배경은 눈보라 치는 설원 숲 던전이다(사용자 결정,2026-11-15 LOOK-01). SD 화풍,눈 바닥·침엽수/바위·화면 눈발/눈안개와 푸른 회색 그림자를 사용한다. 기존 전투·생성 규칙은 유지한다.

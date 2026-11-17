@@ -997,6 +997,10 @@
 
 - 출시 전 최종 점검을 했다. 라운드 안 신호 처리 중 start_region·show_menu·라운드 해제를 직접 부르는 경로는 없었다(결과·일시정지 창 버튼은 지연 호출, 라운드 종료 신호는 결과 창만 띄움). 메인 복귀·다시 하기를 실제 버튼으로 3회 반복한 뒤 노드 수·고아 노드·오디오 플레이어·BGM 저역 필터·Engine.time_scale·일시정지·카메라 줌·배경음악이 처음 메뉴와 같은지 확인하는 검사(rel01_p0)를 더했다. 커밋된 사용자 값으로 runtime과 클리어까지 가는 S9 흐름 검사를 돌려 오류·경고가 없음을 확인했다. 미사용 데이터 키는 지우지 않고 game_design.md에 한 표로 모았다. 내보내기 설정(제품 이름 "나 혼자만 서바이벌", 버전 1.0.0.0, 출력 ../build/SoloSurvival.exe, tests·docs 제외)을 정리해 Windows 실행 파일과 .pck를 만들고, .pck에 CSV 29개·OFL.txt·CREDITS.txt가 있고 tests·docs·.local이 없음을 확인했다. 빌드 방법은 game_design.md '빌드 방법'에 적었다. 종료 시 배경음악 재생 객체가 남았다는 엔진 메시지(누수 4·사용 중 리소스 2)는 이전부터 있던 것으로 남은 문제에 적었다. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회, 결과는 `.local/reports/REL-01.md`. 실제 창 실행·플레이는 사용자 확인이 필요하다.
 
+## 2026-11-17 REGION-01 — 지역 축 데이터화
+
+- 지역별 콘텐츠·연출을 CSV로 고르는 구조를 만들었다. region.csv에 Card_image·Ground_texture·Ground_brightness·Props_texture·Props_cols·World_tint·Weather·Snow_alpha·Fog_strength·Bgm_stage·Bgm_boss·Forest_seed 열을 붙이고 region_01에는 지금까지 코드와 combat_presentation.csv에서 쓰던 값을 그대로 옮겼다(region_02는 잠긴 채 빈칸). spawn.csv·stage_timeline.csv·enemy_scaling.csv 맨 뒤에 Region_id(전부 region_01)를 붙여 실행 시 고른 지역의 행만 쓰고, 열린 지역은 생성 행·시각0 강화 행 1개·최종 보스 타임라인이 있어야 한다. 맵 바닥·장식·눈발·안개·틴트·음악·지역 카드가 지역 값을 읽고, 시작한 지역이 라운드와 다시 하기에 그대로 전달되며 최고 클리어 타임은 지역별이다. 2지역 콘텐츠는 만들지 않았다. 같은 시드로 1지역을 0~340초 구간에서 돌린 결과(생성 수·적 위치 합·보스 등장·HP·처치 수·소리 순서·음악·장식 배치·색)가 변경 전 커밋 623a1cb와 바이트 단위로 같다. 검사 전용 지역(tests/fixtures/region_test, 출시 데이터 아님)을 행 추가만으로 넣어 틴트·날씨 없음·음악·생성 행이 코드 수정 없이 적용됨을 확인했다. CREDITS.txt의 "(출처 채널: 작성 필요)"는 사용자 결정으로 지웠다. 새 지역 추가 절차는 game_design.md '지역 축'. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회, 결과는 `.local/reports/REGION-01.md`. 직접 플레이 확인이 필요하다.
+
 ## 다음 기록 양식
 
 - **목표:**

@@ -25,6 +25,8 @@ var loading_caption: Label
 var notice: Label
 var cards: Array[Control] = []
 var card_rows: Array = []
+# REGION-01: card pictures by path, loaded once (layout runs only on menu changes).
+var card_textures: Dictionary = {}
 var card_index := -1
 var slide_remaining := 0.0
 var slide_direction := 0.0
@@ -424,6 +426,7 @@ func layout_cards() -> void:
 		card.visible = screen=="menu" and index>=0 and index<card_rows.size()
 		if not card.visible: continue
 		var is_locked: bool = card_rows[index].Locked
+		card.get_node("Art").texture = card_texture(card_rows[index])
 		card.get_node("Art").material = art_locked if is_locked else (art_side if i!=1 else null)
 		card.get_node("Lock").visible = is_locked
 		var factor := 1.0 if i==1 else float(values.Ui_side_scale)
@@ -433,6 +436,18 @@ func layout_cards() -> void:
 		card.position = Vector2(640+(i-1)*608-280*factor+slide,300-157.5*factor)
 	# Keep the selected card above the small previews.
 	cards[0].z_index = 0; cards[2].z_index = 0; cards[1].z_index = 1
+
+# region.csv Card_image; a blank one (locked regions) shows the first region picture, darkened by the lock material.
+func card_texture(row: Dictionary) -> Texture2D:
+	var path: Variant = row.get("Card_image")
+	if path==null or String(path).is_empty():
+		for other in card_rows:
+			if other.get("Card_image")!=null and not String(other.Card_image).is_empty():
+				path = other.Card_image
+				break
+	if path==null: return preload("res://assets/ui/region_ice.png")
+	if not card_textures.has(path): card_textures[path] = load(String(path))
+	return card_textures[path]
 
 func draw_dust() -> void:
 	if screen in ["loading","menu"] and int(values.Ui_fx_enabled)!=0:

@@ -99,6 +99,7 @@
 | Spawn_interval | Float | 생성 간격(초) |
 | Spawn_count | Int | 한 번에 생성할 수 |
 | Note | String | 설명용 |
+| Region_id | String | 이 행을 쓰는 지역, `region.csv`의 `Id`(REGION-01). 실행 시 고른 지역의 행만 쓴다 |
 
 시간대가 겹치면 겹친 행을 모두 적용한다. 보스 등장 시점은 시스템8의 `stage_timeline.csv`, 일반 적 생성 시 강화 배율은 `enemy_scaling.csv`에서 관리한다. 이 spawn.csv에는 생성 시각·간격·수만 둔다. 같은 생성 규칙을 두 테이블에 중복해서 두지 않는다.
 
@@ -247,6 +248,7 @@ flowchart TD
 | Spawn_interval | 활성 시간대에서 누적해 생성하는 주기 | 1 | Float | 초 | 0 초과 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Spawn_count | 주기마다 요청하는 적 수 | 2 | Int | 마리 | 미정 | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 내용·범위 검증 없음 | 실제 수는 생존 상한으로 제한; 음수 요청은 생성 수 0으로 제한 |
 | Note | 작성자가 남기는 설명; 게임 동작에는 사용하지 않음 | A단계 검증용 시작값 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | 없음 |
+| Region_id | 이 생성 규칙을 쓰는 지역(REGION-01) | region_01 | String | 해당 없음 | region.csv에 행 존재 | 불가 | region.csv.Id | 데이터 오류 화면 | 열린 지역마다 1행 이상 필요. 잠긴 지역은 0행 허용. 같은 지역 안에서만 시간대 겹침 규칙 적용 |
 
 ### spawn_rule.csv
 

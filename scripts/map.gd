@@ -9,6 +9,11 @@ var debug_visible := false
 var settings: Dictionary
 var ground: Texture2D
 var prop_layout: Array = []
+# REGION-01: the round's region.csv row. Empty (a map made alone, e.g. in tests) keeps the region_01 defaults below.
+var region: Dictionary = {}
+var props_texture: Texture2D
+var props_cols := 6
+var weather_kind := "snow"
 
 func _ready() -> void:
     var bodies := Node2D.new()
@@ -18,11 +23,27 @@ func _ready() -> void:
     _create_boundaries()
     settings = load("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
     preload("res://scripts/sprite_body.gd").prepare_ground_shadow(settings)
-    ground = load("res://assets/art/env/snow_ground.png")
+    _apply_region()
     texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
     texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
     _create_environment(bodies)
     queue_redraw()
+
+# Region values replace the presentation defaults once, typed, before anything reads them.
+func _apply_region() -> void:
+    if region.is_empty():
+        ground = load("res://assets/art/env/snow_ground.png")
+        props_texture = load("res://assets/art/env/env_props.png")
+        return
+    ground = load(String(region.Ground_texture))
+    props_texture = load(String(region.Props_texture))
+    props_cols = int(region.Props_cols)
+    weather_kind = String(region.Weather)
+    settings["Ground_brightness"] = float(region.Ground_brightness)
+    settings["World_tint"] = Color(String(region.World_tint))
+    settings["Snow_alpha"] = float(region.Snow_alpha)
+    settings["Fog_strength"] = float(region.Fog_strength)
+    settings["Forest_seed"] = int(region.Forest_seed)
 
 func get_map_rect() -> Rect2:
     return MAP_RECT
@@ -70,10 +91,12 @@ func _create_environment(bodies: Node2D) -> void:
     var inner := MAP_RECT.grow(-band)
     for i in range(int(settings.get("Inner_props",14))):
         var pos := Vector2(rng.randf_range(inner.position.x,inner.end.x),rng.randf_range(inner.position.y,inner.end.y))
-        var column := rng.randi_range(0,5)
+        var column := rng.randi_range(0,props_cols-1)
         _add_prop(bodies,pos,column,rng.randf()<0.5,float(settings.get("Inner_prop_scale",0.55)) if column<4 else 1.0)
     container.set_meta("count",prop_layout.size())
     modulate = Color(settings.get("World_tint","#eef2fa"))
+    # Weather none: no snow or edge fog layer at all.
+    if weather_kind!="snow": return
     var weather := preload("res://scripts/snow_weather.gd").new()
     weather.name = "SnowWeather"
     weather.settings = settings
@@ -81,7 +104,8 @@ func _create_environment(bodies: Node2D) -> void:
 
 func _add_prop(bodies: Node2D, pos: Vector2, column: int, mirrored: bool, factor: float) -> void:
     var prop := preload("res://scripts/environment_prop.gd").new()
-    prop.texture = load("res://assets/art/env/env_props.png")
+    prop.texture = props_texture
+    prop.cell_size = Vector2(props_texture.get_width()/float(props_cols),props_texture.get_height())
     prop.column = column
     prop.mirrored = mirrored
     prop.display_height = float(settings.get("Prop_cell_height",234))*factor

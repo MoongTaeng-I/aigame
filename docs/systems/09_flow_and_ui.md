@@ -53,8 +53,22 @@ region.csv는 이 시스템이 소유하며 UTF-8 BOM·LF와 keep .import를 함
 | Locked | Bool(0/1) | 0 입장 가능 / 1 잠김 | 0/1 외 파싱 오류 |
 | Locked_text | String | (빈칸) | 빈칸 가능(FIX-03부터 잠긴 지역도). 값이 있으면 카드 아래 문구와 잠긴 시작 버튼 클릭 안내로 쓴다. 예: 추후 업데이트 예정 |
 | Note | String | 현재 전체 데이터 사용 | 게임에서 읽지 않음 |
+| Card_image | Path(빈칸 가능) | res://assets/ui/region_ice.png 지역 카드 그림 | 열린 지역 필수·이미지 없음 오류. 잠긴 지역이 비면 첫 그림 있는 지역의 그림을 흑백·어둡게+자물쇠 |
+| Ground_texture | Path(빈칸 가능) | res://assets/art/env/snow_ground.png 맵 바닥 | 열린 지역 필수·이미지 없음 오류 |
+| Ground_brightness | Float(빈칸 가능) | 0.93 바닥 밝기 배율 | 열린 지역 필수, 0~1 |
+| Props_texture | Path(빈칸 가능) | res://assets/art/env/env_props.png 나무·바위 시트 | 열린 지역 필수·이미지 없음 오류 |
+| Props_cols | Int(빈칸 가능) | 6 시트 칸 수(칸 폭 = 그림 폭 ÷ 칸 수). 앞 4칸은 가장자리 나무, 안쪽 장식은 전체 칸에서 고른다 | 열린 지역 필수, 4 이상 |
+| World_tint | String(빈칸 가능) | #eef2fa 맵 전체 색 | 열린 지역 필수, HTML 색 |
+| Weather | String(빈칸 가능) | snow 눈발·가장자리 안개 / none 날씨 층 없음 | 열린 지역 필수, snow 또는 none |
+| Snow_alpha | Float(빈칸 가능) | 0.65 눈발 불투명도 | 열린 지역 필수, 0~1 |
+| Fog_strength | Float(빈칸 가능) | 0.45 가장자리 안개 세기 | 열린 지역 필수, 0~1 |
+| Bgm_stage | String(빈칸 가능) | bgm_stage01 전투 음악, sound.csv Id | 열린 지역 필수, sound.csv에 행 존재 |
+| Bgm_boss | String(빈칸 가능) | bgm_boss 보스 음악(등장 시 크로스페이드, 처치 시 Bgm_stage로), sound.csv Id | 열린 지역 필수, sound.csv에 행 존재 |
+| Forest_seed | Int(빈칸 가능) | 11015 장식 배치·눈발 난수 시드 | 열린 지역 필수 |
 
 region_01과 region_02 행은 필수다. 오류는 데이터 오류 화면으로 보낸다.
+
+REGION-01: Card_image~Forest_seed는 지역 축 열이다. 잠긴 지역(Locked 1)은 비워도 되고 검증하지 않는다. 열린 지역은 모두 채워야 하며 경로 없음·참조 없음·범위 밖이면 데이터 오류 화면이다. 지역을 고르고 시작하면 Region_id가 라운드 전체에 전달되고 다시 하기도 같은 지역이다. 최고 클리어 타임은 지역 Id별로 따로 기록한다. 새 지역 추가 절차는 game_design.md '지역 축'.
 
 combat_presentation.csv의 기존 Id/Value 구조에 Loading_sec=1.5를 추가한다. Value는 유한 양수 Float 초로 검증하고 로딩 화면 최소 표시 시간으로 사용한다. 기존 연출 값은 바꾸지 않는다. 공통 연출 테이블의 나머지 정의는 시스템10을 따른다.
 

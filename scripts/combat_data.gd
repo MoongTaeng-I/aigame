@@ -11,7 +11,7 @@ const HitFxData = preload("res://scripts/hit_fx_data.gd")
 static func register_schemas(store: CsvDataStore) -> void:
 	store.register_schema("sound.csv",{"Id":"String","Path":"Path","Volume_db":"Float","Max_concurrent":"Int","Min_interval_sec":"Float","Pitch_random":"Float"})
 	preload("res://scripts/flow_data.gd").register_schemas(store)
-	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String"})
+	store.register_schema("enemy_scaling.csv",{"Id":"String","Time_start":"Float","Hp_mult":"Float","Speed_mult":"Float","Damage_mult":"Float","Xp_mult":"Float","Note":"String","Region_id":"String"})
 	store.register_schema("player.csv", {
 		"Id": "String", "Name_ko": "String", "Move_speed": "Float",
 		"Body_radius": "Float", "Push_weight": "Float", "Sprite_path":"String", "Idle_sprite_path":"String", "Sprite_layout":"String",
@@ -31,7 +31,7 @@ static func register_schemas(store: CsvDataStore) -> void:
 	})
 	store.register_schema("spawn.csv", {
 		"Id": "String", "Time_start": "Float", "Time_end": "Float", "Enemy_id": "String",
-		"Spawn_interval": "Float", "Spawn_count": "Int", "Note": "String",
+		"Spawn_interval": "Float", "Spawn_count": "Int", "Note": "String", "Region_id": "String",
 	})
 	store.schemas["player.csv"]["Sprite_anchor_x"] = {"type":"Optional","inner":"Float"}
 	for field in ["Sprite_path","Sprite_layout","Sprite_cols","Sprite_rows","Sprite_cell_height","Sprite_baseline","Sprite_anchor_x","Sprite_foot_y","Anim_fps","Shadow_w","Shadow_h","Sprite_tint"]:
@@ -74,16 +74,20 @@ static func validate(store: CsvDataStore) -> String:
 	# Partial synthetic combat fixtures need not include unrelated tables.
 	# Production load_all requires the registered CSV, even when it has no rows.
 	if store.tables.has("enemy_scaling.csv"):
-		var starts: Dictionary = {}
+		# REGION-01: times are unique and need a time-0 row within each Region_id (one group when the column is absent).
+		var starts_by_region: Dictionary = {}
 		for row in store.get_table("enemy_scaling.csv").values():
 			var at := float(row.Time_start)
+			var starts: Dictionary = starts_by_region.get_or_add(String(row.get("Region_id","")),{})
 			if not is_finite(at) or at<0 or starts.has(at):
 				return _field_error(store,"enemy_scaling.csv",row.Id,"Time_start","시각은 유한한 비음수이며 중복될 수 없습니다.")
 			starts[at] = true
 			for column in ["Hp_mult","Speed_mult","Damage_mult","Xp_mult"]:
 				if not is_finite(float(row[column])) or float(row[column])<=0:
 					return _field_error(store,"enemy_scaling.csv",row.Id,column,"배율은 유한한 양수여야 합니다.")
-		if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
+		if starts_by_region.is_empty(): starts_by_region[""] = {}
+		for starts in starts_by_region.values():
+			if not starts.has(0.0): return _field_error(store,"enemy_scaling.csv","","Time_start","시각0 행이 필요합니다.")
 	for row in store.get_table("player.csv").values():
 		if row.get("Sprite_anchor_x")!=null and (not is_finite(float(row.Sprite_anchor_x)) or float(row.Sprite_anchor_x)<0): return _field_error(store,"player.csv",row.Id,"Sprite_anchor_x","유한한 비음수여야 합니다.")
 		for column in ["Shadow_w","Shadow_h"]:

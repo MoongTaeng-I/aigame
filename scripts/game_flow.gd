@@ -122,12 +122,15 @@ func start_region() -> void:
 		return
 	_dispose_round()
 	state = "playing"
-	preload("res://scripts/audio_events.gd").music(self,"bgm_stage01")
+	var region: Dictionary = regions[region_index]
+	preload("res://scripts/audio_events.gd").music(self,String(region.Bgm_stage))
 	result = {}
 	ui.close_modal()
 	ui.show_screen("playing")
 	session = load("res://main.tscn").instantiate()
 	session.supplied_data = data_store
+	# REGION-01: the chosen region drives the whole round (retry keeps region_index, so the same region).
+	session.region_id = String(region.Id)
 	session.managed_flow = true
 	# Explicitly pausable: the shell itself must still handle UI while paused.
 	session.process_mode = Node.PROCESS_MODE_PAUSABLE

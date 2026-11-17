@@ -1,0 +1,4 @@
+﻿Id,Time_mmss,Boss_id,Note,Region_id
+timeline_early_boss_rt,100,boss_early,A단계 검증용 시작값,region_test
+timeline_middle_boss_rt,300,boss_middle,S8-IMPL-02 사용자 확정 시각,region_test
+timeline_final_boss_rt,530,boss_final,S8-IMPL-03 사용자 확정 3:00,region_test

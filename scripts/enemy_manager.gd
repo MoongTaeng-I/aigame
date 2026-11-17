@@ -37,6 +37,9 @@ var boss_director: Node2D
 var boss_fx: Node2D
 var damage_numbers: Node2D
 var _scaling_rows: Array = []
+# REGION-01: music ids from the round's region (region.csv Bgm_stage / Bgm_boss).
+var bgm_stage := "bgm_stage01"
+var bgm_boss := "bgm_boss"
 
 func configure(player: CharacterBody2D, map_rect: Rect2, enemy_records: Dictionary, spawn_records: Dictionary, max_alive: int, offscreen_relocate_seconds: float, projectile_records: Dictionary = {}, attack_record: Dictionary = {}, gap: float = 0.0, iterations: int = 1, scaling_records: Dictionary = {}) -> void:
 	_player = player
@@ -242,7 +245,7 @@ func _update_dying_enemies(delta: float) -> void:
 			_dying_enemies.erase(enemy)
 
 func _on_enemy_died(enemy: EnemyActor) -> void:
-	if enemy.has_method("configure_boss"): preload("res://scripts/audio_events.gd").music(self,"bgm_stage01")
+	if enemy.has_method("configure_boss"): preload("res://scripts/audio_events.gd").music(self,bgm_stage)
 	else: preload("res://scripts/audio_events.gd").sfx(self,"enemy_die")
 	if is_instance_valid(boss_fx): boss_fx.died(enemy)
 	if _active_enemies.has(enemy):
@@ -570,7 +573,7 @@ func create_boss(enemy_id: String, actions: Array, provider: Callable) -> EnemyA
 func activate_boss(boss: EnemyActor) -> void:
 	_spawn_order_counter += 1
 	boss.activate_at(boss.global_position,_spawn_order_counter)
-	preload("res://scripts/audio_events.gd").music(self,"bgm_boss")
+	preload("res://scripts/audio_events.gd").music(self,bgm_boss)
 	if is_instance_valid(boss_fx): boss_fx.emerge(boss)
 	boss.collision_mask = 0
 	_active_enemies.append(boss)

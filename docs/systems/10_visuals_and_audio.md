@@ -1199,3 +1199,10 @@ combat_presentation.csv 새 키
 - 난도 이펙트: 모든 타격에 기존 난도 선(Slash_lines_per_tick, 마지막 타격은 마무리 X 선 추가)을 그린다. 1·2구간의 기본 공격 베기/찌르기 이펙트(Basic_fx_pool)는 난도에서 쓰지 않는다. 포즈 3구간(Rapid_combo_beats, Rapid_combo_cols)은 시스템05 FIX-05·FIX-06 항목 그대로다.
 - 난도 소리: 시전 시작 순간 rapid_slash 1회, 끝까지 재생(시전 끝에 멈추지 않음). FIX-05의 SFX 재생 번호·시전 단위 줄여 멈춤 기능은 난도 외 사용처가 없어 GameAudio·SkillManager에서 제거했다.
 - 미사용(지우지 않음): sound.csv rapid_slash_finish 행과 sfx_rapid_slash_finish.wav, combat_presentation.csv Rapid_sfx_tail_sec·Rapid_sfx_fade_sec. CSV 열·키 변경 없음.
+
+## 2026-11-17 REGION-01 — 지역별 맵·날씨·틴트·음악
+
+- 맵 바닥(Ground_texture·Ground_brightness), 장식 시트(Props_texture·Props_cols), 월드 틴트(World_tint), 날씨(Weather snow/none, Snow_alpha, Fog_strength), 장식·눈발 시드(Forest_seed), 전투·보스 음악(Bgm_stage·Bgm_boss)은 라운드의 region.csv 행에서 읽는다(열 설명은 시스템 09). 값은 맵을 만들 때 한 번 typed로 바꿔 캐시에 넣고 매 프레임 다시 읽지 않는다. Weather none이면 눈발·가장자리 안개 층을 만들지 않는다. 장식 칸 폭은 그림 폭 ÷ Props_cols이고 발 기준점(-160,-464)은 321×468 칸 기준 비율로 맞춘다.
+- 음악: 지역 시작 시 Bgm_stage, 보스 등장 시 Bgm_boss로 크로스페이드, 보스 처치 시 Bgm_stage로 돌아간다(기존 Sound_bgm_fade_sec).
+- combat_presentation.csv의 Ground_brightness·World_tint·Snow_alpha·Fog_strength·Forest_seed는 지우지 않는다. 게임 라운드는 항상 지역 값을 쓰므로 region.csv로 이동한 값이며, 지역 없이 맵만 따로 만든 경우(검사)의 기본값으로만 쓰인다. 바닥·장식 그림 경로의 코드 기본값도 같다.
+- region_01 값은 이전 값과 같아 표시 결과가 바뀌지 않는다(623a1cb 대비 동일성 검사 통과).
