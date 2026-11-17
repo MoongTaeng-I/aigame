@@ -109,6 +109,23 @@ MVP 목표 플레이타임은 한 판 약 6분이며 자동 종료 시각은 없
 - 사용자 결정으로 하드코딩하는 예외(S7-FIX-01, 2026-11-10): 그림자 간 이동 조향의 SHADOW_SPACING은 shadow_actor.gd의 const 한 곳에 둔다. 16px는 제안·미확정 시작값이며 밀어내기 간격을 정하는 값이 아니다. 적-그림자 분배 Enemy_push_share는 CSV로 관리한다.
 - 전체 컬럼 설명은 각 CSV를 처음 만든 소유 시스템 문서의 "테이블 컬럼 설명" 섹션에서 관리하며, 열을 추가한 다른 시스템 문서는 그 위치를 참조한다.
 
+### 미사용 데이터 키 (REL-01, 2026-11-17 기준)
+
+아래 행은 CSV에 남아 있지만 게임 코드가 읽지 않는다(scripts 전체에서 Id 문자열 참조 없음, 문자열 조합으로 만드는 키 없음 확인). 지우지 않고 보존한다. 정의와 예시 값은 각 시스템 문서의 표를 따른다.
+
+| 파일 | Id | 비고 |
+|---|---|---|
+| combat_presentation.csv | Slash_count, Slash_width, Slash_core_width, Slash_sec, Slash_core_color | 초기 난도 선 연출 시작값(시스템 10) |
+| combat_presentation.csv | Hud_background, Hud_border | 초기 HUD 배경·테두리(시스템 1·9·10) |
+| combat_presentation.csv | Fear_claw_sec, Fear_claw_width, Fear_bat_px, Fear_outline_color, Fear_wave_start_width, Fear_wave_end_width, Fear_range_alpha, Fear_range_width | 이전 드래곤 피어 연출 값(시스템 5·10) |
+| combat_presentation.csv | Damage_number_bold_px | 피해 숫자 겹쳐 굵게 그리기(시스템 10 FX-04) |
+| combat_presentation.csv | Sound_slider_min_db, Sound_slider_max_db | 이전 dB 슬라이더 범위(시스템 10 SND-01). 현재 0~100 단계 |
+| combat_presentation.csv | Toast_gap_px | JUICE-01부터 Toast_visual_gap_px 사용 |
+| combat_presentation.csv | Boss_bar_color, Boss_bar_back_color, Boss_bar_trail_color, Boss_bar_trail_alpha, Boss_bar_border_px, Boss_bar_border_color, Boss_bar_border_alpha, Boss_bar_inner_line_px, Boss_bar_inner_line_color | FIX-04 텍스처 보스 바로 바뀌며 미사용(9개) |
+| combat_presentation.csv | Boss_bar_name_gap_px | FIX-05부터 이름을 장식 위에 겹쳐 둠 |
+| combat_presentation.csv | Rapid_sfx_tail_sec, Rapid_sfx_fade_sec | FIX-06에서 난도 소리 줄여 멈춤 제거 |
+| sound.csv | rapid_slash_finish (assets/audio/sfx/sfx_rapid_slash_finish.wav) | FIX-06에서 난도 3구간 소리 제거. 파일은 내보내기에 포함된다 |
+
 ## 비주얼·사운드 방향
 
 - 배경은 눈보라 치는 설원 숲 던전이다(사용자 결정,2026-11-15 LOOK-01). SD 화풍,눈 바닥·침엽수/바위·화면 눈발/눈안개와 푸른 회색 그림자를 사용한다. 기존 전투·생성 규칙은 유지한다.
@@ -188,6 +205,15 @@ MVP 목표 플레이타임은 한 판 약 6분이며 자동 종료 시각은 없
   10. 색감·AI 이미지·사운드
 
 - 순서 근거(사용자 승인, 2026-11-08): 기본 스킬(5)을 선택지(6)·그림자(7)보다 먼저 둔다. 기본 스킬이 만드는 스킬 발동 공통 처리(쿨타임, 범위 판정, 대상 선정, 피해 적용)를 그림자 각성 스킬이 그대로 재사용하기 때문이다. 또한 기본 스킬은 레벨업(4)의 강화 포인트만 있으면 되고 선택지를 거치지 않는다.
+
+## 빌드 방법
+
+Windows 실행 파일 내보내기(REL-01, 2026-11-17).
+
+- 필요한 것: Godot 4.7.2 편집기와 같은 버전의 Windows 내보내기 템플릿(`windows_release_x86_64.exe` 포함). 템플릿은 Godot 편집기의 "내보내기 템플릿 관리"로 설치하며, 사용자 설정 폴더의 `Godot/export_templates/4.7.2.stable/` 아래에 있다.
+- 설정: 저장소의 `export_presets.cfg`의 "Windows Desktop" 프리셋을 쓴다. 출력 위치 `../build/SoloSurvival.exe`(저장소 폴더 바로 옆 build 폴더, Git 대상 아님), `.pck` 분리, 제품 이름·파일 설명 "나 혼자만 서바이벌", 파일·제품 버전 1.0.0.0, 회사·저작권·아이콘 비움. include_filter `*.csv, assets/fonts/OFL.txt, assets/audio/CREDITS.txt`로 CSV와 라이선스 파일을 넣고, exclude_filter `tests/*, docs/*`로 검사·문서를 뺀다. 점으로 시작하는 폴더(`.local`, `.claude`)는 Godot가 읽지 않는다.
+- 명령(저장소 폴더에서): `<Godot 편집기 실행 파일> --headless --path . --export-release "Windows Desktop" ../build/SoloSurvival.exe`. 편집기에서는 프로젝트 → 내보내기 → Windows Desktop → 프로젝트 내보내기(디버그 끔)와 같다. build 폴더가 없으면 먼저 만든다.
+- 결과: `build/SoloSurvival.exe`와 `build/SoloSurvival.pck` 두 파일을 같은 폴더에 함께 배포한다. 실행 확인은 `SoloSurvival.exe --headless --quit-after 1800 --log-file <로그 경로>`로 할 수 있다.
 
 ## 승인·변경 이력
 

@@ -993,6 +993,10 @@
 
 - 난도의 이펙트와 소리를 FIX-04 이전(JUICE-01)과 같게 되돌렸다. 모든 타격에 기존 난도 선 이펙트(마무리 X 선 포함)를 그리고, 1·2구간의 기본 공격 베기/찌르기 이펙트는 난도에서 내지 않는다. 소리는 시전 시작 순간 rapid_slash 1회만 내고 끝까지 두며, 1·2구간 slash/thrust, 3구간 rapid_slash_finish, 시전 끝 줄여 멈춤(Rapid_sfx_tail_sec·Rapid_sfx_fade_sec)은 쓰지 않는다. 시전 단위 소리 추적·정지 코드(GameAudio 재생 번호·fade_handles, SkillManager 시전 소리 목록)는 난도 외 사용처가 없어 지웠다. 포즈 3구간(23 → 24 → 기존 난도 포즈), 구간 길이 (Hits−1)×Hit_interval_sec÷3, Hits 1이면 3구간만, 빙결·사망·끊김 시 즉시 복귀는 FIX-05 그대로다. rapid_slash_finish 행·파일과 Rapid_sfx_tail_sec·Rapid_sfx_fade_sec 키는 지우지 않고 미사용으로 남겼다. 피해·타격 수·시점·범위·대상은 바뀌지 않는다. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회를 실행했고 결과·되돌린 검사 기대값·캡처·성능은 `.local/reports/FIX-06.md`에 적었다. 실제 소리·체감은 사용자 확인이 필요하다.
 
+## 2026-11-17 REL-01 — 최종 점검·Windows 실행 파일 내보내기·master 갱신
+
+- 출시 전 최종 점검을 했다. 라운드 안 신호 처리 중 start_region·show_menu·라운드 해제를 직접 부르는 경로는 없었다(결과·일시정지 창 버튼은 지연 호출, 라운드 종료 신호는 결과 창만 띄움). 메인 복귀·다시 하기를 실제 버튼으로 3회 반복한 뒤 노드 수·고아 노드·오디오 플레이어·BGM 저역 필터·Engine.time_scale·일시정지·카메라 줌·배경음악이 처음 메뉴와 같은지 확인하는 검사(rel01_p0)를 더했다. 커밋된 사용자 값으로 runtime과 클리어까지 가는 S9 흐름 검사를 돌려 오류·경고가 없음을 확인했다. 미사용 데이터 키는 지우지 않고 game_design.md에 한 표로 모았다. 내보내기 설정(제품 이름 "나 혼자만 서바이벌", 버전 1.0.0.0, 출력 ../build/SoloSurvival.exe, tests·docs 제외)을 정리해 Windows 실행 파일과 .pck를 만들고, .pck에 CSV 29개·OFL.txt·CREDITS.txt가 있고 tests·docs·.local이 없음을 확인했다. 빌드 방법은 game_design.md '빌드 방법'에 적었다. 종료 시 배경음악 재생 객체가 남았다는 엔진 메시지(누수 4·사용 중 리소스 2)는 이전부터 있던 것으로 남은 문제에 적었다. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회, 결과는 `.local/reports/REL-01.md`. 실제 창 실행·플레이는 사용자 확인이 필요하다.
+
 ## 다음 기록 양식
 
 - **목표:**
