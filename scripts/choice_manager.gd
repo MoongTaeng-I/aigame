@@ -73,6 +73,8 @@ func candidates() -> Array:
 		var summon_id := Data.shadow_id(int(records[id].Effect))
 		if not summon_id.is_empty() and (shadow_manager==null or not shadow_manager.can_summon(summon_id)): continue
 		if int(levels[id])<level_rows[id].size(): result.append(id)
+	# FIX-05: heal has no level and never leaves the pool; it is drawn by Weight like the others.
+	if not heal_id.is_empty() and int(records[heal_id].Weight)>0: result.append(heal_id)
 	return result
 
 func draw_cards() -> Array:

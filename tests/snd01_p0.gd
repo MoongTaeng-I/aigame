@@ -5,7 +5,7 @@ func total(a: Node, id: String) -> int: return int(a.request_counts.get(id,0))
 
 func run(t: SceneTree) -> void:
 	var audio: Node = t.root.get_node("GameAudio")
-	t.check(audio.pool.size()==16 and audio.sounds.size()==26 and AudioServer.get_bus_index("BGM")>=0 and AudioServer.get_bus_index("SFX")>=0,"SND01 one manager sixteen fixed voices three buses twentysix streams (FIX03)")
+	t.check(audio.pool.size()==16 and audio.sounds.size()==27 and AudioServer.get_bus_index("BGM")>=0 and AudioServer.get_bus_index("SFX")>=0,"SND01 one manager sixteen fixed voices three buses twentyseven streams (FIX05)")
 	for id in ["bgm_title","bgm_stage01","bgm_boss"]: t.check(audio.sounds[id].stream.loop,"SND01 BGM imported/loaded looping "+id)
 	for i in range(2,16): audio.pool[i].stop()
 	audio.clock+=10
@@ -31,11 +31,12 @@ func run(t: SceneTree) -> void:
 	before = total(audio,"shadow_summon")
 	n.shadows.summon("igrit")
 	t.check(total(audio,"shadow_summon")==before+1,"SND01 summon event once")
-	before = total(audio,"rapid_slash")
+	before = total(audio,"rapid_slash_finish")
+	var rapid_before := total(audio,"rapid_slash")
 	n.skills.try_use("skill_rapid_slash")
 	# FIX-04: the rapid slash sound plays once at the last combo beat instead of at the start.
 	for i in range(6): n.skills._physics_process(0.2)
-	t.check(total(audio,"rapid_slash")==before+1,"SND01 rapid slash sound once per cast without per tick sound (FIX04 at beat 3)")
+	t.check(total(audio,"rapid_slash_finish")==before+1 and total(audio,"rapid_slash")==rapid_before,"SND01 rapid slash finish sound once per cast without per tick sound (FIX05 rapid_slash_finish at beat 3)")
 	var hud: Node = n.map.get_node("TemporaryHud")
 	t.check(hud.xp_bar.offset_bottom==14 and is_equal_approx(n.skills.ui.glyphs[0].size.x,56*1.35),"SND01 XP bar14 and icon1.35")
 	var cast = n.skills.skills.skill_dash

@@ -19,6 +19,9 @@ var effects: Array = []
 # with the poses in Rapid_combo_cols; -1 = no beat shown. Picture/sound only.
 var combo_cols := PackedInt32Array()
 var combo_beat := -1
+# FIX-05: sound plays made by the current rapid slash cast (faded out after it ends).
+var combo_handles: Array = []
+var combo_was_active := false
 var ui: Control
 var screen_fx: CanvasLayer
 var cartoon_fx: Node2D
@@ -84,7 +87,9 @@ func try_use(id: String) -> bool:
 		return false
 	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
 		return false
-	if id=="skill_rapid_slash": combo_beat = -1
+	if id=="skill_rapid_slash":
+		combo_beat = -1
+		_release_combo_sounds(0.0)
 	var started: bool = skills[id].start(clock)
 	# The rapid slash sound now plays at its last combo beat (_start_beat).
 	if started and not (id=="skill_rapid_slash" and combo_enabled()): preload("res://scripts/audio_events.gd").sfx(self,id.trim_prefix("skill_"))
@@ -101,6 +106,7 @@ func try_upgrade(id: String) -> bool:
 	return true
 
 func _physics_process(delta: float) -> void:
+	if player!=null and player.is_dead and not combo_handles.is_empty(): _release_combo_sounds(0.0)
 	if player==null or player.is_dead or get_tree().paused:
 		return
 	var had_effects: bool = not effects.is_empty() or skills.skill_rapid_slash.active
@@ -109,6 +115,8 @@ func _physics_process(delta: float) -> void:
 	for cast in skills.values():
 		cast.advance(clock)
 	if not skills.skill_rapid_slash.active: combo_beat = -1
+	if combo_was_active and not skills.skill_rapid_slash.active: _release_combo_sounds(float(presentation.get("Rapid_sfx_tail_sec",0.1)))
+	combo_was_active = skills.skill_rapid_slash.active
 	if screen_fx!=null: screen_fx.set_slash_active(visuals_enabled and skills.skill_rapid_slash.active)
 	for index in range(effects.size()-1,-1,-1):
 		var effect: Dictionary = effects[index]
@@ -131,19 +139,37 @@ func update_combo() -> void:
 	if not cast.active or not combo_enabled() or player.is_dead:
 		combo_beat = -1
 		return
+	var beat := beat_at(clock)
 	var beats := int(presentation.Rapid_combo_beats)
-	var length := maxf(int(cast.snapshot.Hits)*float(cast.snapshot.Hit_interval_sec)/beats,0.000001)
-	var beat := mini(floori((clock-cast.started_at+0.000000001)/length),beats-1)
 	while combo_beat<beat:
 		combo_beat += 1
 		_start_beat(combo_beat,beats)
 
+# FIX-05: beats span the hits: first hit (cast start) to last hit, (Hits-1) x Hit_interval_sec / beats
+# each. A one-hit cast is the last beat only.
+func beat_at(at: float) -> int:
+	var cast = skills.skill_rapid_slash
+	var beats := int(presentation.get("Rapid_combo_beats",0))
+	if beats<=0 or cast.snapshot.is_empty(): return -1
+	var span := (int(cast.snapshot.Hits)-1)*float(cast.snapshot.Hit_interval_sec)
+	if span<=0.000000001: return beats-1
+	return clampi(floori((at-cast.started_at+0.000000001)/(span/beats)),0,beats-1)
+
+func _combo_sound(id: String) -> void:
+	var audio := preload("res://scripts/audio_events.gd").manager(self)
+	if audio!=null and audio.request(id): combo_handles.append([audio.last_voice,audio.last_play_id])
+
+func _release_combo_sounds(delay: float) -> void:
+	var audio := preload("res://scripts/audio_events.gd").manager(self)
+	if audio!=null: audio.fade_handles(combo_handles,delay,float(presentation.get("Rapid_sfx_fade_sec",0.06)))
+	combo_handles = []
+
 func _start_beat(beat: int, beats: int) -> void:
 	if beat>=beats-1:
-		preload("res://scripts/audio_events.gd").sfx(self,"rapid_slash")
+		_combo_sound("rapid_slash_finish")
 		return
 	var thrust := beat%2==1
-	preload("res://scripts/audio_events.gd").sfx(self,"thrust" if thrust else "slash")
+	_combo_sound("thrust" if thrust else "slash")
 	var facing: Vector2 = player.last_move_direction
 	if facing==Vector2.ZERO: facing = Vector2.LEFT if player.sprite_body!=null and player.sprite_body.flip_h else Vector2.RIGHT
 	if visuals_enabled: player.emit_combo_fx(facing,thrust)
@@ -166,7 +192,10 @@ func _slash_tick(stats: Dictionary, at: float) -> void:
 	if visuals_enabled:
 		var lines: Array = []
 		var widths: Array = []
-		for index in range(int(presentation.get("Slash_lines_per_tick",4))):
+		# FIX-05: the rapid slash lines show only in the last combo beat; beats 1-2 show the basic
+		# slash/thrust effects instead. Stars, damage numbers and hits are unchanged.
+		var show_lines: bool = not combo_enabled() or beat_at(at)>=int(presentation.Rapid_combo_beats)-1
+		for index in range(int(presentation.get("Slash_lines_per_tick",4)) if show_lines else 0):
 			var direction := Vector2.RIGHT.rotated(visual_rng.randf()*TAU)
 			var offset := visual_rng.randf_range(-0.6,0.6)*float(stats.Range)
 			var center: Vector2 = player.global_position+direction.orthogonal()*offset
@@ -179,7 +208,7 @@ func _slash_tick(stats: Dictionary, at: float) -> void:
 				if preload("res://scripts/impact_budget.gd").take(preload("res://scripts/impact_budget.gd").scope(self),int(presentation.Impact_spawn_max_per_frame)):
 					stars.append(candidate.position)
 		var finishing: bool = stats.has("Hits") and skills.skill_rapid_slash.hits_done+1>=int(stats.Hits)
-		if finishing:
+		if finishing and show_lines:
 			for angle in [PI/4,-PI/4]:
 				var half := Vector2.RIGHT.rotated(angle)*float(stats.Range)*float(presentation.get("Slash_length_mult",1.5))*float(presentation.get("Slash_finish_length_mult",1.8))
 				lines.append([player.global_position-half,player.global_position+half])

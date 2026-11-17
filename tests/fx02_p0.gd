@@ -33,9 +33,12 @@ func slash(t: SceneTree) -> void:
 	var inside := enemy(n,n.player.global_position+Vector2(radius*0.5,0))
 	var outside := enemy(n,n.player.global_position+Vector2(radius+1,0))
 	var combat_rng: int = n.manager._random.state
+	# FIX-05: with the combo on, lines appear only in its last beat; check the line format with the combo off.
+	n.skills.presentation.Rapid_combo_beats = 0
 	cast.start(0)
+	n.skills.presentation.Rapid_combo_beats = 3
 	var effect: Dictionary = n.skills.effects.back()
-	t.check(effect.lines.size()==4 and effect.widths==[9.0,9.0,9.0,9.0] and is_equal_approx(effect.until-effect.at,0.25),"FX02 slash four keyed lines with .25 lifetime")
+	t.check(effect.lines.size()==4 and effect.widths==[9.0,9.0,9.0,9.0] and is_equal_approx(effect.until-effect.at,0.25),"FX02 slash four keyed lines with .25 lifetime (FIX05 combo off)")
 	t.check(inside.hp==10000-int(cast.snapshot.Damage) and outside.hp==10000 and n.manager._random.state==combat_rng,"FX02 extended light does not change damage radius or combat RNG")
 	t.check(effect.stars.size()==1 and effect.stars[0]==inside.global_position,"FX02 stars only on actually damaged enemies")
 	var correct := true

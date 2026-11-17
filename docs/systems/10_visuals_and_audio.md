@@ -1174,3 +1174,22 @@ combat_presentation.csv 새 키
 | Rapid_combo_cols | 23;24;3 | 구간별 플레이어 포즈 열(세미콜론 구분, CSV 쉼표와 겹치지 않게) |
 
 값을 바꾼 기존 키: Boss_bar_width 560→600(틀 전체 폭), Boss_bar_height 18→28(채움 높이).
+
+## 2026-11-17 FIX-05 — 보스 바 0.8배·난도 소리 정리·로고 위치
+
+- 보스 HP 바: 틀 NinePatch를 Boss_bar_frame_scale로 그려 테두리선이 가장자리에서 Boss_bar_frame_line_px × 배율(9.6px) 안쪽에 온다. 채움은 그 안 Boss_bar_inner_pad_x/y(12.8/3.2)에 두며 틀 폭 480·채움 435.2×22·틀 높이 47.6이다. 장식(Boss_bar_crest_scale 1.2, 115.2×40.8)은 아래 끝이 채움 위 끝에 닿도록 틀에 겹치고, 보스 이름(22px, 외곽선 유지)은 장식 위에 겹쳐 장식의 보이는 높이(텍스처 위 Boss_bar_crest_clear_top_px는 투명) 중 Boss_bar_name_center_ratio 지점에 글자 세로 가운데를 둔다. 이름+장식+틀 세로 높이 75.6px. 진행 시간·레벨·경험치 수치와 겹치지 않는다.
+- 난도 소리: rapid_slash_finish 행을 sound.csv에 추가(Volume_db 0, Max_concurrent 2, Min_interval_sec 0, Pitch_random 0.05). GameAudio는 SFX 재생마다 번호를 붙이고, 난도는 자기 시전의 재생 번호만 모아 끝날 때 줄여 멈춘다.
+
+combat_presentation.csv 새 키
+
+| Id | 예시 Value | 설명 |
+|---|---|---|
+| Boss_bar_frame_scale | 0.8 | 보스 바 틀 그림 배율 |
+| Boss_bar_crest_clear_top_px | 6 | 장식 텍스처 위쪽 투명 줄 수(배율 전) |
+| Boss_bar_name_center_ratio | 0.333 | 장식의 보이는 높이 중 이름 글자 세로 가운데 위치 |
+| Rapid_sfx_tail_sec | 0.1 | 난도 시전이 끝난 뒤 소리를 줄이기 시작할 때까지(초) |
+| Rapid_sfx_fade_sec | 0.06 | 난도 소리를 줄여 멈추는 시간(초) |
+| Logo_bar_gap_px | 24 | 로고 아래 끝과 로딩 게이지 위 끝 사이 최소 간격px |
+| Logo_top_min_px | 24 | 로고 위 끝과 화면 위 사이 최소 간격px |
+
+값을 바꾼 기존 키: Boss_bar_width 600→480, Boss_bar_height 28→22, Boss_bar_crest_scale 1.5→1.2, Boss_bar_name_font_size 28→22, Boss_bar_inner_pad_x 16→12.8, Boss_bar_inner_pad_y 4→3.2.

@@ -85,6 +85,7 @@ func _ready() -> void:
 	progress.show_percentage = false
 	add_child(progress)
 	loading_nodes.append(progress)
+	place_logo()
 	loading_caption = text("던전 입장 준비 중… 0%",Rect2(100,674,1080,26),18,true)
 	loading_nodes.append(loading_caption)
 	# FIX-03: the text line (drawn at the top of the label) ends on the screen bottom; it grows upward with the font size.
@@ -381,6 +382,20 @@ func show_modal(title: String, details: String, actions: Array, sound: bool = fa
 		UI.animate_button(view)
 	modal.size = Vector2(MODAL_WIDTH,0)
 	queue_redraw()
+
+# FIX-05: the logo's lower edge sits Logo_bar_gap_px above the loading bar's top and its top at least
+# Logo_top_min_px below the screen top; the size only shrinks (centred) when both cannot hold.
+func place_logo() -> void:
+	var gap := float(values.Logo_bar_gap_px)
+	var top_min := float(values.Logo_top_min_px)
+	var bottom := progress.position.y-gap
+	var size := logo.size
+	if bottom-size.y<top_min:
+		var height := maxf(bottom-top_min,1.0)
+		size = Vector2(size.x*height/size.y,height)
+	var center_x := logo.position.x+logo.size.x/2
+	logo.size = size
+	logo.position = Vector2(center_x-size.x/2,bottom-size.y)
 
 func picture(texture: Texture2D, box: Rect2, parent: Control = null) -> TextureRect:
 	var image := TextureRect.new()

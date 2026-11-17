@@ -29,7 +29,7 @@ func keys(t: SceneTree) -> void:
 	t.check(is_equal_approx(v.Kill_pop_scale,1.15) and is_equal_approx(v.Kill_pop_sec,0.08) and is_equal_approx(v.Kill_fling_px,10) and is_equal_approx(v.Kill_fling_sec,0.12),"JUICE01 kill pop keys")
 	t.check(is_equal_approx(v.Low_hp_ratio,0.3) and v.Low_hp_color==Color("#c8102e") and is_equal_approx(v.Low_hp_beat_hz,1.2) and is_equal_approx(v.Low_hp_alpha_min,0.1) and is_equal_approx(v.Low_hp_alpha_max,0.35) and is_equal_approx(v.Low_hp_fade_sec,0.3) and is_equal_approx(v.Low_hp_bgm_lowpass_hz,1200),"JUICE01 low hp keys")
 	t.check(int(v.Zoom_punch_enabled)==1 and is_equal_approx(v.Zoom_punch_scale,1.03) and is_equal_approx(v.Zoom_punch_in_sec,0.06) and is_equal_approx(v.Zoom_punch_out_sec,0.18) and is_equal_approx(v.Toast_visual_gap_px,6),"JUICE01 zoom and toast gap keys")
-	t.check(int(v.Boss_bar_name_font_size)==28 and int(v.Boss_bar_border_px)==2 and v.Boss_bar_border_color==Color("#ece6ff") and is_equal_approx(v.Boss_bar_border_alpha,0.9) and int(v.Boss_bar_inner_line_px)==1 and v.Boss_bar_inner_line_color==Color("#1a1240") and int(v.Boss_bar_name_outline_px)==2 and v.Boss_bar_name_outline_color==Color("#1a1240"),"JUICE01 boss bar polish keys (name 20 x1.4 = 28)")
+	t.check(int(v.Boss_bar_name_font_size)==22 and int(v.Boss_bar_border_px)==2 and v.Boss_bar_border_color==Color("#ece6ff") and is_equal_approx(v.Boss_bar_border_alpha,0.9) and int(v.Boss_bar_inner_line_px)==1 and v.Boss_bar_inner_line_color==Color("#1a1240") and int(v.Boss_bar_name_outline_px)==2 and v.Boss_bar_name_outline_color==Color("#1a1240"),"JUICE01 boss bar polish keys (FIX05 name 22)")
 
 func experience(t: SceneTree) -> void:
 	var audio: Node = t.root.get_node("GameAudio")
@@ -290,7 +290,7 @@ func bar_polish(t: SceneTree) -> void:
 	var n := fixture(t)
 	var bar: Control = n.director.boss_bar
 	t.check(bar.frame is NinePatchRect and bar.frame.texture==load("res://assets/ui/ui_boss_bar_frame.png") and bar.get_node_or_null("InnerLine")==null,"JUICE01 bar border now drawn by the FIX04 frame texture (flat border and inner line replaced)")
-	t.check(bar.name_label.get_theme_font_size("font_size")==28 and bar.name_label.get_theme_constant("outline_size")==4 and bar.name_label.get_theme_color("font_outline_color")==Color("#1a1240"),"JUICE01 boss name 28px with a 2px 1a1240 outline")
+	t.check(bar.name_label.get_theme_font_size("font_size")==22 and bar.name_label.get_theme_constant("outline_size")==4 and bar.name_label.get_theme_color("font_outline_color")==Color("#1a1240"),"JUICE01 boss name 22px (FIX05) with a 2px 1a1240 outline")
 	var level: Control = n.host.find_child("PlayerLevel",true,false)
 	var timer: Control = n.host.find_child("ElapsedTime",true,false)
 	var amount: Control = n.host.find_child("ExperienceAmount",true,false)

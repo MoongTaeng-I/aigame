@@ -22,8 +22,9 @@ static func validate(store: CsvDataStore, base_interval: float) -> String:
 		var row: Dictionary = choices[id]
 		if int(row.Effect)==Effect.HEAL:
 			heal_count += 1
-			if int(row.Weight)!=0:
-				return _error(store,"choice.csv",id,"Weight","heal의 가중치는 0이어야 합니다.")
+			# FIX-05: heal is an ordinary repeatable candidate when Weight >= 1; 0 keeps it filler-only.
+			if int(row.Weight)<0:
+				return _error(store,"choice.csv",id,"Weight","heal의 가중치는 0 이상이어야 합니다.")
 		elif int(row.Weight)<1:
 			return _error(store,"choice.csv",id,"Weight","일반 선택지 가중치는 1 이상이어야 합니다.")
 	if heal_count!=1:

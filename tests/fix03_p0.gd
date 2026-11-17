@@ -96,7 +96,7 @@ func boss_bar(t: SceneTree) -> void:
 	var bear: Node2D = spawn(n,"boss_middle",100)
 	await t.process_frame
 	t.check(is_instance_valid(bear) and bear.is_active and bar.visible and bar.name_label.text==String(n.manager._enemy_records[bear.enemy_id].Name_ko) and is_equal_approx(bar.ratio(),1),"FIX03 boss bar shows the boss name and a full bar once the boss is active")
-	t.check(bar.fill.size.is_equal_approx(Vector2(544,28)) and bar.fill.texture==load("res://assets/ui/ui_boss_bar_fill.png") and bar.frame is NinePatchRect and bar.fill.get_index()>bar.frame.get_index(),"FIX03 boss bar fill inside the textured frame as separate nodes (FIX04 600 frame, 544x28 fill)")
+	t.check(bar.fill.size.is_equal_approx(Vector2(435.2,22)) and bar.fill.texture==load("res://assets/ui/ui_boss_bar_fill.png") and bar.frame is NinePatchRect and bar.fill.get_index()>bar.frame.get_index(),"FIX03 boss bar fill inside the textured frame as separate nodes (FIX05 480 frame, 435.2x22 fill)")
 	var hud: CanvasLayer = n.host.find_child("TopExperienceBar",true,false).get_parent().get_parent() if n.host.find_child("TopExperienceBar",true,false)!=null else null
 	var xp: Control = n.host.find_child("TopExperienceBar",true,false)
 	var level: Control = n.host.find_child("PlayerLevel",true,false)
@@ -114,7 +114,7 @@ func boss_bar(t: SceneTree) -> void:
 	for i in range(5): await t.process_frame
 	t.check(bar.updates==updates and not bar.is_processing(),"FIX03 boss bar does no per-frame update while hp is unchanged")
 	bear.apply_damage(275)
-	t.check(bar.updates==updates+1 and is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,544.0*bear.hp/bear.max_hp) and is_equal_approx(bar.fill.size.y,28),"FIX03 boss bar fill follows hp on the damage signal only (FIX04 544 fill)")
+	t.check(bar.updates==updates+1 and is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,435.2*bear.hp/bear.max_hp) and is_equal_approx(bar.fill.size.y,22),"FIX03 boss bar fill follows hp on the damage signal only (FIX05 435.2 fill)")
 	t.paused = true
 	t.check(bar.visible,"FIX03 boss bar stays visible while paused")
 	t.paused = false

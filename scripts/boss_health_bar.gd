@@ -2,7 +2,7 @@ extends Control
 # FIX-03: boss name + HP bar at the top centre, below the experience bar. Updated from the boss's
 # damaged/died/stealth signals. JUICE-01: delayed trail; the node processes only while it moves.
 # FIX-04: drawn with ui_boss_bar_frame (NinePatch), ui_boss_bar_fill and ui_boss_bar_trail; the
-# window crest (1.5x) sits on the frame and the name sits above the crest.
+# window crest sits on the frame. FIX-05: 0.8x overall and the name is laid over the crest.
 const UI = preload("res://scripts/system_ui.gd")
 const FRAME_TEXTURE = preload("res://assets/ui/ui_boss_bar_frame.png")
 const FILL_TEXTURE = preload("res://assets/ui/ui_boss_bar_fill.png")
@@ -22,6 +22,7 @@ var trail_wait := 0.0
 var trail_from := 0.0
 var trail_age := 0.0
 var stealth_hidden := false
+var name_top := 0.0
 
 func _ready() -> void:
 	name = "BossHealthBar"
@@ -30,17 +31,23 @@ func _ready() -> void:
 	var total_width := float(values.Boss_bar_width)
 	bar_height = float(values.Boss_bar_height)
 	var patch := int(values.Boss_bar_frame_patch)
-	# Fill area: inside the drawn border line (Boss_bar_frame_line_px from the frame edge) plus padding.
-	var inset := Vector2(float(values.Boss_bar_frame_line_px)+float(values.Boss_bar_inner_pad_x),float(values.Boss_bar_frame_line_px)+float(values.Boss_bar_inner_pad_y))
+	# FIX-05: the frame art is drawn at Boss_bar_frame_scale, so its border line sits
+	# Boss_bar_frame_line_px x scale in from the edge; the fill sits that far in plus the padding.
+	var frame_scale := float(values.Boss_bar_frame_scale)
+	var line := float(values.Boss_bar_frame_line_px)*frame_scale
+	var inset := Vector2(line+float(values.Boss_bar_inner_pad_x),line+float(values.Boss_bar_inner_pad_y))
 	bar_width = total_width-inset.x*2
 	var frame_size := Vector2(total_width,bar_height+inset.y*2)
 	var font_size := int(values.Boss_bar_name_font_size)
 	var name_height := ceilf(UI.BLACK.get_height(font_size))
 	var crest_scale := float(values.Boss_bar_crest_scale)
 	var crest_size := Vector2(UI.CREST.get_size())*crest_scale
-	# The crest rests on the frame: its lower edge meets the drawn border line, above the fill.
-	var crest_top := name_height
-	var frame_top := crest_top+crest_size.y-float(values.Boss_bar_frame_line_px)
+	# The crest overlaps the frame top down to the fill's top edge (never over the fill). The name is
+	# laid over the crest, centred Boss_bar_name_center_ratio down its visible (non-transparent) height.
+	var clear_top := float(values.Boss_bar_crest_clear_top_px)*crest_scale
+	var name_center := clear_top+(crest_size.y-clear_top)*float(values.Boss_bar_name_center_ratio)
+	var crest_top := maxf(0.0,name_height/2-name_center)
+	var frame_top := crest_top+crest_size.y-inset.y
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
 	offset_left = -total_width/2
 	offset_right = total_width/2
@@ -53,7 +60,8 @@ func _ready() -> void:
 	frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
 	frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
 	frame.position = Vector2(0,frame_top)
-	frame.size = frame_size
+	frame.size = frame_size/frame_scale
+	frame.scale = Vector2.ONE*frame_scale
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(frame)
 	trail = bar_piece("Trail",TRAIL_TEXTURE,frame.position+inset)
@@ -64,12 +72,13 @@ func _ready() -> void:
 	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	crest.stretch_mode = TextureRect.STRETCH_SCALE
 	crest.position = Vector2((total_width-crest_size.x)/2,crest_top)
+	name_top = crest_top+name_center-name_height/2
 	crest.size = crest_size
 	crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(crest)
 	name_label = Label.new()
 	name_label.name = "Name"
-	name_label.position = Vector2.ZERO
+	name_label.position = Vector2(0,name_top)
 	name_label.size = Vector2(total_width,name_height)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

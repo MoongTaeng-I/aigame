@@ -52,6 +52,7 @@ CSV 오류는 게임을 멈추고 화면에 표시한다.
 - choice.csv: Effect가 허용값(attack_range_add, attack_interval_sub, pickup_radius_add, heal, shadow_igrit, shadow_charger_test, shadow_belion, attack_targets_add, max_hp_pct_add)이 아님, heal 행이 정확히 1개가 아님, heal의 Weight가 0이 아님, 일반 선택지의 Weight가 1 미만.
 - choice_level.csv: Choice_id가 choice.csv에 없음, 일반 선택지의 레벨 행이 없거나 Level이 1부터 이어지지 않음, heal의 레벨 행이 1개가 아니거나 Level이 1이 아님, heal의 Value가 0 이하 또는 100 초과, 일반 선택지 Value가 0 미만.
 - choice_level.csv: attack_targets_add 선택지의 Value가 1 미만이거나 정수가 아님(BAL-02).
+- choice.csv: heal의 Weight가 0 미만(FIX-05부터 heal도 Weight로 추출; 0이면 이전처럼 빈 칸 채우기 전용).
 - choice_level.csv: max_hp_pct_add 선택지의 Value가 유한한 양수가 아님(FIX-04).
 - 그림자 카드(shadow_igrit/shadow_charger_test)는 소환 1행(Value 1)이어야 한다. 추가 레벨 성장 구현은 아직 없으며 현재 검증 구조와 맞지 않는 행은 오류다. 반복 선택 성장의 확정 기획과 현재 소환 전용 구현을 구분한다.
 - attack_interval_sub의 모든 Value에 대해 basic_attack.csv의 Interval_sec − Value가 0 미만이면 오류.
@@ -139,3 +140,4 @@ UTF-8 BOM, LF, 엑셀 숫자 표기, .import keep. 표기하지 않은 Id·이�
 - 2026-11-12 DOC-CUT-01 사용자 결정 반영: 개발 시간 부족으로 그림자 각성 스킬을 범위에서 제외한다. 반복 선택 성장·최대 레벨 후보 제외를 유지하며, 과거 근거와 이력은 보존한다.
 - 2026-11-17 BAL-02: 사용자 결정으로 선택지 choice_attack_targets(Effect attack_targets_add, Weight 10, 3레벨 Value 1/2/3)를 추가한다(규칙 17-1). 일반 후보가 4종이 되어, 그림자 2종을 모두 뽑은 뒤에도 후보가 3개를 넘으면 규칙 13대로 다시 뽑기를 쓸 수 있다.
 - 2026-11-17 FIX-04: 사용자 결정으로 선택지 choice_max_hp(Name_ko 최대 체력, Effect max_hp_pct_add, Weight 10, Note "FIX-04 사용자 결정")를 추가한다. choice_level.csv 예: choice_max_hp_01~05, Level 1~5, Value 3/6/9/12/15(그 레벨까지의 누적 %), Desc_ko "최대 체력 +3%" … "+15%", 아이콘 없는 글자 카드(규칙 17-2). 일반 후보가 5종이 되어 그림자 2종을 모두 뽑은 뒤 일반 후보는 5개다.
+- 2026-11-17 FIX-05: 사용자 결정으로 choice_heal Weight 0→10. 회복은 레벨 없는 반복 선택지로 일반 후보에 Weight대로 섞여 나오고, 골라도 후보에서 빠지지 않는다(효과·30% 값 그대로). 이전의 'heal Weight는 0이어야 함' 검증은 '0 이상'으로 바꾼다. 후보가 3개 미만이면 남은 칸을 회복으로 채우는 기존 처리는 유지한다. 후보 수 예: 처음 9개(일반 5 + 그림자 3 + 회복), 그림자 2종을 뽑은 뒤 6개.

@@ -27,10 +27,11 @@ func boss_bar(t: SceneTree) -> void:
 	var bar: Control = n.director.boss_bar
 	t.check(bar.frame is NinePatchRect and bar.frame.texture==load("res://assets/ui/ui_boss_bar_frame.png") and bar.frame.patch_margin_left==22 and bar.frame.patch_margin_top==22 and bar.frame.patch_margin_right==22 and bar.frame.patch_margin_bottom==22,"FIX04 boss bar frame is the 9-slice ui_boss_bar_frame with patch 22")
 	t.check(bar.fill.texture==load("res://assets/ui/ui_boss_bar_fill.png") and bar.trail.texture==load("res://assets/ui/ui_boss_bar_trail.png") and bar.trail.get_index()<bar.fill.get_index() and bar.frame.get_index()<bar.trail.get_index(),"FIX04 fill and trail use their textures, trail behind fill, both over the frame")
-	t.check(is_equal_approx(bar.frame.size.x,600) and is_equal_approx(bar.frame.size.y,60) and bar.fill.position.is_equal_approx(bar.frame.position+Vector2(28,16)) and bar.fill.size.is_equal_approx(Vector2(544,28)),"FIX04 frame 600 wide, fill 28 high inside border line 12 + pad 16/4")
+	var frame_box := Rect2(bar.frame.position,bar.frame.size*bar.frame.scale)
+	t.check(is_equal_approx(frame_box.size.x,480) and is_equal_approx(frame_box.size.y,47.6) and bar.fill.position.is_equal_approx(frame_box.position+Vector2(22.4,12.8)) and bar.fill.size.is_equal_approx(Vector2(435.2,22)),"FIX04 frame and fill inside the border line + pad (FIX05 0.8x: 480 frame, 435.2x22 fill)")
 	var crest_bottom: float = bar.crest.position.y+bar.crest.size.y
-	t.check(bar.crest.texture==UI.CREST and bar.crest.size.is_equal_approx(Vector2(144,51)) and is_equal_approx(bar.crest.get_rect().get_center().x,300) and is_equal_approx(crest_bottom,bar.frame.position.y+12) and crest_bottom<=bar.fill.position.y,"FIX04 crest 1.5x centred and resting on the frame without covering the fill")
-	t.check(bar.name_label.get_rect().end.y<=bar.crest.position.y+0.01 and bar.name_label.get_theme_font("font")==UI.BLACK and bar.name_label.get_theme_font_size("font_size")==28 and bar.name_label.get_theme_color("font_outline_color")==Color("#1a1240"),"FIX04 Black name keeps 28px with a 1a1240 outline above the crest")
+	t.check(bar.crest.texture==UI.CREST and bar.crest.size.is_equal_approx(Vector2(96,34)*1.2) and is_equal_approx(bar.crest.get_rect().get_center().x,240) and is_equal_approx(crest_bottom,bar.fill.position.y),"FIX04 crest centred on the frame without covering the fill (FIX05 1.2x, down to the fill top)")
+	t.check(bar.name_label.get_index()>bar.crest.get_index() and bar.name_label.get_theme_font("font")==UI.BLACK and bar.name_label.get_theme_font_size("font_size")==22 and bar.name_label.get_theme_color("font_outline_color")==Color("#1a1240"),"FIX04 Black name with a 1a1240 outline (FIX05 22px laid over the crest)")
 	var bear: Node2D = spawn(n,"boss_middle",100)
 	var box: Rect2 = bar.get_global_rect()
 	for id in ["PlayerLevel","ElapsedTime","ExperienceAmount","TopExperienceBar"]:
@@ -39,10 +40,10 @@ func boss_bar(t: SceneTree) -> void:
 	var view: Control = n.director.toast_view
 	t.check(bar.visible and is_equal_approx(view.stack_offset,bar.bottom_px()+6-float(view.presentation.Toast_top_px)),"FIX04 toasts still start below the taller bar")
 	bear.apply_damage(330)
-	t.check(is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,544.0*bear.hp/bear.max_hp) and is_equal_approx(bar.fill.size.y,28) and is_equal_approx(bar.trail_ratio(),1) and bar.is_processing(),"FIX04 fill width follows hp only; trail waits")
+	t.check(is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,435.2*bear.hp/bear.max_hp) and is_equal_approx(bar.fill.size.y,22) and is_equal_approx(bar.trail_ratio(),1) and bar.is_processing(),"FIX04 fill width follows hp only; trail waits (FIX05 sizes)")
 	bar._process(0.25)
 	bar._process(0.35)
-	t.check(is_equal_approx(bar.trail.size.x,bar.fill.size.x) and is_equal_approx(bar.trail.size.y,28) and not bar.is_processing(),"FIX04 trail texture drains with the JUICE01 timing")
+	t.check(is_equal_approx(bar.trail.size.x,bar.fill.size.x) and is_equal_approx(bar.trail.size.y,22) and not bar.is_processing(),"FIX04 trail texture drains with the JUICE01 timing (FIX05 height 22)")
 	var updates: int = bar.updates
 	for i in range(3): await t.process_frame
 	t.check(bar.updates==updates and not bar.is_processing(),"FIX04 idle textured bar does no per-frame work")
@@ -256,7 +257,7 @@ func rapid_combo(t: SceneTree) -> void:
 	enemy.max_hp = 100000
 	player.last_move_direction = Vector2.RIGHT
 	for item in player.basic_fx_pool: item.finish()
-	var before := {"slash":count(audio,"slash"),"thrust":count(audio,"thrust"),"rapid_slash":count(audio,"rapid_slash")}
+	var before := {"slash":count(audio,"slash"),"thrust":count(audio,"thrust"),"rapid_slash":count(audio,"rapid_slash"),"finish":count(audio,"rapid_slash_finish")}
 	var slash = skills.skills.skill_rapid_slash
 	slash.cooldown_until = 0
 	skills.try_use("skill_rapid_slash")
@@ -278,7 +279,7 @@ func rapid_combo(t: SceneTree) -> void:
 		if c!=sequence.back(): sequence.append(c)
 	t.check(sequence==[23,24,3],"FIX04 beats show 23 then 24 then 3 in order: "+str(sequence))
 	t.check(sounds_at_beat2.get("thrust",0)==before.thrust+1 and sounds_at_beat2.get("fx",0)==1,"FIX04 beat 2 thrust pose with one thrust effect and sound")
-	t.check(count(audio,"slash")==before.slash+1 and count(audio,"thrust")==before.thrust+1 and count(audio,"rapid_slash")==before.rapid_slash+1,"FIX04 one cast plays slash, thrust and the rapid slash sound once each")
+	t.check(count(audio,"slash")==before.slash+1 and count(audio,"thrust")==before.thrust+1 and count(audio,"rapid_slash_finish")==before.finish+1 and count(audio,"rapid_slash")==before.rapid_slash,"FIX04 one cast plays slash, thrust and the finish sound once each (FIX05 rapid_slash_finish replaces rapid_slash)")
 	t.check(player.rapid_pose_column()==3 and skills.combo_beat==-1,"FIX04 pose returns to the existing state when the cast ends")
 	var with_combo := cast(t,n,enemy)
 	skills.presentation.Rapid_combo_beats = 0

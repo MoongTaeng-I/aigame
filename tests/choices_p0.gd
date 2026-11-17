@@ -255,7 +255,7 @@ func csv_error(changes: Dictionary) -> String:
 func validate_csv() -> void:
 	var text := sources()
 	check(csv_error({}).is_empty(),"S6-16 valid synthetic choice CSV")
-	for pair in [["attack_range_add","invalid"],["h,heal,heal,0,test\n",""],["h,heal,heal,0,test\n","h,heal,heal,0,test\nh2,heal,heal,0,test\n"],["h,heal,heal,0","h,heal,heal,1"],["r,range,attack_range_add,1","r,range,attack_range_add,0"]]:
+	for pair in [["attack_range_add","invalid"],["h,heal,heal,0,test\n",""],["h,heal,heal,0,test\n","h,heal,heal,0,test\nh2,heal,heal,0,test\n"],["h,heal,heal,0","h,heal,heal,-1"],["r,range,attack_range_add,1","r,range,attack_range_add,0"]]:
 		check(not csv_error({"choice.csv":text["choice.csv"].replace(pair[0],pair[1])}).is_empty(),"S6-16 choice Effect heal count or weight rejects: "+pair[1])
 	for pair in [["r1,r,1,10","r1,unknown,1,10"],["r1,r,1,10,range,test\nr2,r,2,20,range,test\n",""],["r1,r,1,10","r1,r,0,10"],["r2,r,2,20","r2,r,3,20"],["h1,h,1,30,heal,test\n",""],["h1,h,1,30,heal,test\n","h1,h,1,30,heal,test\nh2,h,2,30,heal,test\n"],["h1,h,1,30","h1,h,2,30"],["h1,h,1,30","h1,h,1,0"],["h1,h,1,30","h1,h,1,101"],["r1,r,1,10","r1,r,1,-1"],["i1,i,1,0.1","i1,i,1,0.61"]]:
 		check(not csv_error({"choice_level.csv":text["choice_level.csv"].replace(pair[0],pair[1])}).is_empty(),"S6-17 invalid choice reference level value or interval rejects: "+pair[1])

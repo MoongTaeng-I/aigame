@@ -77,7 +77,7 @@ func data_and_cards() -> void:
 	choices.configure(f.player,f.store.get_table("choice.csv"),f.store.get_table("choice_level.csv"),f.store.get_row("choice_rule.csv","choice_rule_01"),f.summons)
 	f.host.add_child(choices)
 	choices.random.seed = 20261110
-	t.check(choices.candidates().count("choice_igrit")==1 and choices.candidates().count("choice_charger_test")==1 and choices.candidates().count("choice_belion")==1 and choices.candidates().size()==8,"S7-I4 three distinct shadow cards each appear once among eight candidates (FIX04)")
+	t.check(choices.candidates().count("choice_igrit")==1 and choices.candidates().count("choice_charger_test")==1 and choices.candidates().count("choice_belion")==1 and choices.candidates().size()==9,"S7-I4 three distinct shadow cards each appear once among nine candidates with heal (FIX05)")
 	f.player.add_experience(f.player.get_xp_to_next())
 	t.check(choices.can_reroll() and t.paused,"S7-02 actual level-up enables reroll rule 13 with five candidates")
 	var rerolls: int = choices.rerolls
@@ -105,7 +105,7 @@ func data_and_cards() -> void:
 	t.check(f.summons.actors.size()==2 and f.summons.capacity==2 and not choices.candidates().has("choice_igrit") and not choices.candidates().has("choice_charger_test") and not choices.candidates().has("choice_belion") and f.summons.summon()==null and f.summons.summon("charger_test")==null and f.summons.summon("belion")==null,"S7-I4 two owned types fill capacity; third recruitment draw excludes all three shadow cards")
 	f.player.add_experience(f.player.get_xp_to_next()-f.player.experience)
 	t.check(choices.cards.size()==3 and not choices.cards.has("choice_igrit") and not choices.cards.has("choice_charger_test") and not choices.cards.has("choice_belion"),"S7-I4 third recruitment draw keeps three cards but excludes all shadow candidates at capacity")
-	t.check(choices.can_reroll() and choices.candidates().size()==5,"S7-02 after both one-time summons five general candidates keep reroll by rule 13 (FIX04)")
+	t.check(choices.can_reroll() and choices.candidates().size()==6,"S7-02 after both one-time summons six candidates with heal keep reroll by rule 13 (FIX05)")
 	await close(f)
 
 func targeting_and_bt() -> void:
