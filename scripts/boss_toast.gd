@@ -140,7 +140,10 @@ func _refresh() -> void:
 		if float(entries[index].remaining)<=0:
 			entries[index].panel.queue_free()
 			entries.remove_at(index)
-	var top := first_top(presentation)+stack_offset
+	# JUICE-01: stack by the drawn border lines (Toast_visual_gap_px between them), not the panel rects.
+	# The window art keeps Ui_window_border_px of transparent margin inside every panel rect.
+	var line := float(presentation.Toast_top_px)+stack_offset
+	var edge := border()
 	var fade_sec := float(presentation.Toast_old_fade_sec)
 	for entry in entries:
 		var view: PanelContainer = entry.panel
@@ -153,9 +156,9 @@ func _refresh() -> void:
 			factor = lerpf(1,float(presentation.Toast_old_scale),clampf((demote-fade_sec)/maxf(float(presentation.Toast_old_shrink_sec),0.000001),0,1))
 		if not entry.retiring:
 			var height := maxf(view.custom_minimum_size.y,view.get_combined_minimum_size().y)
-			view.offset_top = top
-			view.offset_bottom = top+height
-			top = view.offset_top+height*factor+float(presentation.Toast_gap_px)
+			view.offset_top = line-edge*factor
+			view.offset_bottom = view.offset_top+height
+			line = view.offset_top+(height-edge)*factor+float(presentation.Toast_visual_gap_px)
 		view.modulate.a = minf(clampf(float(entry.age)/FADE_IN_SEC,0,1),clampf(float(entry.remaining)/FADE_OUT_SEC,0,1))
 		if int(presentation.Ui_fx_enabled)!=0:
 			var open := clampf(float(entry.age)/float(presentation.Ui_open_sec),0,1)

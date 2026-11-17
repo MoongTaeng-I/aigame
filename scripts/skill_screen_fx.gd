@@ -26,6 +26,10 @@ var push_duration := 0.0
 var fear_dim_rect: ColorRect
 var fear_dim_color := Color(0,0,0,0)
 var fear_dim_tail := 0.6
+# JUICE-01 zoom punch on the world camera only (CanvasLayers are not zoomed).
+var camera: Camera2D
+var zoom_age := -1.0
+var zoom_base := Vector2.ONE
 
 func push(direction: Vector2, px: float, seconds: float) -> void:
 	if int(settings.get("Shake_enabled",1))==0 or seconds<=0 or direction==Vector2.ZERO: return
@@ -34,6 +38,32 @@ func push(direction: Vector2, px: float, seconds: float) -> void:
 	push_duration = seconds
 	push_remaining = seconds
 	_process(0)
+
+# Ignored while a punch is running so overlapping triggers keep the current one.
+func zoom_punch() -> void:
+	if int(settings.Zoom_punch_enabled)==0 or not is_instance_valid(camera) or zoom_age>=0: return
+	zoom_base = camera.zoom
+	zoom_age = 0.0
+	_advance_zoom(0)
+
+func zoom_factor(age: float) -> float:
+	var punch := float(settings.Zoom_punch_scale)
+	var zoom_in := float(settings.Zoom_punch_in_sec)
+	if age<zoom_in: return lerpf(1.0,punch,clampf(age/maxf(zoom_in,0.000001),0,1))
+	var t := clampf((age-zoom_in)/maxf(float(settings.Zoom_punch_out_sec),0.000001),0,1)
+	return lerpf(punch,1.0,1.0-(1.0-t)*(1.0-t))
+
+func _advance_zoom(delta: float) -> void:
+	if zoom_age<0: return
+	zoom_age += maxf(delta,0)
+	if not is_instance_valid(camera):
+		zoom_age = -1.0
+		return
+	if zoom_age>=float(settings.Zoom_punch_in_sec)+float(settings.Zoom_punch_out_sec):
+		camera.zoom = zoom_base
+		zoom_age = -1.0
+		return
+	camera.zoom = zoom_base*zoom_factor(zoom_age)
 
 func set_slash_active(active: bool) -> void:
 	slash_active = active
@@ -79,6 +109,8 @@ func kick(px: float, seconds: float, flash_sec: float = 0.0) -> void:
 	flash_remaining = maxf(flash_remaining,flash_sec)
 	_process(0)
 func _process(delta: float) -> void:
+	# Zoom punch keeps its real-time length even under the boss-kill slow motion.
+	_advance_zoom(delta)
 	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0)) if is_inside_tree() else 1.0
 	player_hit_remaining = maxf(0,player_hit_remaining-delta)
 	elapsed += maxf(delta,0)
@@ -132,7 +164,8 @@ func player_hit() -> void:
 	_process(0)
 
 func advance_result_kill(delta: float) -> void:
-	# Only the approved kill flash/shake advances under the result pause.
+	# Only the approved kill flash/shake (and the JUICE-01 zoom punch) advances under the result pause.
+	_advance_zoom(delta)
 	delta *= float(get_viewport().get_meta(&"fx05_visual_scale",1.0))
 	elapsed += maxf(delta,0)
 	remaining = maxf(0,remaining-delta)

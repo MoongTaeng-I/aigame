@@ -1094,3 +1094,59 @@ combat_presentation.csv 새 키
 | Boss_bar_toast_gap_px | 6 | 바 아래와 첫 토스트 테두리 선 사이px |
 
 값을 바꾼 기존 키: Toast_gap_px 8→4.
+
+## 2026-11-17 JUICE-01 — 손맛 연출
+
+판정·피해·시점·AI·생성·전투 RNG는 바꾸지 않는다. 값은 typed 캐시에서 읽고, 새 이펙트는 고정 풀·활성일 때만 처리·redraw한다.
+
+- 경험치 흡수: 끌려오는 결정만 늘임·꼬리를 그리고(쉬는 결정은 redraw 없음), 획득 반짝임은 노드 1개·슬롯 Xp_flash_pool개 고정 풀이다. 음정 사다리는 시스템04.
+- 보스 HP 잔상: Back → Trail → Fill 순서의 ColorRect. 잔상이 기다리거나 줄어드는 동안만 처리한다. Ui_fx_enabled=0이면 잔상은 기다리지 않고 채움과 함께 바로 줄어든다.
+- 처치 팝: 일반 적 사망 순간부터 그림(sprite_body.presentation_transform)만 발 기준으로 Kill_pop_scale까지 Kill_pop_sec 동안 커지고 그 크기로 기존 흐려짐(Death_fade_sec)을 이어 간다. 마지막 피격 방향(공격자 → 적, 공격자가 없는 피해는 이동 없음)으로 Kill_fling_px를 Kill_fling_sec 동안 감속 이동한다. 위치·충돌은 바뀌지 않고 노드·재질을 만들지 않는다. 보스 제외.
+- 저체력 경고: HP ≤ max_hp × Low_hp_ratio에서 화면 가장자리 비네트(Low_hp_color, 폭 Low_hp_vignette_width)가 Low_hp_beat_hz 주기마다 강·약 두 번 뛰며 알파 Low_hp_alpha_min~max를 오간다. 켜기·끄기는 Low_hp_fade_sec 동안 서서히. 같은 동안 BGM 버스 저역 통과 필터를 열린 상태(20.5kHz)에서 Low_hp_bgm_lowpass_hz까지 지수 곡선으로 내린다. 필터가 완전히 열리면 효과를 끈다. SFX 버스는 건드리지 않는다. 비네트 재질은 1개를 만들어 보일 때만 붙인다. 드래곤 피어 비네트와는 별도 사각형이라 겹쳐도 각자 알파 상한을 지킨다. 플레이어 hp_changed 신호로만 켜고 끈다.
+- 줌 펀치: 드래곤 피어 시전·보스 처치 순간 월드 카메라 zoom만 Zoom_punch_scale까지 Zoom_punch_in_sec 동안 당겼다 Zoom_punch_out_sec 동안 되돌린다. 실제 시간으로 진행해 보스 처치 느린 화면 중에도 길이가 같다. 진행 중 새 요청은 무시한다. CanvasLayer UI는 줌되지 않는다(기존 화면 흔들림은 화면 전체를 흔든다). Zoom_punch_enabled=0이면 끈다. 보스 처치 줌은 Impact_fx_enabled=0이면 기존 보스 처치 연출과 함께 생략된다.
+- 토스트 간격: 그려진 테두리 선 사이 Toast_visual_gap_px. 패널 사각형 안 투명 테두리(Ui_window_border_px)를 각 패널의 현재 크기 배율로 빼서 계산하므로 물러나 작아진 토스트도 같은 간격이다. Toast_gap_px는 더 이상 읽지 않는다.
+- 드래곤 피어 비네트 색: Fear_color #e8283c → #8a0012, Fear_vignette_alpha 0.6 → 0.5(같은 키를 쓰는 피어 눈 색·플레이어 틴트도 함께 바뀐다).
+- Ui_fx_enabled=0일 때: 보스 잔상 애니메이션만 끈다. 경험치 늘임·반짝임·처치 팝·저체력·줌은 UI 연출이 아니라서 이 키와 무관하다.
+
+combat_presentation.csv 새 키
+
+| Id | 예시 Value | 설명 |
+|---|---|---|
+| Xp_absorb_stretch | 1.6 | 끌려오는 결정의 최대 늘임 배율 |
+| Xp_absorb_full_speed | 900 | 최대 늘임에 도달하는 끌림 속도(px/s) |
+| Xp_absorb_trail_alpha | 0.35 | 꼬리 알파 |
+| Xp_pickup_flash_sec | 0.12 | 획득 반짝임 길이(초) |
+| Xp_pickup_flash_px | 14 | 획득 반짝임 반경px |
+| Xp_flash_pool | 12 | 반짝임 고정 풀 크기 |
+| Xp_pitch_reset_sec | 0.5 | 이 시간 안에 다시 얻으면 음정 +1반음 |
+| Xp_pitch_max_semitones | 12 | 음정 사다리 최대 반음 |
+| Boss_bar_trail_color | #ffffff | 보스 바 잔상 색 |
+| Boss_bar_trail_alpha | 0.75 | 잔상 알파 |
+| Boss_bar_trail_delay_sec | 0.25 | 피해 뒤 잔상이 줄기 시작할 때까지(초) |
+| Boss_bar_trail_drain_sec | 0.35 | 잔상이 채움까지 줄어드는 시간(초) |
+| Boss_bar_border_px | 2 | 바깥 테두리 굵기px |
+| Boss_bar_border_color | #ece6ff | 바깥 테두리 색 |
+| Boss_bar_border_alpha | 0.9 | 바깥 테두리 알파 |
+| Boss_bar_inner_line_px | 1 | 바 바로 바깥 어두운 선 굵기px |
+| Boss_bar_inner_line_color | #1a1240 | 어두운 선 색 |
+| Boss_bar_name_outline_px | 2 | 보스 이름 외곽선px(Label outline_size는 이 값의 2배) |
+| Boss_bar_name_outline_color | #1a1240 | 보스 이름 외곽선 색 |
+| Kill_pop_scale | 1.15 | 처치 팝 최대 크기 |
+| Kill_pop_sec | 0.08 | 최대 크기까지 걸리는 시간(초) |
+| Kill_fling_px | 10 | 피격 방향 튕김 거리px |
+| Kill_fling_sec | 0.12 | 튕김 시간(초) |
+| Low_hp_ratio | 0.3 | 저체력 경고를 켜는 HP 비율(이하) |
+| Low_hp_color | #c8102e | 저체력 비네트 색 |
+| Low_hp_beat_hz | 1.2 | 두 번 뛰기 한 묶음의 초당 횟수 |
+| Low_hp_alpha_min | 0.1 | 비네트 최소 알파 |
+| Low_hp_alpha_max | 0.35 | 비네트 최대 알파 |
+| Low_hp_fade_sec | 0.3 | 비네트·BGM 필터가 들어오고 빠지는 시간(초) |
+| Low_hp_bgm_lowpass_hz | 1200 | 저체력 중 BGM 저역 통과 차단 주파수 |
+| Low_hp_vignette_width | 0.45 | 비네트 가장자리 폭(화면 비율) |
+| Zoom_punch_enabled | 1 | 0이면 줌 펀치 끔 |
+| Zoom_punch_scale | 1.03 | 줌 펀치 최대 배율 |
+| Zoom_punch_in_sec | 0.06 | 당기는 시간(초) |
+| Zoom_punch_out_sec | 0.18 | 되돌리는 시간(초) |
+| Toast_visual_gap_px | 6 | 그려진 토스트 테두리 선 사이 간격px |
+
+값을 바꾼 기존 키: Fear_color #e8283c→#8a0012, Fear_vignette_alpha 0.6→0.5, Boss_bar_name_font_size 20→28. 읽지 않게 된 키: Toast_gap_px.

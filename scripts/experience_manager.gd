@@ -6,6 +6,7 @@ var _player: Node2D
 var _rule: Dictionary = {}
 var _orbs: Array = []
 var _label: Label
+var flash: Node2D
 
 func configure(player: Node2D, enemy_manager: EnemyManager, rule: Dictionary) -> void:
 	_player = player
@@ -46,10 +47,14 @@ func _physics_process(delta: float) -> void:
 	for orb in _orbs.duplicate():
 		if orb.advance(delta,_player):
 			_orbs.erase(orb)
+			if flash!=null: flash.emit(_player.global_position)
 			_player.add_experience(int(orb.value))
 	_update_label()
 
 func _ready() -> void:
+	flash = preload("res://scripts/xp_pickup_flash.gd").new()
+	flash.name = "XpPickupFlash"
+	add_child(flash)
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	_label = Label.new()

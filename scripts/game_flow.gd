@@ -139,6 +139,8 @@ func _dispose_round() -> void:
 		remove_child(session)
 		session.free()
 	session = null
+	var audio := preload("res://scripts/audio_events.gd").manager(self)
+	if audio!=null: audio.reset_low_hp()
 	get_tree().paused = false
 	for action in ["move_up","move_down","move_left","move_right"]: Input.action_release(action)
 

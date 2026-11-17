@@ -123,3 +123,4 @@
 - 2026-11-09 변경: 시스템 6 연결로 레벨업 시 선택 화면이 뜨는 동안 게임이 멈춘다. 규칙 17은 시스템 4 단독 동작에 대한 것이다.
 - 2026-11-14 BAL-01: `xp_rule.csv`의 `Skill_point_every_levels=2`에 따라 짝수 레벨 도달 시에만 강화 포인트1개를 주며, 다중 레벨업의 지나간 짝수 레벨과 매 레벨 선택지 신호는 모두 처리한다.
 - 2026-11-17 BAL-02: 사용자 결정으로 경험치 획득을 70%로 낮춘다. 적·보스 Xp_value와 획득 규칙은 그대로 두고 level.csv Xp_to_next를 1/0.7배(올림)한 7, 12, 16, 20, 25, 29, 35, 40, 46, 52로 바꾼다.
+- 2026-11-17 JUICE-01(표시·소리만): 획득 반경에 들어와 끌려오는 경험치 결정은 이동 방향으로 늘어나(Xp_absorb_stretch, Xp_absorb_full_speed 속도에서 최대) 꼬리 1개(Xp_absorb_trail_alpha)를 그린다. 획득 순간 플레이어 위치에 반짝임(Xp_pickup_flash_sec·Xp_pickup_flash_px, 고정 풀 Xp_flash_pool)을 낸다. xp_pickup 효과음은 직전 획득 뒤 Xp_pitch_reset_sec 안에 다시 얻으면 +1반음(최대 Xp_pitch_max_semitones), 그 시간이 지나면 0반음이며 기존 Pitch_random 위에 곱한다. 획득 판정·반경·값·합치기 규칙은 바뀌지 않는다.

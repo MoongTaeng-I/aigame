@@ -68,13 +68,14 @@ func toasts(t: SceneTree) -> void:
 	t.check(is_equal_approx(first.modulate.a,0.6) and first.scale.is_equal_approx(Vector2.ONE*0.85) and first.pivot_offset.y==0 and is_equal_approx(first.pivot_offset.x,first.size.x/2),"FIX03 older toast ends at scale .85 anchored on its top edge")
 	t.check(is_equal_approx(second.modulate.a,1) and second.scale.is_equal_approx(Vector2.ONE),"FIX03 newest toast stays at 100 percent")
 	var height := maxf(second.custom_minimum_size.y,second.get_combined_minimum_size().y)
-	t.check(is_equal_approx(second.offset_top,view.first_top(values)) and is_equal_approx(first.offset_top,second.offset_top+height+4) and is_equal_approx(first.position.y,first.offset_top),"FIX03 newest toast on top and the older one 4px below it")
+	var B := float(values.Ui_window_border_px)
+	t.check(is_equal_approx(second.offset_top,view.first_top(values)) and is_equal_approx(first.offset_top,second.offset_top+height-B+6-B*0.85) and is_equal_approx(first.position.y,first.offset_top),"FIX03 newest toast on top and the older one below it (JUICE01 drawn border gap 6)")
 	view.push_message("third")
 	view._process(0.3)
 	var third: PanelContainer = view.entries[0].panel
 	var second_height := maxf(second.custom_minimum_size.y,second.get_combined_minimum_size().y)
 	var third_height := maxf(third.custom_minimum_size.y,third.get_combined_minimum_size().y)
-	t.check(is_equal_approx(second.offset_top,third.offset_top+third_height+4) and is_equal_approx(first.offset_top,second.offset_top+second_height*0.85+4) and is_equal_approx(second.scale.x,0.85) and is_equal_approx(first.scale.x,0.85) and is_equal_approx(third.scale.x,1),"FIX03 three toasts restack by the shrunken heights with 4px gaps")
+	t.check(is_equal_approx(second.offset_top,third.offset_top+third_height-B+6-B*0.85) and is_equal_approx(first.offset_top,second.offset_top+(second_height-B)*0.85+6-B*0.85) and is_equal_approx(second.scale.x,0.85) and is_equal_approx(first.scale.x,0.85) and is_equal_approx(third.scale.x,1),"FIX03 three toasts restack by the shrunken heights (JUICE01 drawn border gap 6)")
 	n.host.free()
 	await t.process_frame
 
@@ -95,7 +96,7 @@ func boss_bar(t: SceneTree) -> void:
 	var bear: Node2D = spawn(n,"boss_middle",100)
 	await t.process_frame
 	t.check(is_instance_valid(bear) and bear.is_active and bar.visible and bar.name_label.text==String(n.manager._enemy_records[bear.enemy_id].Name_ko) and is_equal_approx(bar.ratio(),1),"FIX03 boss bar shows the boss name and a full bar once the boss is active")
-	t.check(is_equal_approx(bar.back.size.x,560) and is_equal_approx(bar.back.size.y,18) and bar.fill.color==Color("#e0283c") and bar.back.color==Color("#1a1030") and bar.fill!=bar.back and bar.fill.get_index()>bar.back.get_index() and bar.frame.get_theme_stylebox("panel")==UI.THEME.get_stylebox("background","ProgressBar"),"FIX03 boss bar 560x18 red fill over dark back with the theme bar frame as separate nodes")
+	t.check(is_equal_approx(bar.back.size.x,560) and is_equal_approx(bar.back.size.y,18) and bar.fill.color==Color("#e0283c") and bar.back.color==Color("#1a1030") and bar.fill!=bar.back and bar.fill.get_index()>bar.back.get_index() and bar.frame.get_theme_stylebox("panel") is StyleBoxFlat and bar.frame.get_theme_stylebox("panel").border_width_top==2,"FIX03 boss bar 560x18 red fill over dark back with a 2px frame as separate nodes (JUICE01)")
 	var hud: CanvasLayer = n.host.find_child("TopExperienceBar",true,false).get_parent().get_parent() if n.host.find_child("TopExperienceBar",true,false)!=null else null
 	var xp: Control = n.host.find_child("TopExperienceBar",true,false)
 	var level: Control = n.host.find_child("PlayerLevel",true,false)

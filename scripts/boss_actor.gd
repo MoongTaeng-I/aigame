@@ -1,4 +1,6 @@
 extends "res://scripts/enemy.gd"
+# JUICE-01: emitted when the elf enters or leaves stealth (the top boss bar follows it).
+signal stealth_changed(hidden: bool)
 
 const Geometry = preload("res://scripts/combat_geometry.gd")
 var manager: EnemyManager

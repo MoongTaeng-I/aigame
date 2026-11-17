@@ -140,6 +140,10 @@ func _create_game(data_store: CsvDataStore) -> void:
 		elf_debug.name = "ElfDebugRecorder"
 		elf_debug.configure(enemy_manager)
 		add_child(elf_debug)
+	var low_hp := preload("res://scripts/low_hp_fx.gd").new()
+	low_hp.name = "LowHpFx"
+	low_hp.configure(player)
+	map.add_child(low_hp)
 	var temporary_hud := preload("res://scripts/temporary_hud.gd").new()
 	temporary_hud.name = "TemporaryHud"
 	temporary_hud.configure(enemy_manager,shadows,skill_manager.ui)
@@ -153,7 +157,7 @@ func _create_game(data_store: CsvDataStore) -> void:
 		player.death_presented.connect(_present_round_result)
 		boss_director.run_completed.connect(_end_round.bind(true))
 		enemy_manager.enemy_died.connect(_count_kill)
-	round_nodes = {"map":map,"player":player,"manager":enemy_manager,"skills":skill_manager,"choices":choices,"shadows":shadows,"director":boss_director}
+	round_nodes = {"map":map,"player":player,"manager":enemy_manager,"skills":skill_manager,"choices":choices,"shadows":shadows,"director":boss_director,"low_hp":low_hp}
 
 func _count_kill(_enemy: EnemyActor) -> void:
 	if not round_finished: kills+=1
@@ -168,6 +172,7 @@ func _end_round(cleared: bool) -> void:
 	round_result = {"cleared":cleared,"seconds":round_nodes.manager._elapsed_seconds,"level":player.level,"kills":kills,"shadows":names}
 	player.run_finished = true
 	round_nodes.director.result_locked = true
+	round_nodes.low_hp.release()
 	if is_instance_valid(round_nodes.director.boss_bar): round_nodes.director.boss_bar.release()
 	round_nodes.choices.result_locked = true
 	round_nodes.choices.active = false

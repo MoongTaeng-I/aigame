@@ -147,7 +147,11 @@ func toast_and_visual_checks() -> void:
 	for i in range(5): view.push_message("message%d" % i)
 	var active: Array = view.entries.filter(func(entry: Dictionary) -> bool: return not entry.retiring)
 	t.check(active.size()==4 and active[0].text=="message4" and active[3].text=="message1","S8-I3-B newest first with oldest retiring at fifth")
-	t.check(active[1].panel.offset_top-active[0].panel.offset_bottom==4,"S8-I3-B toast gap4 (FIX03)")
+	var B := float(view.presentation.Ui_window_border_px)
+	var upper: PanelContainer = active[0].panel
+	var lower: PanelContainer = active[1].panel
+	var upper_height := maxf(upper.custom_minimum_size.y,upper.get_combined_minimum_size().y)
+	t.check(is_equal_approx(lower.offset_top+B*lower.scale.x-(upper.offset_top+(upper_height-B)*upper.scale.x),6),"S8-I3-B toast drawn border gap6 (JUICE01)")
 	view._process(0.21)
 	t.check(view.entries.size()==4,"S8-I3-B overflow fade removes oldest")
 	d.timeline = [{"Id":"test_final","Time_mmss":0,"Boss_id":"boss_final"}]

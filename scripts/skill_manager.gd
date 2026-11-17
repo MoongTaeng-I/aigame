@@ -59,6 +59,7 @@ func _ready() -> void:
 	add_child(cartoon_fx)
 	screen_fx = preload("res://scripts/skill_screen_fx.gd").new()
 	screen_fx.settings = presentation
+	screen_fx.camera = player.get_node_or_null("Camera2D")
 	add_child(screen_fx)
 	var layer := CanvasLayer.new()
 	add_child(layer)
@@ -200,6 +201,7 @@ func _fear_start(stats: Dictionary, at: float) -> void:
 		if screen_fx!=null:
 			screen_fx.kick(float(presentation.get("Fear_shake_px",8)),float(presentation.get("Fear_shake_sec",0.25)),float(presentation.get("Fear_flash_sec",0.15)))
 			screen_fx.start_fear(float(stats.Cast_sec))
+			screen_fx.zoom_punch()
 	queue_redraw()
 
 func _draw() -> void:

@@ -47,6 +47,13 @@ var wander_target := Vector2.ZERO
 var has_wander_target: bool = false
 var fear_remaining: float = 0.0
 var action_delta: float = 0.0
+# JUICE-01 kill pop (picture only): grow and fling along the last hit direction while fading.
+var last_hit_direction := Vector2.ZERO
+var pop_age := -1.0
+var pop_scale := 1.0
+var pop_sec := 0.0
+var fling_px := 0.0
+var fling_sec := 0.0
 const SkillUI = preload("res://scripts/skill_ui.gd")
 
 func is_feared() -> bool:
@@ -96,6 +103,9 @@ func activate_at(world_position: Vector2, order: int = 0) -> void:
 	has_wander_target = false
 	fear_remaining = 0.0
 	_fade_elapsed = 0.0
+	pop_age = -1.0
+	last_hit_direction = Vector2.ZERO
+	if sprite_body!=null and not has_method("configure_boss"): sprite_body.presentation_transform = Transform2D.IDENTITY
 	knockback_direction = Vector2.ZERO
 	knockback_distance = 0.0
 	knockback_duration = 0.0
@@ -130,6 +140,7 @@ func apply_damage(amount: int) -> bool:
 	var previous_hp := hp
 	hp = maxi(0, hp - amount)
 	var owner: Node = damage_visual_owner if is_instance_valid(damage_visual_owner) else null
+	last_hit_direction = owner.global_position.direction_to(global_position) if owner is Node2D else Vector2.ZERO
 	damage_presented.emit(self,previous_hp-hp,damage_visual_source,owner,hp==0)
 	damage_visual_source = "player"
 	damage_visual_owner = null
@@ -152,9 +163,32 @@ func begin_death() -> void:
 	_fade_elapsed = 0.0
 	if is_node_ready():
 		collision_shape.set_deferred("disabled", true)
+	if not has_method("configure_boss") and sprite_body!=null:
+		var values: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation()
+		pop_scale = float(values.Kill_pop_scale)
+		pop_sec = float(values.Kill_pop_sec)
+		fling_px = float(values.Kill_fling_px)
+		fling_sec = float(values.Kill_fling_sec)
+		pop_age = 0.0
 	died.emit(self)
 	if death_fade_sec <= 0.0:
 		queue_free()
+
+# Scale up to Kill_pop_scale over Kill_pop_sec (then held while the existing fade runs) and slide
+# Kill_fling_px along the last hit direction with a decelerating ease. Collision/position untouched.
+func advance_kill_pop(delta: float) -> void:
+	pop_age += maxf(delta,0)
+	if sprite_body==null: return
+	var grow := clampf(pop_age/maxf(pop_sec,0.000001),0,1)
+	var size := lerpf(1.0,pop_scale,1.0-(1.0-grow)*(1.0-grow))
+	var travel := clampf(pop_age/maxf(fling_sec,0.000001),0,1)
+	var offset := last_hit_direction*fling_px*(1.0-(1.0-travel)*(1.0-travel))
+	var pivot := Vector2(0,sprite_body.foot_y)
+	sprite_body.presentation_transform = Transform2D(0,Vector2.ONE*size,0,offset+pivot-pivot*size)
+	sprite_body.request_redraw()
+
+func kill_pop_offset() -> Vector2:
+	return last_hit_direction*fling_px*(1.0-pow(1.0-clampf(pop_age/maxf(fling_sec,0.000001),0,1),2)) if pop_age>=0 else Vector2.ZERO
 
 func start_knockback(source_position: Vector2, distance: float, duration: float) -> void:
 	if not is_active or is_logically_dead or distance <= 0.0 or duration <= 0.0:
@@ -175,6 +209,7 @@ func update_actor(delta: float, player_position: Vector2, bounds: Rect2, stop_at
 	if is_logically_dead:
 		_fade_elapsed += delta
 		modulate.a = clampf(1.0 - _fade_elapsed / maxf(death_fade_sec, 0.0001), 0.0, 1.0)
+		if pop_age>=0: advance_kill_pop(delta)
 		if _fade_elapsed >= death_fade_sec:
 			queue_free()
 		return

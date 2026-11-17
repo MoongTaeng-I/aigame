@@ -17,6 +17,8 @@ signal leveled_up(new_level: int)
 signal damaged(world_position: Vector2)
 signal died
 signal death_presented
+# JUICE-01: hp changed by damage or healing (low-hp warning listens).
+signal hp_changed
 var death_presentation: Node
 var death_presentation_complete := false
 var last_hit_direction := Vector2.RIGHT
@@ -147,6 +149,7 @@ func apply_damage(amount: int) -> void:
     if is_dead or run_finished or amount <= 0 or is_fear_casting():
         return
     hp = maxi(0, hp - amount)
+    hp_changed.emit()
     preload("res://scripts/audio_events.gd").sfx(self,"player_hurt")
     damaged.emit(global_position)
     _update_hp_label()
@@ -254,6 +257,7 @@ func heal_percent(percent: float) -> void:
     if is_dead:
         return
     hp = healed_hp(percent)
+    hp_changed.emit()
     _update_hp_label()
 
 func _apply_basic_triangle(target: Variant, enemies: Array) -> void:

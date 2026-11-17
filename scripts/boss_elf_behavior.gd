@@ -201,6 +201,7 @@ func start_stealth() -> void:
 	if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.stealth(boss.global_position)
 	hidden = true
 	hidden_until = now()+float(rows[6].Duration_sec)
+	boss.stealth_changed.emit(true)
 	for shadow in boss.manager._shadow_bodies:
 		if shadow.target==boss: shadow.target = null
 	boss.queue_redraw()
@@ -209,12 +210,15 @@ func end_stealth(at: float) -> void:
 	if is_instance_valid(boss.manager.boss_fx): boss.manager.boss_fx.stealth(boss.global_position)
 	hidden = false
 	boss.ready_at[rows[6].Id] = at+float(rows[6].Cooldown_sec)
+	boss.stealth_changed.emit(false)
 	boss.queue_redraw()
 
 func cleanup() -> void:
+	var was_hidden: bool = hidden
 	fleeing = false
 	burst = false
 	hidden = false
+	if was_hidden: boss.stealth_changed.emit(false)
 	hidden_until = 0
 	push_effect_until = 0
 

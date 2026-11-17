@@ -206,7 +206,8 @@ func toast_checks() -> void:
 		if i>0:
 			# FIX-03: gap 4 and older toasts shrink from their top edge, so compare against the drawn bottom.
 			var above: PanelContainer = view.entries[i-1].panel
-			t.check(panel.offset_top>=above.offset_top+above.size.y*above.scale.x+4-0.01,"S8-I3-C actual heights stack without overlap")
+			var B := float(view.presentation.Ui_window_border_px)
+			t.check(panel.offset_top+B*panel.scale.x>=above.offset_top+(above.size.y-B)*above.scale.x+6-0.01,"S8-I3-C actual heights stack without overlap")
 	t.check(view.entries[0].text.ends_with("3") and view.entries[3].text.ends_with("0"),"S8-I3-C newest toast on top")
 	view.queue_free()
 	await t.process_frame

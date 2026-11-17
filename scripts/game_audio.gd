@@ -19,6 +19,14 @@ var choice_before := false
 var bgm_db := -6.0
 var sfx_db := 0.0
 var levels := {"BGM":100.0,"SFX":100.0}
+# JUICE-01 xp_pickup pitch ladder: +1 semitone per pickup within Xp_pitch_reset_sec, up to the max.
+var xp_semitones := 0
+var xp_last_pickup := -INF
+# JUICE-01 low-hp BGM low-pass: 0 = off, 1 = fully at Low_hp_bgm_lowpass_hz.
+var lowpass: AudioEffectLowPassFilter
+var lowpass_amount := 0.0
+var lowpass_target := 0.0
+const LOWPASS_OPEN_HZ := 20500.0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -44,10 +52,50 @@ func _ready() -> void:
 		voice.set_meta(&"sound","")
 		add_child(voice); pool.append(voice)
 		voice.finished.connect(func() -> void: voice.set_meta(&"sound",""))
+	_setup_lowpass()
 	update_buses(false)
+
+func _setup_lowpass() -> void:
+	var bgm := AudioServer.get_bus_index("BGM")
+	for i in range(AudioServer.get_bus_effect_count(bgm)):
+		if AudioServer.get_bus_effect(bgm,i) is AudioEffectLowPassFilter: lowpass = AudioServer.get_bus_effect(bgm,i)
+	if lowpass==null:
+		lowpass = AudioEffectLowPassFilter.new()
+		AudioServer.add_bus_effect(bgm,lowpass)
+	reset_low_hp()
+
+func lowpass_index() -> int:
+	var bgm := AudioServer.get_bus_index("BGM")
+	for i in range(AudioServer.get_bus_effect_count(bgm)):
+		if AudioServer.get_bus_effect(bgm,i)==lowpass: return i
+	return -1
+
+# Low-hp warning: slide the BGM low-pass in (true) or out (false) over Low_hp_fade_sec.
+func set_low_hp(active: bool) -> void:
+	lowpass_target = 1.0 if active else 0.0
+	_apply_lowpass(0)
+
+# Round start/end and menu: the filter is off at once.
+func reset_low_hp() -> void:
+	lowpass_target = 0.0
+	lowpass_amount = 0.0
+	_apply_lowpass(0)
+
+func _apply_lowpass(delta: float) -> void:
+	if lowpass==null: return
+	lowpass_amount = move_toward(lowpass_amount,lowpass_target,delta/maxf(float(settings.Low_hp_fade_sec),0.000001))
+	# Exponential sweep sounds even between 20.5kHz (open) and the target cutoff.
+	lowpass.cutoff_hz = LOWPASS_OPEN_HZ*pow(float(settings.Low_hp_bgm_lowpass_hz)/LOWPASS_OPEN_HZ,lowpass_amount)
+	var index := lowpass_index()
+	if index>=0: AudioServer.set_bus_effect_enabled(AudioServer.get_bus_index("BGM"),index,lowpass_amount>0)
 
 func request(id: String) -> bool:
 	request_counts[id] = int(request_counts.get(id,0))+1
+	var semitones := 0
+	if id=="xp_pickup":
+		xp_semitones = mini(xp_semitones+1,int(settings.Xp_pitch_max_semitones)) if clock-xp_last_pickup<=float(settings.Xp_pitch_reset_sec) else 0
+		xp_last_pickup = clock
+		semitones = xp_semitones
 	if not sounds.has(id): return false
 	if get_tree().paused and not (id in ["ui_click","level_up"] and choice_pause()): return false
 	var row: Dictionary = sounds[id]
@@ -61,7 +109,7 @@ func request(id: String) -> bool:
 	if count>=int(row.max) or free==null: return false
 	free.stream = row.stream
 	free.volume_db = row.volume
-	free.pitch_scale = 1+rng.randf_range(-float(row.pitch),float(row.pitch))
+	free.pitch_scale = pow(2.0,semitones/12.0)*(1+rng.randf_range(-float(row.pitch),float(row.pitch)))
 	free.set_meta(&"sound",id)
 	free.play()
 	last_play[id] = clock
@@ -118,6 +166,7 @@ func choice_pause() -> bool:
 
 func _process(delta: float) -> void:
 	clock+=delta
+	if lowpass_amount!=lowpass_target: _apply_lowpass(delta)
 	var paused := get_tree().paused
 	var choice := paused and choice_pause()
 	if paused!=paused_before or choice!=choice_before:

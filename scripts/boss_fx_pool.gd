@@ -148,6 +148,8 @@ func died(enemy: Node2D) -> void:
 	queue_redraw()
 	slow_remaining = float(settings.Boss_kill_slowmo_sec)
 	kill_presenting = true
+	var screen := screen_fx()
+	if screen!=null: screen.zoom_punch()
 	get_viewport().set_meta(&"fx05_visual_scale",float(settings.Boss_kill_slowmo_scale))
 	get_viewport().set_meta(&"fx05_slow_owner",self)
 	if enemy.sprite_body!=null:
@@ -195,7 +197,7 @@ func advance(delta: float) -> void:
 		advance_ghosts(scaled)
 		var screen := screen_fx()
 		if screen!=null: screen.advance_result_kill(delta)
-		kill_presenting = slow_remaining>0 or ghosts.any(func(ghost: Dictionary) -> bool: return ghost.active) or (screen!=null and (screen.white_remaining>0 or screen.remaining>0))
+		kill_presenting = slow_remaining>0 or ghosts.any(func(ghost: Dictionary) -> bool: return ghost.active) or (screen!=null and (screen.white_remaining>0 or screen.remaining>0 or screen.zoom_age>=0))
 		return
 	var had := active_count>0
 	age+=scaled
