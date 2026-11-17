@@ -101,6 +101,11 @@ func card_rect(index: int) -> Rect2:
 	var total: float = CARD.x*float(palette.Skill_icon_scale)/1.35*manager.SkillData.IDS.size()+GAP*(manager.SkillData.IDS.size()-1)
 	return Rect2(Vector2(size.x-MARGIN.x-total+(CARD.x*float(palette.Skill_icon_scale)/1.35+GAP)*index,size.y-MARGIN.y-CARD.y),Vector2(CARD.x*float(palette.Skill_icon_scale)/1.35,CARD.y))
 
+# FIX-04: "강화 포인트" badge, Hud_points_scale x its old 240x80, still 16px above the skill cards.
+func points_rect() -> Rect2:
+	var badge := Vector2(240,80)*float(palette.Hud_points_scale)
+	return Rect2(card_rect(0).position+Vector2(0,-16-badge.y),badge)
+
 func _layout() -> void:
 	for index in range(glyphs.size()):
 		glyphs[index].position = card_rect(index).position+ICON_OFFSET
@@ -197,11 +202,13 @@ func _draw_overlays() -> void:
 		if state.active_border: overlay.draw_rect(box,ACTIVE,false,3)
 		if ready_flash[index]>0: overlay.draw_rect(icon.grow(6),Color(1,1,1,ready_flash[index]/float(palette.Skill_ready_flash_sec)),false,4)
 	var points: int = manager.player.enhancement_points
-	var badge := Rect2(card_rect(0).position+Vector2(0,-96),Vector2(240,80))
+	var badge := points_rect()
+	var points_scale := float(palette.Hud_points_scale)
+	var caption_size := roundi(20*points_scale)
 	UI.panel(overlay,badge)
 	var caption := "강화 포인트 %d" % points
-	var caption_width := UI.BLACK.get_string_size(caption,HORIZONTAL_ALIGNMENT_LEFT,-1,20).x
-	outlined(caption,badge.position+Vector2((badge.size.x-caption_width)/2,50),20,Color(palette.Skill_plus_color) if points>=1 else Color("#7d8da4"))
+	var caption_width := UI.BLACK.get_string_size(caption,HORIZONTAL_ALIGNMENT_LEFT,-1,caption_size).x
+	outlined(caption,badge.position+Vector2((badge.size.x-caption_width)/2,50*points_scale),caption_size,Color(palette.Skill_plus_color) if points>=1 else Color("#7d8da4"))
 
 static func draw_ranges(node: Node2D, effects: Array) -> void:
 	for effect in effects:

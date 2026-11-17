@@ -43,14 +43,16 @@
 16. attack_interval_sub: 기본 공격 Interval_sec = basic_attack.csv의 Interval_sec − Value. 다음 공격의 대기 시간 계산부터 적용한다.
 17. pickup_radius_add: 경험치 획득 반경 = player.csv의 Pickup_radius + Value. 즉시 적용한다.
 17-1. attack_targets_add(BAL-02): 기본 공격의 동시 대상 수 = 1 + Value. 일반 공격의 각 타격에서 기존 첫 대상 선택 규칙(체력 낮은 순 → 가까운 순 → 생성 순, 같은 사거리)으로 서로 다른 대상을 최대 1+Value명 고르고, 대상마다 그 방향으로 같은 삼각형 판정과 베기/찌르기 이펙트를 낸다. 한 타격에서 여러 삼각형에 겹친 적은 피해·넉백을 1회만 받는다. 대상이 부족하면 있는 만큼만 친다. 선택한 뒤 다음 타격부터 적용한다. 소리·그림 내딛기·당김은 첫 대상 기준 1회다.
+17-2. max_hp_pct_add(FIX-04): 최대 체력 = player.csv Max_hp × (1 + Value/100), 정수 반올림(0.5는 올림). 선택 순간 늘어난 최대 체력만큼 현재 체력도 함께 늘린다(감소 없음, 최대 초과 없음). 회복 선택지·피해·사망은 새 최대 체력 기준이다.
 18. heal: 레벨이 없는 단발성이다. 고르는 즉시 최대 체력 × Value% 를 회복한다(정수가 아니면 내림). 최대 체력을 넘는 분량은 버린다. 최대 체력일 때도 고를 수 있다(회복량 0).
 
 ## 예외 처리
 
 CSV 오류는 게임을 멈추고 화면에 표시한다.
-- choice.csv: Effect가 허용값(attack_range_add, attack_interval_sub, pickup_radius_add, heal, shadow_igrit, shadow_charger_test, shadow_belion, attack_targets_add)이 아님, heal 행이 정확히 1개가 아님, heal의 Weight가 0이 아님, 일반 선택지의 Weight가 1 미만.
+- choice.csv: Effect가 허용값(attack_range_add, attack_interval_sub, pickup_radius_add, heal, shadow_igrit, shadow_charger_test, shadow_belion, attack_targets_add, max_hp_pct_add)이 아님, heal 행이 정확히 1개가 아님, heal의 Weight가 0이 아님, 일반 선택지의 Weight가 1 미만.
 - choice_level.csv: Choice_id가 choice.csv에 없음, 일반 선택지의 레벨 행이 없거나 Level이 1부터 이어지지 않음, heal의 레벨 행이 1개가 아니거나 Level이 1이 아님, heal의 Value가 0 이하 또는 100 초과, 일반 선택지 Value가 0 미만.
 - choice_level.csv: attack_targets_add 선택지의 Value가 1 미만이거나 정수가 아님(BAL-02).
+- choice_level.csv: max_hp_pct_add 선택지의 Value가 유한한 양수가 아님(FIX-04).
 - 그림자 카드(shadow_igrit/shadow_charger_test)는 소환 1행(Value 1)이어야 한다. 추가 레벨 성장 구현은 아직 없으며 현재 검증 구조와 맞지 않는 행은 오류다. 반복 선택 성장의 확정 기획과 현재 소환 전용 구현을 구분한다.
 - attack_interval_sub의 모든 Value에 대해 basic_attack.csv의 Interval_sec − Value가 0 미만이면 오류.
 - choice_rule.csv: choice_rule_01이 없음, Reroll_count가 0 미만.
@@ -97,7 +99,7 @@ UTF-8 BOM, LF, 엑셀 숫자 표기, .import keep. 표기하지 않은 Id·이�
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Id | 행을 조회·참조하는 식별자 | choice_attack_range | String | 해당 없음 | 공통 원칙 참조 | 공통 원칙 참조 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | 없음 |
 | Name_ko | 표시 이름 | 기본 공격 범위 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | 비어 있어도 별도 오류 검사 없음 |
-| Effect | 선택했을 때 실행할 효과 종류 | attack_range_add | Enum | 해당 없음 | attack_range_add / attack_interval_sub / pickup_radius_add / heal / shadow_igrit / shadow_charger_test / shadow_belion / attack_targets_add(예: choice_attack_targets) | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | heal 행은 정확히 1개; 문자열을 내부 Enum으로 변환 |
+| Effect | 선택했을 때 실행할 효과 종류 | attack_range_add | Enum | 해당 없음 | attack_range_add / attack_interval_sub / pickup_radius_add / heal / shadow_igrit / shadow_charger_test / shadow_belion / attack_targets_add(예: choice_attack_targets) / max_hp_pct_add(예: choice_max_hp) | 불가 | 없음 | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | heal 행은 정확히 1개; 문자열을 내부 Enum으로 변환 |
 | Weight | 일반 후보를 뽑을 때 상대 확률을 정하는 가중치 | 10 | Int | 상대 가중치 | heal은 0; 그 외는 1 이상 | 불가 | choice.csv.Effect | 자료형 오류: 데이터 오류 화면; 조건 위반: 데이터 오류 화면 | heal은 가중치 추출에 참여하지 않음 |
 | Note | 작성자가 남기는 설명; 게임 동작에는 사용하지 않음 | A단계 검증용 시작값 | String | 해당 없음 | 문자열(내용 제한 검증 없음) | 허용 | 없음 | 검증 없음(문자열 내용) | 없음 |
 
@@ -136,3 +138,4 @@ UTF-8 BOM, LF, 엑셀 숫자 표기, .import keep. 표기하지 않은 Id·이�
 
 - 2026-11-12 DOC-CUT-01 사용자 결정 반영: 개발 시간 부족으로 그림자 각성 스킬을 범위에서 제외한다. 반복 선택 성장·최대 레벨 후보 제외를 유지하며, 과거 근거와 이력은 보존한다.
 - 2026-11-17 BAL-02: 사용자 결정으로 선택지 choice_attack_targets(Effect attack_targets_add, Weight 10, 3레벨 Value 1/2/3)를 추가한다(규칙 17-1). 일반 후보가 4종이 되어, 그림자 2종을 모두 뽑은 뒤에도 후보가 3개를 넘으면 규칙 13대로 다시 뽑기를 쓸 수 있다.
+- 2026-11-17 FIX-04: 사용자 결정으로 선택지 choice_max_hp(Name_ko 최대 체력, Effect max_hp_pct_add, Weight 10, Note "FIX-04 사용자 결정")를 추가한다. choice_level.csv 예: choice_max_hp_01~05, Level 1~5, Value 3/6/9/12/15(그 레벨까지의 누적 %), Desc_ko "최대 체력 +3%" … "+15%", 아이콘 없는 글자 카드(규칙 17-2). 일반 후보가 5종이 되어 그림자 2종을 모두 뽑은 뒤 일반 후보는 5개다.

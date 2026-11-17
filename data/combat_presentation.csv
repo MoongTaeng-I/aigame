@@ -592,8 +592,8 @@ Toast_old_fade_sec,0.12
 Toast_old_scale,0.85
 Toast_old_shrink_sec,0.12
 Ui_notice_font_size,13
-Boss_bar_width,560
-Boss_bar_height,18
+Boss_bar_width,600
+Boss_bar_height,28
 Boss_bar_color,#e0283c
 Boss_bar_back_color,#1a1030
 Boss_bar_top_px,18
@@ -636,3 +636,13 @@ Zoom_punch_scale,1.03
 Zoom_punch_in_sec,0.06
 Zoom_punch_out_sec,0.18
 Toast_visual_gap_px,6
+Boss_bar_frame_patch,22
+Boss_bar_frame_line_px,12
+Boss_bar_inner_pad_x,16
+Boss_bar_inner_pad_y,4
+Boss_bar_crest_scale,1.5
+Toast_superseded_life_sec,1
+Hud_points_scale,1.3
+Hud_shadow_scale,1.3
+Rapid_combo_beats,3
+Rapid_combo_cols,23;24;3

@@ -109,8 +109,13 @@ func push_message(text: String, duration: float = -1.0, is_warning: bool = false
 	copy.size = copy.custom_minimum_size
 	copy.offset_left = -width/2; copy.offset_right = width/2
 	# FIX-03: every toast already on screen steps back (dim, then shrink) when a new one arrives.
+	# FIX-04: and its fade-out now starts Toast_superseded_life_sec after it was created (at once if
+	# that time has passed). The boss warning keeps its own arrival timing.
+	var superseded := float(presentation.Toast_superseded_life_sec)
 	for item in entries:
 		if not item.retiring and float(item.demote)<0: item.demote = 0.0
+		if item.retiring or item.warning: continue
+		item.remaining = minf(float(item.remaining),maxf(0.0,superseded-float(item.age))+FADE_OUT_SEC)
 	var entry := {"panel":copy,"text":text,"demote":-1.0,"age":0.0,"remaining":float(presentation.Toast_sec) if duration<0 else duration,"warning":is_warning,"retiring":false,"pause_elapsed":0.0}
 	entries.push_front(entry)
 	if is_warning:

@@ -1,7 +1,7 @@
 extends RefCounted
 
-enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT, SHADOW_CHARGER_TEST, SHADOW_BELION, ATTACK_TARGETS_ADD }
-const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT,"shadow_charger_test":Effect.SHADOW_CHARGER_TEST,"shadow_belion":Effect.SHADOW_BELION,"attack_targets_add":Effect.ATTACK_TARGETS_ADD}
+enum Effect { ATTACK_RANGE_ADD, ATTACK_INTERVAL_SUB, PICKUP_RADIUS_ADD, HEAL, SHADOW_IGRIT, SHADOW_CHARGER_TEST, SHADOW_BELION, ATTACK_TARGETS_ADD, MAX_HP_PCT_ADD }
+const EFFECTS := {"attack_range_add":Effect.ATTACK_RANGE_ADD,"attack_interval_sub":Effect.ATTACK_INTERVAL_SUB,"pickup_radius_add":Effect.PICKUP_RADIUS_ADD,"heal":Effect.HEAL,"shadow_igrit":Effect.SHADOW_IGRIT,"shadow_charger_test":Effect.SHADOW_CHARGER_TEST,"shadow_belion":Effect.SHADOW_BELION,"attack_targets_add":Effect.ATTACK_TARGETS_ADD,"max_hp_pct_add":Effect.MAX_HP_PCT_ADD}
 
 static func shadow_id(effect: int) -> String:
 	if effect==Effect.SHADOW_IGRIT: return "igrit"
@@ -50,6 +50,8 @@ static func validate(store: CsvDataStore, base_interval: float) -> String:
 				return _error(store,"choice_level.csv",row.Id,"Value","일반 값은 0 이상, 회복 비율은 0 초과 100 이하입니다.")
 			if int(choices[id].Effect)==Effect.ATTACK_TARGETS_ADD and (value<1 or value!=floorf(value)):
 				return _error(store,"choice_level.csv",row.Id,"Value","기본 공격 대상 추가 수는 1 이상의 정수여야 합니다.")
+			if int(choices[id].Effect)==Effect.MAX_HP_PCT_ADD and (not is_finite(value) or value<=0):
+				return _error(store,"choice_level.csv",row.Id,"Value","최대 체력 증가율은 유한한 양수여야 합니다.")
 			if int(choices[id].Effect)==Effect.ATTACK_INTERVAL_SUB and base_interval-value<0:
 				return _error(store,"choice_level.csv",row.Id,"Value","기본 공격 간격에서 빼면 음수가 됩니다.")
 	var rule := store.get_row("choice_rule.csv","choice_rule_01")

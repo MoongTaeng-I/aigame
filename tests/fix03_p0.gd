@@ -96,7 +96,7 @@ func boss_bar(t: SceneTree) -> void:
 	var bear: Node2D = spawn(n,"boss_middle",100)
 	await t.process_frame
 	t.check(is_instance_valid(bear) and bear.is_active and bar.visible and bar.name_label.text==String(n.manager._enemy_records[bear.enemy_id].Name_ko) and is_equal_approx(bar.ratio(),1),"FIX03 boss bar shows the boss name and a full bar once the boss is active")
-	t.check(is_equal_approx(bar.back.size.x,560) and is_equal_approx(bar.back.size.y,18) and bar.fill.color==Color("#e0283c") and bar.back.color==Color("#1a1030") and bar.fill!=bar.back and bar.fill.get_index()>bar.back.get_index() and bar.frame.get_theme_stylebox("panel") is StyleBoxFlat and bar.frame.get_theme_stylebox("panel").border_width_top==2,"FIX03 boss bar 560x18 red fill over dark back with a 2px frame as separate nodes (JUICE01)")
+	t.check(bar.fill.size.is_equal_approx(Vector2(544,28)) and bar.fill.texture==load("res://assets/ui/ui_boss_bar_fill.png") and bar.frame is NinePatchRect and bar.fill.get_index()>bar.frame.get_index(),"FIX03 boss bar fill inside the textured frame as separate nodes (FIX04 600 frame, 544x28 fill)")
 	var hud: CanvasLayer = n.host.find_child("TopExperienceBar",true,false).get_parent().get_parent() if n.host.find_child("TopExperienceBar",true,false)!=null else null
 	var xp: Control = n.host.find_child("TopExperienceBar",true,false)
 	var level: Control = n.host.find_child("PlayerLevel",true,false)
@@ -114,7 +114,7 @@ func boss_bar(t: SceneTree) -> void:
 	for i in range(5): await t.process_frame
 	t.check(bar.updates==updates and not bar.is_processing(),"FIX03 boss bar does no per-frame update while hp is unchanged")
 	bear.apply_damage(275)
-	t.check(bar.updates==updates+1 and is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,560.0*bear.hp/bear.max_hp) and is_equal_approx(bar.back.size.x,560),"FIX03 boss bar fill follows hp on the damage signal only")
+	t.check(bar.updates==updates+1 and is_equal_approx(bar.ratio(),float(bear.hp)/bear.max_hp) and is_equal_approx(bar.fill.size.x,544.0*bear.hp/bear.max_hp) and is_equal_approx(bar.fill.size.y,28),"FIX03 boss bar fill follows hp on the damage signal only (FIX04 544 fill)")
 	t.paused = true
 	t.check(bar.visible,"FIX03 boss bar stays visible while paused")
 	t.paused = false

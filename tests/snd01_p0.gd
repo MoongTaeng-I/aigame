@@ -33,8 +33,9 @@ func run(t: SceneTree) -> void:
 	t.check(total(audio,"shadow_summon")==before+1,"SND01 summon event once")
 	before = total(audio,"rapid_slash")
 	n.skills.try_use("skill_rapid_slash")
-	n.skills._physics_process(0.2)
-	t.check(total(audio,"rapid_slash")==before+1,"SND01 rapid slash start once without per tick sound")
+	# FIX-04: the rapid slash sound plays once at the last combo beat instead of at the start.
+	for i in range(6): n.skills._physics_process(0.2)
+	t.check(total(audio,"rapid_slash")==before+1,"SND01 rapid slash sound once per cast without per tick sound (FIX04 at beat 3)")
 	var hud: Node = n.map.get_node("TemporaryHud")
 	t.check(hud.xp_bar.offset_bottom==14 and is_equal_approx(n.skills.ui.glyphs[0].size.x,56*1.35),"SND01 XP bar14 and icon1.35")
 	var cast = n.skills.skills.skill_dash

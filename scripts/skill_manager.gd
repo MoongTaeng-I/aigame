@@ -15,6 +15,10 @@ var records: Dictionary = {}
 var skills: Dictionary = {}
 var clock: float = 0.0
 var effects: Array = []
+# FIX-04 rapid slash combo: the cast time (Hits x Hit_interval_sec) splits into Rapid_combo_beats beats
+# with the poses in Rapid_combo_cols; -1 = no beat shown. Picture/sound only.
+var combo_cols := PackedInt32Array()
+var combo_beat := -1
 var ui: Control
 var screen_fx: CanvasLayer
 var cartoon_fx: Node2D
@@ -57,6 +61,7 @@ func _ready() -> void:
 	cartoon_fx.settings = presentation
 	cartoon_fx.visual_rng = visual_rng
 	add_child(cartoon_fx)
+	for part in String(presentation.get("Rapid_combo_cols","")).split(";",false): combo_cols.append(int(part))
 	screen_fx = preload("res://scripts/skill_screen_fx.gd").new()
 	screen_fx.settings = presentation
 	screen_fx.camera = player.get_node_or_null("Camera2D")
@@ -79,8 +84,11 @@ func try_use(id: String) -> bool:
 		return false
 	if id=="skill_dragon_fear" and player.dash_remaining>0.000000001:
 		return false
+	if id=="skill_rapid_slash": combo_beat = -1
 	var started: bool = skills[id].start(clock)
-	if started: preload("res://scripts/audio_events.gd").sfx(self,id.trim_prefix("skill_"))
+	# The rapid slash sound now plays at its last combo beat (_start_beat).
+	if started and not (id=="skill_rapid_slash" and combo_enabled()): preload("res://scripts/audio_events.gd").sfx(self,id.trim_prefix("skill_"))
+	if started and id=="skill_rapid_slash": update_combo()
 	if started: Toast.notify(self,"[스킬 : %s 사용합니다]" % Toast.particle(String(records[id].Name_ko),"을","를"))
 	return started
 
@@ -97,8 +105,10 @@ func _physics_process(delta: float) -> void:
 		return
 	var had_effects: bool = not effects.is_empty() or skills.skill_rapid_slash.active
 	clock += delta
+	update_combo()
 	for cast in skills.values():
 		cast.advance(clock)
+	if not skills.skill_rapid_slash.active: combo_beat = -1
 	if screen_fx!=null: screen_fx.set_slash_active(visuals_enabled and skills.skill_rapid_slash.active)
 	for index in range(effects.size()-1,-1,-1):
 		var effect: Dictionary = effects[index]
@@ -112,6 +122,37 @@ func _physics_process(delta: float) -> void:
 		if effect.has("stars") and elapsed>=float(presentation.get("Slash_star_sec",0.12)): effect.stars.clear()
 		if elapsed>=float(effect.until)-float(effect.at): effects.remove_at(index)
 	if had_effects or not effects.is_empty() or skills.skill_rapid_slash.active: queue_redraw()
+
+func combo_enabled() -> bool:
+	return int(presentation.get("Rapid_combo_beats",0))>0 and combo_cols.size()>=int(presentation.get("Rapid_combo_beats",0))
+
+func update_combo() -> void:
+	var cast = skills.skill_rapid_slash
+	if not cast.active or not combo_enabled() or player.is_dead:
+		combo_beat = -1
+		return
+	var beats := int(presentation.Rapid_combo_beats)
+	var length := maxf(int(cast.snapshot.Hits)*float(cast.snapshot.Hit_interval_sec)/beats,0.000001)
+	var beat := mini(floori((clock-cast.started_at+0.000000001)/length),beats-1)
+	while combo_beat<beat:
+		combo_beat += 1
+		_start_beat(combo_beat,beats)
+
+func _start_beat(beat: int, beats: int) -> void:
+	if beat>=beats-1:
+		preload("res://scripts/audio_events.gd").sfx(self,"rapid_slash")
+		return
+	var thrust := beat%2==1
+	preload("res://scripts/audio_events.gd").sfx(self,"thrust" if thrust else "slash")
+	var facing: Vector2 = player.last_move_direction
+	if facing==Vector2.ZERO: facing = Vector2.LEFT if player.sprite_body!=null and player.sprite_body.flip_h else Vector2.RIGHT
+	if visuals_enabled: player.emit_combo_fx(facing,thrust)
+
+# Pose column for the player while the rapid slash is active; the existing slash pose (3) when the
+# combo is off, between casts, or while frozen.
+func rapid_pose_column() -> int:
+	if combo_beat<0 or not skills.skill_rapid_slash.active or player.is_frozen() or player.is_dead: return 3
+	return combo_cols[mini(combo_beat,combo_cols.size()-1)]
 
 func _slash_tick(stats: Dictionary, at: float) -> void:
 	if player.is_dead or player.is_stealthed():

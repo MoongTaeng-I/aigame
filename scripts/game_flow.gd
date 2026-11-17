@@ -8,6 +8,7 @@ var ui: Control
 var session: Node2D
 var region_index := 0
 var regions: Array = []
+# Fastest clear time per region (seconds) for this run only; absent = no clear yet.
 var best_times: Dictionary = {}
 var result: Dictionary = {}
 var load_progress := 0.0
@@ -148,7 +149,8 @@ func _on_round_ended(summary: Dictionary) -> void:
 	if state!="playing" and state!="paused": return
 	result = summary.duplicate(true)
 	var id: String = regions[region_index].Id
-	best_times[id] = maxf(float(best_times.get(id,0)),float(result.seconds))
+	# FIX-04: only a clear (final boss killed) records, and the fastest clear in this run is kept.
+	if result.cleared: best_times[id] = minf(float(best_times.get(id,INF)),float(result.seconds))
 	state = "result"
 	ui.show_screen("result")
 	var names := ", ".join(result.shadows) if not result.shadows.is_empty() else "-"

@@ -77,6 +77,8 @@ var _attack_ready_at: float = 0.0
 var _base_attack_range: float = 0.0
 var _base_attack_interval: float = 0.0
 var _base_pickup_radius: float = 0.0
+# FIX-04: player.csv Max_hp before the max_hp_pct_add choice.
+var _base_max_hp: int = 0
 var _attack_cast_range: float = 0.0
 var is_dead: bool = false
 var _hp_label: Label
@@ -110,6 +112,7 @@ func _ready() -> void:
 func configure_combat(health: int, attack_data: Dictionary) -> void:
     max_hp = health
     hp = health
+    _base_max_hp = health
     _attack_data = attack_data.duplicate(true)
     _base_attack_range = float(attack_data.get("Range",0.0))
     _base_attack_interval = float(attack_data.get("Interval_sec",0.0))
@@ -247,6 +250,19 @@ func apply_choice_modifiers(range_add: float, interval_sub: float, pickup_add: f
     pickup_radius = _base_pickup_radius + pickup_add
     basic_extra_targets = maxi(0,targets_add)
 
+# FIX-04 max_hp_pct_add: max = base x (1 + total%/100) rounded half up. A rise also raises current hp
+# by the same amount (never above the new max); current hp is never lowered.
+func apply_max_hp_percent(total_percent: float) -> void:
+    if _base_max_hp<=0: return
+    # base*(100+pct)/100 keeps x.5 exact (250*1.03 would be 257.4999...).
+    var next := floori(_base_max_hp*(100.0+total_percent)/100.0+0.5)
+    var gained := next-max_hp
+    max_hp = next
+    if gained>0 and not is_dead: hp = mini(max_hp,hp+gained)
+    hp = mini(hp,max_hp)
+    hp_changed.emit()
+    _update_hp_label()
+
 func cancel_basic_attack() -> void:
     _remaining_hits = 0
 
@@ -299,17 +315,19 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
                     struck.append(enemy)
     for enemy in struck: _apply_basic_hit(enemy)
 
-func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool) -> Node2D:
+# thrust_override: -1 = current basic attack (slash/thrust), 0 = slash, 1 = thrust. length_override < 0 = cast range.
+func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool, thrust_override: int = -1, length_override: float = -1.0) -> Node2D:
     var effect: Node2D = acquire_basic_fx()
-    effect.thrust = basic_attack_thrust
+    var length := _attack_cast_range if length_override<0 else length_override
+    effect.thrust = basic_attack_thrust if thrust_override<0 else thrust_override==1
     effect.top_level = true
-    effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
+    effect.polygon = Geometry.triangle_points(base,facing,length,width)
     effect.color = Color.TRANSPARENT
     var foot := global_position+Vector2(0,sprite_body.foot_y if sprite_body!=null else 0.0)
     var mirrored: bool = facing.x<0 or (facing.x==0 and sprite_body!=null and sprite_body.flip_h)
     effect.base = foot+Vector2(basic_hand.x*(-1.0 if mirrored else 1.0),basic_hand.y)
     effect.facing = facing
-    effect.length = _attack_cast_range
+    effect.length = length
     effect.width = width
     effect.life = float(_attack_data["Hit_effect_sec"])
     effect.settings = presentation
@@ -318,6 +336,17 @@ func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool)
     if primary and sprite_body!=null: sprite_body.trigger_basic_step(facing,step_px,float(presentation.get("Basic_step_sec",0.1)))
     effect.activate()
     return effect
+
+# FIX-04 rapid slash combo (picture only): the basic slash/thrust effect from the shared pool, at the
+# basic attack's range, toward the player's facing. Deals no damage.
+func emit_combo_fx(direction: Vector2, thrust: bool) -> void:
+    if not visuals_enabled or _attack_data.is_empty() or get_parent()==null: return
+    var facing := direction.normalized() if direction!=Vector2.ZERO else Vector2.RIGHT
+    var length := float(_attack_data.get("Range",0.0))
+    _emit_basic_fx(global_position+facing*body_radius,facing,length*float(_attack_data.get("Tri_width_ratio",0.381)),false,1 if thrust else 0,length)
+
+func rapid_pose_column() -> int:
+    return skill_presentation.rapid_pose_column() if is_instance_valid(skill_presentation) and skill_presentation.has_method("rapid_pose_column") else 3
 
 func _apply_basic_hit(enemy: Variant) -> void:
     if enemy.has_method("record_damage_presentation"): enemy.record_damage_presentation("player",self)
@@ -386,7 +415,7 @@ func _physics_process(delta: float) -> void:
             visual_hitstop_remaining = maxf(0,visual_hitstop_remaining-delta)
             sprite_body.advance_frozen_walk_time(moved and not locked,delta)
         else:
-            sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation)
+            sprite_body.advance_player_skill_pose(Vector2.ZERO if locked else direction,moved and not locked,delta,fear_cast_remaining>0,dash_remaining>0,slash_active,dash_direction,presentation,rapid_pose_column())
             apply_basic_pose()
             sprite_body.advance_locomotion(Vector2.ZERO if locked else direction,moved and not locked,delta,dash_pass_through)
             if dash_pass_through and dash_remaining<=0: dash_land_remaining = float(presentation.get("Dash_land_sec",0.08))

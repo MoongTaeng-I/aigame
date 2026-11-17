@@ -116,7 +116,7 @@ func run(tree: SceneTree) -> void:
 	escape(flow)
 	flow.show_menu()
 	all_freed(old,"pause to menu")
-	t.check(flow.state=="menu" and not t.paused and flow.session==null and flow.ui.best_label.text.contains("02:12"),"S9 menu returns with in-memory best survival only")
+	t.check(flow.state=="menu" and not t.paused and flow.session==null and flow.ui.best_label.text.ends_with("-"),"S9 menu returns and a death leaves no clear record (FIX04)")
 	flow.start_region()
 	n = flow.session.round_nodes
 	for child in n.map.get_children(): child.set_physics_process(false)

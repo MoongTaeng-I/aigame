@@ -1150,3 +1150,27 @@ combat_presentation.csv 새 키
 | Toast_visual_gap_px | 6 | 그려진 토스트 테두리 선 사이 간격px |
 
 값을 바꾼 기존 키: Fear_color #e8283c→#8a0012, Fear_vignette_alpha 0.6→0.5, Boss_bar_name_font_size 20→28. 읽지 않게 된 키: Toast_gap_px.
+
+## 2026-11-17 FIX-04 — 보스 바 텍스처·토스트 수명·HUD 확대·난도 3연 모션
+
+- 보스 HP 바: 틀 ui_boss_bar_frame.png(192×56, NinePatchRect 패치 Boss_bar_frame_patch 22), 채움 ui_boss_bar_fill.png·잔상 ui_boss_bar_trail.png(64×16, 바 사각형에 늘려 그리고 hp에 따라 너비만 바뀜). 틀 폭은 Boss_bar_width, 채움 높이는 Boss_bar_height이고 틀 그림의 테두리선 안쪽(가장자리에서 Boss_bar_frame_line_px)부터 Boss_bar_inner_pad_x/y 안에 채움을 둔다. 틀 높이 = Boss_bar_height + 2×(Boss_bar_frame_line_px + Boss_bar_inner_pad_y). ui_window_crest를 Boss_bar_crest_scale 배로 바 위 가운데에 얹고(장식 아래 끝이 테두리선에 닿아 채움을 가리지 않음) 그 위에 Black 글꼴 보스 이름을 둔다. 잔상 시간·은신 숨김·신호 갱신·토스트가 바 아래로 내려가는 배치는 JUICE-01과 같다. 미사용 키: Boss_bar_color, Boss_bar_back_color, Boss_bar_trail_color, Boss_bar_trail_alpha, Boss_bar_border_px, Boss_bar_border_color, Boss_bar_border_alpha, Boss_bar_inner_line_px, Boss_bar_inner_line_color.
+- 토스트 수명: 새 토스트가 표시되면 그때 보이던 이전 토스트의 남은 시간을 줄여 "생성 시각 + Toast_superseded_life_sec"에 페이드 아웃(0.2초)을 시작한다. 그 시각이 지났으면 즉시 시작한다. 보스 등장 경고 토스트는 등장 시각에 묶여 있어 줄이지 않는다. 새 토스트가 없으면 Toast_sec 그대로다.
+- HUD: 강화 포인트 표시(240×80, 글자 20)와 보유 그림자 칸(144×64, 아이콘 40, 이름 16)을 각각 Hud_points_scale, Hud_shadow_scale 배로 그린다. 스킬 칸 4개는 그대로다. 포인트 표시는 첫 스킬 칸 위 16px, 그림자 칸은 오른쪽 정렬로 스킬 칸 위 12px에 두고, 둘이 겹치게 되면 그림자 칸을 포인트 표시 위로 올린다. 스킬 칸 클릭 좌표는 그대로다.
+- 난도 3연 모션은 시스템05 FIX-04 항목. 베기/찌르기 이펙트는 기본 공격 고정 풀(Basic_fx_pool)을 쓴다. 이 풀은 처음 쓸 때 한 번 만들어진다.
+
+combat_presentation.csv 새 키
+
+| Id | 예시 Value | 설명 |
+|---|---|---|
+| Boss_bar_frame_patch | 22 | 보스 바 틀 9-slice 패치px |
+| Boss_bar_frame_line_px | 12 | 틀 그림 가장자리에서 테두리선 안쪽까지px |
+| Boss_bar_inner_pad_x | 16 | 테두리선 안 좌우 여백px |
+| Boss_bar_inner_pad_y | 4 | 테두리선 안 위아래 여백px |
+| Boss_bar_crest_scale | 1.5 | 바 위 창 장식 배율 |
+| Toast_superseded_life_sec | 1 | 새 토스트가 나온 뒤 이전 토스트가 생성 후 페이드 아웃을 시작하는 시각(초) |
+| Hud_points_scale | 1.3 | 강화 포인트 표시 배율 |
+| Hud_shadow_scale | 1.3 | 보유 그림자 칸 배율 |
+| Rapid_combo_beats | 3 | 난도 시전 시간을 나누는 구간 수 |
+| Rapid_combo_cols | 23;24;3 | 구간별 플레이어 포즈 열(세미콜론 구분, CSV 쉼표와 겹치지 않게) |
+
+값을 바꾼 기존 키: Boss_bar_width 560→600(틀 전체 폭), Boss_bar_height 18→28(채움 높이).

@@ -226,7 +226,7 @@ func show_region(row: Dictionary, best: float) -> void:
 	locked = bool(row.Locked)
 	region_title.text = String(row.Name_ko)
 	locked_label.text = String(row.Locked_text) if locked else ""
-	best_label.text = "최장 생존 시간  "+("-" if best<0 else preload("res://scripts/temporary_hud.gd").format_elapsed(best))
+	best_label.text = "최고 클리어 타임  "+("-" if best<0 else preload("res://scripts/temporary_hud.gd").format_elapsed(best))
 	start_button.disabled = locked
 	locked_click.visible = locked and screen=="menu"
 	region_title.add_theme_font_override("font",UI.BLACK)

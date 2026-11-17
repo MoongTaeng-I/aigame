@@ -94,7 +94,7 @@ func trail(t: SceneTree) -> void:
 	var bar: Control = n.director.boss_bar
 	var bear: Node2D = spawn(n,"boss_middle",100)
 	t.check(bar.visible and is_equal_approx(bar.trail_ratio(),1) and not bar.is_processing(),"JUICE01 trail starts full and idle")
-	t.check(bar.trail.get_index()>bar.back.get_index() and bar.trail.get_index()<bar.fill.get_index() and bar.trail.color==Color(1,1,1,0.75),"JUICE01 white .75 trail sits between back and fill")
+	t.check(bar.trail.get_index()>bar.frame.get_index() and bar.trail.get_index()<bar.fill.get_index() and bar.trail.texture==load("res://assets/ui/ui_boss_bar_trail.png"),"JUICE01 trail sits between frame and fill (FIX04 trail texture)")
 	bear.apply_damage(220)
 	var after: float = bar.ratio()
 	t.check(after<1 and is_equal_approx(bar.trail_ratio(),1) and bar.is_processing(),"JUICE01 fill drops at once and the trail waits")
@@ -271,12 +271,13 @@ func toast_gap(t: SceneTree) -> void:
 	var view: Control = n.director.toast_view
 	view.set_process(false)
 	var border := float(view.presentation.Ui_window_border_px)
+	# FIX-04: older toasts now fade 1s after creation once superseded, so the three arrive .25s apart.
 	view.push_message("one")
-	view._process(0.4)
+	view._process(0.25)
 	view.push_message("two")
-	view._process(0.4)
+	view._process(0.25)
 	view.push_message("three")
-	view._process(0.4)
+	view._process(0.25)
 	var lines: Array = []
 	for entry in view.entries: lines.append(drawn(entry,border))
 	t.check(is_equal_approx(lines[0].x,float(view.presentation.Toast_top_px)),"JUICE01 first toast border line stays at Toast_top_px")
@@ -288,10 +289,7 @@ func toast_gap(t: SceneTree) -> void:
 func bar_polish(t: SceneTree) -> void:
 	var n := fixture(t)
 	var bar: Control = n.director.boss_bar
-	var outer: StyleBoxFlat = bar.frame.get_theme_stylebox("panel")
-	var inner: StyleBoxFlat = bar.inner.get_theme_stylebox("panel")
-	t.check(outer.border_width_top==2 and outer.border_color==Color(Color("#ece6ff"),0.9) and not outer.draw_center and bar.frame.get_global_rect().grow(-3).is_equal_approx(bar.back.get_global_rect()),"JUICE01 outer 2px border ece6ff .9 outside the bar")
-	t.check(inner.border_width_top==1 and inner.border_color==Color("#1a1240") and bar.inner.get_global_rect().grow(-1).is_equal_approx(bar.back.get_global_rect()),"JUICE01 inner dark 1px line around the bar")
+	t.check(bar.frame is NinePatchRect and bar.frame.texture==load("res://assets/ui/ui_boss_bar_frame.png") and bar.get_node_or_null("InnerLine")==null,"JUICE01 bar border now drawn by the FIX04 frame texture (flat border and inner line replaced)")
 	t.check(bar.name_label.get_theme_font_size("font_size")==28 and bar.name_label.get_theme_constant("outline_size")==4 and bar.name_label.get_theme_color("font_outline_color")==Color("#1a1240"),"JUICE01 boss name 28px with a 2px 1a1240 outline")
 	var level: Control = n.host.find_child("PlayerLevel",true,false)
 	var timer: Control = n.host.find_child("ElapsedTime",true,false)

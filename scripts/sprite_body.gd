@@ -514,11 +514,11 @@ func trigger_basic_step(direction: Vector2, px: float, seconds: float) -> void:
 	basic_step_remaining = seconds
 	request_redraw()
 
-func advance_player_skill_pose(direction: Vector2, moving: bool, delta: float, fear: bool, dash: bool, slash: bool, dash_direction: Vector2, settings: Dictionary) -> void:
+func advance_player_skill_pose(direction: Vector2, moving: bool, delta: float, fear: bool, dash: bool, slash: bool, dash_direction: Vector2, settings: Dictionary, slash_column: int = 3) -> void:
 	advance_pose(direction,moving,delta)
 	if layout!="pose" or columns<5 or not (fear or dash or slash): return
 	frame_row = 0
-	frame_column = 4 if fear else (2 if dash else 3)
+	frame_column = 4 if fear else (2 if dash else clampi(slash_column,0,columns-1))
 	if dash and not fear:
 		if dash_direction.x<0: flip_h = true
 		elif dash_direction.x>0: flip_h = false

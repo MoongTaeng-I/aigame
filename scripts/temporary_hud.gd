@@ -14,6 +14,8 @@ const ICON_MARGIN := Vector2(8,12)
 const NAME_MARGIN := Vector2(54,12)
 const NAME_SIZE := Vector2(86,40)
 const FONT_SIZE := 16
+# FIX-04: owned-shadow cards are Hud_shadow_scale x the sizes above.
+var roster_scale := float(UI.settings().Hud_shadow_scale)
 const BACKGROUND := Color("#211c30")
 const BORDER := Color("#5d4a7f")
 const TEXT_COLOR := Color("#ebf8ff")
@@ -114,7 +116,7 @@ func _ready() -> void:
 	timer_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	roster = HBoxContainer.new()
 	roster.name = "OwnedShadows"
-	roster.add_theme_constant_override("separation",int(ROSTER_GAP))
+	roster.add_theme_constant_override("separation",roundi(ROSTER_GAP*roster_scale))
 	roster.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Share the skill control transform so logical layout and input remain aligned.
 	skill_ui.add_child(roster)
@@ -145,9 +147,16 @@ func refresh() -> void:
 	skill_ui.scale = Vector2.ONE*COMBAT_UI_SCALE
 	timer_label.text = format_elapsed(manager._elapsed_seconds)
 	var skill_box: Rect2 = skill_ui.card_rect(skill_ui.manager.SkillData.IDS.size()-1)
-	var width := ROSTER_CARD.x*entries.size()+ROSTER_GAP*maxi(0,entries.size()-1)
-	roster.position = Vector2(skill_box.end.x-width,skill_box.position.y-ROSTER_ABOVE_SKILLS-ROSTER_CARD.y)
-	roster.size = Vector2(width,ROSTER_CARD.y)
+	var card := ROSTER_CARD*roster_scale
+	var width := card.x*entries.size()+roundi(ROSTER_GAP*roster_scale)*maxi(0,entries.size()-1)
+	# The container rounds child sizes; align by its real minimum width so the right edge matches the cards.
+	width = maxf(width,roster.get_combined_minimum_size().x)
+	var spot := Rect2(Vector2(skill_box.end.x-width,skill_box.position.y-ROSTER_ABOVE_SKILLS-card.y),Vector2(width,card.y))
+	# Right-aligned above the cards; if it would meet the points badge, it moves above the badge.
+	var badge: Rect2 = skill_ui.points_rect()
+	if spot.grow(ROSTER_ABOVE_SKILLS*0.5).intersects(badge): spot.position.y = badge.position.y-ROSTER_ABOVE_SKILLS-card.y
+	roster.position = spot.position
+	roster.size = spot.size
 
 func rebuild_roster() -> void:
 	for child in roster.get_children(): child.free()
@@ -158,7 +167,7 @@ func rebuild_roster() -> void:
 		var path := String(record.Icon) if record.get("Icon")!=null else ""
 		if path.is_empty() and mapped!=null: path = mapped.resource_path
 		var card := Panel.new()
-		card.custom_minimum_size = ROSTER_CARD
+		card.custom_minimum_size = ROSTER_CARD*roster_scale
 		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.theme = UI.THEME
 		roster.add_child(card)
@@ -172,8 +181,8 @@ func rebuild_roster() -> void:
 			image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			icon = image
-		icon.position = ICON_MARGIN
-		icon.size = ICON_SIZE
+		icon.position = ICON_MARGIN*roster_scale
+		icon.size = ICON_SIZE*roster_scale
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(icon)
 		var frame := NinePatchRect.new()
@@ -181,15 +190,15 @@ func rebuild_roster() -> void:
 		frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
 		frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
 		frame.patch_margin_left = 20; frame.patch_margin_right = 20; frame.patch_margin_top = 20; frame.patch_margin_bottom = 20
-		frame.position = ICON_MARGIN-Vector2(4,4); frame.size = ICON_SIZE+Vector2(8,8)
+		frame.position = (ICON_MARGIN-Vector2(4,4))*roster_scale; frame.size = (ICON_SIZE+Vector2(8,8))*roster_scale
 		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(frame)
 		var label := Label.new()
 		label.text = String(record.get("Name_ko",""))
-		label.position = NAME_MARGIN
-		label.size = NAME_SIZE
+		label.position = NAME_MARGIN*roster_scale
+		label.size = NAME_SIZE*roster_scale
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.add_theme_font_size_override("font_size",FONT_SIZE)
+		label.add_theme_font_size_override("font_size",roundi(FONT_SIZE*roster_scale))
 		label.add_theme_color_override("font_color",TEXT_COLOR)
 		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card.add_child(label)

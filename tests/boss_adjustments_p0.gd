@@ -156,7 +156,7 @@ func presentation() -> void:
 	t.check(ui.scale==Vector2(0.75,0.75) and ui.pivot_offset==ui.size,"S8-I2-B skill UI75 percent with bottom-right pivot")
 	var local_box: Rect2 = ui.card_rect(3)
 	var card: Control = hud.entries[0].icon.get_parent()
-	t.check(card.get_global_rect().size.is_equal_approx(Vector2(108,48)) and hud.entries[0].icon.get_global_rect().size.is_equal_approx(Vector2(30,30)),"S8-I2-B shadow icon and name card inherit75 percent")
+	t.check((card.get_global_rect().size-Vector2(108,48)*1.3).abs().x<=1.0 and (card.get_global_rect().size-Vector2(108,48)*1.3).abs().y<=1.0 and hud.entries[0].icon.get_global_rect().size.is_equal_approx(Vector2(30,30)*1.3),"S8-I2-B shadow icon and name card inherit75 percent of the 1.3x size (FIX04)")
 	var right: Vector2 = ui.get_global_transform()*local_box.end
 	var top: Vector2 = ui.get_global_transform()*local_box.position
 	t.check(absf(card.get_global_rect().end.x-right.x)<1 and card.get_global_rect().end.y<top.y,"S8-I2-B scaled roster stays right-aligned above skills")

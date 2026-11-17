@@ -1,19 +1,22 @@
 extends Control
-# FIX-03: large boss name + HP bar at the top centre, below the experience bar.
-# Updated from the boss's damaged/died/stealth signals. JUICE-01: a delayed white trail sits between
-# Back and Fill; the node processes only while that trail is waiting or draining.
+# FIX-03: boss name + HP bar at the top centre, below the experience bar. Updated from the boss's
+# damaged/died/stealth signals. JUICE-01: delayed trail; the node processes only while it moves.
+# FIX-04: drawn with ui_boss_bar_frame (NinePatch), ui_boss_bar_fill and ui_boss_bar_trail; the
+# window crest (1.5x) sits on the frame and the name sits above the crest.
 const UI = preload("res://scripts/system_ui.gd")
+const FRAME_TEXTURE = preload("res://assets/ui/ui_boss_bar_frame.png")
+const FILL_TEXTURE = preload("res://assets/ui/ui_boss_bar_fill.png")
+const TRAIL_TEXTURE = preload("res://assets/ui/ui_boss_bar_trail.png")
 const NAME_COLOR := Color("#ebf8ff")
 var values: Dictionary = preload("res://scripts/shadow_afterimage.gd").compiled_presentation()
 var boss: Node
 var name_label: Label
-var frame: Panel
-var inner: Panel
-var back: ColorRect
-var trail: ColorRect
-var fill: ColorRect
-var bar_width := 560.0
-var bar_height := 18.0
+var crest: TextureRect
+var frame: NinePatchRect
+var trail: TextureRect
+var fill: TextureRect
+var bar_width := 544.0
+var bar_height := 28.0
 var updates := 0
 var trail_wait := 0.0
 var trail_from := 0.0
@@ -24,23 +27,50 @@ func _ready() -> void:
 	name = "BossHealthBar"
 	theme = UI.THEME
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar_width = float(values.Boss_bar_width)
+	var total_width := float(values.Boss_bar_width)
 	bar_height = float(values.Boss_bar_height)
-	var line := float(values.Boss_bar_inner_line_px)
-	var border := float(values.Boss_bar_border_px)
-	var margin := line+border
+	var patch := int(values.Boss_bar_frame_patch)
+	# Fill area: inside the drawn border line (Boss_bar_frame_line_px from the frame edge) plus padding.
+	var inset := Vector2(float(values.Boss_bar_frame_line_px)+float(values.Boss_bar_inner_pad_x),float(values.Boss_bar_frame_line_px)+float(values.Boss_bar_inner_pad_y))
+	bar_width = total_width-inset.x*2
+	var frame_size := Vector2(total_width,bar_height+inset.y*2)
 	var font_size := int(values.Boss_bar_name_font_size)
 	var name_height := ceilf(UI.BLACK.get_height(font_size))
-	var bar_top := name_height+float(values.Boss_bar_name_gap_px)+margin
+	var crest_scale := float(values.Boss_bar_crest_scale)
+	var crest_size := Vector2(UI.CREST.get_size())*crest_scale
+	# The crest rests on the frame: its lower edge meets the drawn border line, above the fill.
+	var crest_top := name_height
+	var frame_top := crest_top+crest_size.y-float(values.Boss_bar_frame_line_px)
 	set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	offset_left = -bar_width/2-margin
-	offset_right = bar_width/2+margin
+	offset_left = -total_width/2
+	offset_right = total_width/2
 	offset_top = float(values.Boss_bar_top_px)
-	offset_bottom = offset_top+bar_top+bar_height+margin
+	offset_bottom = offset_top+frame_top+frame_size.y
+	frame = NinePatchRect.new()
+	frame.name = "Frame"
+	frame.texture = FRAME_TEXTURE
+	frame.patch_margin_left = patch; frame.patch_margin_right = patch; frame.patch_margin_top = patch; frame.patch_margin_bottom = patch
+	frame.axis_stretch_horizontal = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+	frame.axis_stretch_vertical = NinePatchRect.AXIS_STRETCH_MODE_STRETCH
+	frame.position = Vector2(0,frame_top)
+	frame.size = frame_size
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(frame)
+	trail = bar_piece("Trail",TRAIL_TEXTURE,frame.position+inset)
+	fill = bar_piece("Fill",FILL_TEXTURE,frame.position+inset)
+	crest = TextureRect.new()
+	crest.name = "Crest"
+	crest.texture = UI.CREST
+	crest.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	crest.stretch_mode = TextureRect.STRETCH_SCALE
+	crest.position = Vector2((total_width-crest_size.x)/2,crest_top)
+	crest.size = crest_size
+	crest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(crest)
 	name_label = Label.new()
 	name_label.name = "Name"
 	name_label.position = Vector2.ZERO
-	name_label.size = Vector2(bar_width+margin*2,name_height)
+	name_label.size = Vector2(total_width,name_height)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
@@ -51,47 +81,27 @@ func _ready() -> void:
 	name_label.add_theme_constant_override("outline_size",int(values.Boss_bar_name_outline_px)*2)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(name_label)
-	back = ColorRect.new()
-	back.name = "Back"
-	back.position = Vector2(margin,bar_top)
-	back.size = Vector2(bar_width,bar_height)
-	back.color = values.Boss_bar_back_color
-	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(back)
-	trail = ColorRect.new()
-	trail.name = "Trail"
-	trail.position = back.position
-	trail.size = back.size
-	trail.color = Color(values.Boss_bar_trail_color,float(values.Boss_bar_trail_alpha))
-	trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(trail)
-	fill = ColorRect.new()
-	fill.name = "Fill"
-	fill.position = back.position
-	fill.size = back.size
-	fill.color = values.Boss_bar_color
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(fill)
-	inner = outline("InnerLine",Rect2(back.position-Vector2.ONE*line,back.size+Vector2.ONE*line*2),line,values.Boss_bar_inner_line_color)
-	frame = outline("Frame",Rect2(back.position-Vector2.ONE*margin,back.size+Vector2.ONE*margin*2),border,Color(values.Boss_bar_border_color,float(values.Boss_bar_border_alpha)))
 	set_process(false)
 	hide()
 
-func outline(id: String, box: Rect2, width: float, color: Color) -> Panel:
-	var view := Panel.new()
-	view.name = id
-	view.position = box.position
-	view.size = box.size
-	var style := StyleBoxFlat.new()
-	style.draw_center = false
-	style.set_border_width_all(int(width))
-	style.border_color = color
-	view.add_theme_stylebox_override("panel",style)
-	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(view)
-	return view
+# Fill and trail textures stretch to the bar rect; only their width changes with hp.
+func bar_piece(id: String, texture: Texture2D, at: Vector2) -> TextureRect:
+	var piece := TextureRect.new()
+	piece.name = id
+	piece.texture = texture
+	piece.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	piece.stretch_mode = TextureRect.STRETCH_SCALE
+	piece.position = at
+	piece.size = Vector2(bar_width,bar_height)
+	piece.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(piece)
+	return piece
 
-# Screen y of the bar's lower edge (outer border included); toasts stack below it while shown.
+# Rect (bar local) that the fill and trail occupy at full hp.
+func bar_rect() -> Rect2:
+	return Rect2(fill.position,Vector2(bar_width,bar_height))
+
+# Screen y of the frame's lower edge; toasts stack below it while shown.
 func bottom_px() -> float:
 	return offset_bottom
 
