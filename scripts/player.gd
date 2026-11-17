@@ -315,19 +315,17 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
                     struck.append(enemy)
     for enemy in struck: _apply_basic_hit(enemy)
 
-# thrust_override: -1 = current basic attack (slash/thrust), 0 = slash, 1 = thrust. length_override < 0 = cast range.
-func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool, thrust_override: int = -1, length_override: float = -1.0) -> Node2D:
+func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool) -> Node2D:
     var effect: Node2D = acquire_basic_fx()
-    var length := _attack_cast_range if length_override<0 else length_override
-    effect.thrust = basic_attack_thrust if thrust_override<0 else thrust_override==1
+    effect.thrust = basic_attack_thrust
     effect.top_level = true
-    effect.polygon = Geometry.triangle_points(base,facing,length,width)
+    effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
     effect.color = Color.TRANSPARENT
     var foot := global_position+Vector2(0,sprite_body.foot_y if sprite_body!=null else 0.0)
     var mirrored: bool = facing.x<0 or (facing.x==0 and sprite_body!=null and sprite_body.flip_h)
     effect.base = foot+Vector2(basic_hand.x*(-1.0 if mirrored else 1.0),basic_hand.y)
     effect.facing = facing
-    effect.length = length
+    effect.length = _attack_cast_range
     effect.width = width
     effect.life = float(_attack_data["Hit_effect_sec"])
     effect.settings = presentation
@@ -337,14 +335,7 @@ func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool,
     effect.activate()
     return effect
 
-# FIX-04 rapid slash combo (picture only): the basic slash/thrust effect from the shared pool, at the
-# basic attack's range, toward the player's facing. Deals no damage.
-func emit_combo_fx(direction: Vector2, thrust: bool) -> void:
-    if not visuals_enabled or _attack_data.is_empty() or get_parent()==null: return
-    var facing := direction.normalized() if direction!=Vector2.ZERO else Vector2.RIGHT
-    var length := float(_attack_data.get("Range",0.0))
-    _emit_basic_fx(global_position+facing*body_radius,facing,length*float(_attack_data.get("Tri_width_ratio",0.381)),false,1 if thrust else 0,length)
-
+# FIX-04/06 rapid slash 3-beat motion: pose column only (no extra effect or sound).
 func rapid_pose_column() -> int:
     return skill_presentation.rapid_pose_column() if is_instance_valid(skill_presentation) and skill_presentation.has_method("rapid_pose_column") else 3
 

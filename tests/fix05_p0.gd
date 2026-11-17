@@ -1,6 +1,6 @@
 extends RefCounted
-# FIX-05: 0.8x boss bar with the name over the crest, rapid slash finish sound / per-cast fade / beat
-# effects / beat span, heal as a repeatable weighted candidate, logo above the loading bar.
+# FIX-05: 0.8x boss bar with the name over the crest, rapid slash beat span (FIX-06: finish
+# sound, fade and beat effects reverted), heal as a repeatable weighted candidate, logo above the loading bar.
 const UI = preload("res://scripts/system_ui.gd")
 
 func run(t: SceneTree) -> void:
@@ -89,7 +89,6 @@ func rapid(t: SceneTree) -> void:
 	enemy.max_hp = 100000
 	player.last_move_direction = Vector2.RIGHT
 	for i in range(2,audio.pool.size()): audio.pool[i].stop(); audio.pool[i].set_meta(&"sound","")
-	audio.fades.clear()
 	var before := {"finish":count(audio,"rapid_slash_finish"),"rapid":count(audio,"rapid_slash")}
 	var slash = skills.skills.skill_rapid_slash
 	slash.cooldown_until = 0
@@ -107,40 +106,24 @@ func rapid(t: SceneTree) -> void:
 	var length := span/3.0
 	t.check(beat_times.size()==3 and beat_times[1]>=length-0.0001 and beat_times[1]<length+1.0/60.0+0.0001 and beat_times[2]>=2*length-0.0001 and beat_times[2]<2*length+1.0/60.0+0.0001,"FIX05 beats switch at (Hits-1) x interval / 3 steps: "+str(beat_times))
 	t.check(is_equal_approx(slash.completed_at-slash.started_at,span),"FIX05 the last beat ends at the last hit (cast end)")
-	t.check(count(audio,"rapid_slash_finish")==before.finish+1 and count(audio,"rapid_slash")==before.rapid,"FIX05 beat 3 plays rapid_slash_finish once and rapid_slash not at all")
-	var handles: Array = audio.fades.back().handles if not audio.fades.is_empty() else []
-	t.check(handles.size()==3 and is_equal_approx(audio.fades.back().delay,0.1) and is_equal_approx(audio.fades.back().fade,0.06),"FIX05 cast end schedules its three plays to fade after .1s over .06s")
-	var playing_now: int = handles.filter(func(h: Array) -> bool: return audio.handle_playing(h)).size()
-	var other_ok: bool = audio.request("slash")
-	var other: Array = [audio.last_voice,audio.last_play_id]
-	audio._advance_fades(0.1)
-	var still: int = handles.filter(func(h: Array) -> bool: return audio.handle_playing(h)).size()
-	audio._advance_fades(0.07)
-	var after: int = handles.filter(func(h: Array) -> bool: return audio.handle_playing(h)).size()
-	print("FIX05 cast sounds playing at end ",playing_now," after tail ",still," after fade ",after," other ",audio.handle_playing(other))
-	t.check(after==0 and audio.fades.is_empty(),"FIX05 the cast's sounds are stopped after tail + fade")
-	t.check(other_ok and audio.handle_playing(other),"FIX05 a slash sound from another attack keeps playing")
-	for i in range(2,audio.pool.size()): audio.pool[i].stop(); audio.pool[i].set_meta(&"sound","")
+	t.check(count(audio,"rapid_slash_finish")==before.finish and count(audio,"rapid_slash")==before.rapid+1,"FIX05 one cast plays rapid_slash once at the start and no finish sound (FIX06 pre-FIX-04 sound)")
 	slash.cooldown_until = 0
 	skills.try_use("skill_rapid_slash")
 	skills._physics_process(1.0/60.0)
-	var cut_handles: Array = skills.combo_handles.duplicate()
 	skills.skills.skill_stealth.level = 1
 	skills.skills.skill_stealth.cooldown_until = 0
 	player.stealth_remaining = 0
 	skills._stealth_start({"Duration_sec":1.0},skills.clock)
 	skills._physics_process(1.0/60.0)
-	t.check(not slash.active and skills.combo_handles.is_empty() and not audio.fades.is_empty() and audio.fades.back().handles==cut_handles,"FIX05 a cut cast schedules the same fade for its own plays")
-	audio._advance_fades(0.2)
-	t.check(cut_handles.all(func(h: Array) -> bool: return not audio.handle_playing(h)),"FIX05 the cut cast's sounds are stopped")
+	t.check(not slash.active and skills.combo_beat==-1 and player.rapid_pose_column()==3,"FIX05 a cut cast drops the beat pose at once (FIX06 no sound fade)")
 	player.stealth_remaining = 0
 	var with_combo := trace_cast(n,enemy)
 	t.check(with_combo.lines.size()==int(stats.Hits),"FIX05 one effect entry per hit")
 	var lines_ok := true
 	for entry in with_combo.lines:
 		var beat := 2 if span<=0.000001 else clampi(floori((float(entry[0])+0.000000001)/length),0,2)
-		lines_ok = lines_ok and ((entry[1]>0)==(beat==2))
-	t.check(lines_ok,"FIX05 rapid slash lines only in beat 3, none in beats 1-2: "+str(with_combo.lines))
+		lines_ok = lines_ok and entry[1]>0 and beat>=0
+	t.check(lines_ok,"FIX05 rapid slash lines on every hit in all beats (FIX06 pre-FIX-04 effect): "+str(with_combo.lines))
 	skills.presentation.Rapid_combo_beats = 0
 	var without := trace_cast(n,enemy)
 	skills.presentation.Rapid_combo_beats = 3

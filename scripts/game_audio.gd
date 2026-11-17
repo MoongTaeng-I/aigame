@@ -27,11 +27,6 @@ var lowpass: AudioEffectLowPassFilter
 var lowpass_amount := 0.0
 var lowpass_target := 0.0
 const LOWPASS_OPEN_HZ := 20500.0
-# FIX-05: every successful SFX play gets a serial; callers can fade exactly the plays they made.
-var play_serial := 0
-var last_voice: AudioStreamPlayer
-var last_play_id := 0
-var fades: Array = []
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -116,10 +111,6 @@ func request(id: String) -> bool:
 	free.volume_db = row.volume
 	free.pitch_scale = pow(2.0,semitones/12.0)*(1+rng.randf_range(-float(row.pitch),float(row.pitch)))
 	free.set_meta(&"sound",id)
-	play_serial += 1
-	free.set_meta(&"play_id",play_serial)
-	last_voice = free
-	last_play_id = play_serial
 	free.play()
 	last_play[id] = clock
 	play_counts[id] = int(play_counts.get(id,0))+1
@@ -173,36 +164,8 @@ func choice_pause() -> bool:
 		if view.visible and view.manager.active: return true
 	return false
 
-# handles: [[voice, play_id], ...]. After delay seconds, fade those exact plays out over fade seconds
-# and stop them; a voice already reused for another play is left alone.
-func fade_handles(handles: Array, delay: float, fade: float) -> void:
-	if handles.is_empty(): return
-	fades.append({"handles":handles.duplicate(),"delay":maxf(delay,0),"fade":maxf(fade,0.000001),"age":0.0,"base":{}})
-
-func handle_playing(handle: Array) -> bool:
-	var voice: AudioStreamPlayer = handle[0]
-	return is_instance_valid(voice) and voice.playing and int(voice.get_meta(&"play_id",0))==int(handle[1])
-
-func _advance_fades(delta: float) -> void:
-	for index in range(fades.size()-1,-1,-1):
-		var entry: Dictionary = fades[index]
-		entry.age += delta
-		if entry.age<entry.delay: continue
-		var t := clampf((entry.age-entry.delay)/entry.fade,0,1)
-		for i in range(entry.handles.size()):
-			var handle: Array = entry.handles[i]
-			if not handle_playing(handle): continue
-			var voice: AudioStreamPlayer = handle[0]
-			if not entry.base.has(i): entry.base[i] = voice.volume_db
-			if t>=1:
-				voice.stop()
-				voice.set_meta(&"sound","")
-			else: voice.volume_db = float(entry.base[i])+linear_to_db(maxf(1.0-t,0.0001))
-		if t>=1: fades.remove_at(index)
-
 func _process(delta: float) -> void:
 	clock+=delta
-	if not fades.is_empty(): _advance_fades(delta)
 	if lowpass_amount!=lowpass_target: _apply_lowpass(delta)
 	var paused := get_tree().paused
 	var choice := paused and choice_pause()

@@ -1193,3 +1193,9 @@ combat_presentation.csv 새 키
 | Logo_top_min_px | 24 | 로고 위 끝과 화면 위 사이 최소 간격px |
 
 값을 바꾼 기존 키: Boss_bar_width 600→480, Boss_bar_height 28→22, Boss_bar_crest_scale 1.5→1.2, Boss_bar_name_font_size 28→22, Boss_bar_inner_pad_x 16→12.8, Boss_bar_inner_pad_y 4→3.2.
+
+## 2026-11-17 FIX-06 — 난도 이펙트·소리 원래대로
+
+- 난도 이펙트: 모든 타격에 기존 난도 선(Slash_lines_per_tick, 마지막 타격은 마무리 X 선 추가)을 그린다. 1·2구간의 기본 공격 베기/찌르기 이펙트(Basic_fx_pool)는 난도에서 쓰지 않는다. 포즈 3구간(Rapid_combo_beats, Rapid_combo_cols)은 시스템05 FIX-05·FIX-06 항목 그대로다.
+- 난도 소리: 시전 시작 순간 rapid_slash 1회, 끝까지 재생(시전 끝에 멈추지 않음). FIX-05의 SFX 재생 번호·시전 단위 줄여 멈춤 기능은 난도 외 사용처가 없어 GameAudio·SkillManager에서 제거했다.
+- 미사용(지우지 않음): sound.csv rapid_slash_finish 행과 sfx_rapid_slash_finish.wav, combat_presentation.csv Rapid_sfx_tail_sec·Rapid_sfx_fade_sec. CSV 열·키 변경 없음.

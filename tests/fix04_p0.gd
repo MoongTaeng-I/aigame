@@ -264,7 +264,7 @@ func rapid_combo(t: SceneTree) -> void:
 	var stats: Dictionary = slash.snapshot
 	var beat := int(stats.Hits)*float(stats.Hit_interval_sec)/3.0
 	var first_fx: Array = active_fx(player)
-	t.check(player.rapid_pose_column()==23 and first_fx.size()==1 and not first_fx[0].thrust and first_fx[0].facing==Vector2.RIGHT and count(audio,"slash")==before.slash+1 and count(audio,"rapid_slash")==before.rapid_slash,"FIX04 beat 1 slash pose 23, one slash effect toward the facing and one slash sound")
+	t.check(player.rapid_pose_column()==23 and first_fx.size()==0 and count(audio,"slash")==before.slash and count(audio,"rapid_slash")==before.rapid_slash+1,"FIX04 beat 1 slash pose 23 (FIX06 no basic effect or slash sound; rapid_slash at the start)")
 	player.sprite_body.advance_player_skill_pose(Vector2.ZERO,false,0.0,false,false,true,Vector2.ZERO,player.presentation,player.rapid_pose_column())
 	t.check(player.sprite_body.frame_column==23,"FIX04 the player sprite shows column 23 in beat 1")
 	var columns: Array = []
@@ -278,8 +278,8 @@ func rapid_combo(t: SceneTree) -> void:
 	for c in columns:
 		if c!=sequence.back(): sequence.append(c)
 	t.check(sequence==[23,24,3],"FIX04 beats show 23 then 24 then 3 in order: "+str(sequence))
-	t.check(sounds_at_beat2.get("thrust",0)==before.thrust+1 and sounds_at_beat2.get("fx",0)==1,"FIX04 beat 2 thrust pose with one thrust effect and sound")
-	t.check(count(audio,"slash")==before.slash+1 and count(audio,"thrust")==before.thrust+1 and count(audio,"rapid_slash_finish")==before.finish+1 and count(audio,"rapid_slash")==before.rapid_slash,"FIX04 one cast plays slash, thrust and the finish sound once each (FIX05 rapid_slash_finish replaces rapid_slash)")
+	t.check(sounds_at_beat2.get("thrust",-1)==before.thrust and sounds_at_beat2.get("fx",-1)==0,"FIX04 beat 2 thrust pose (FIX06 no thrust effect or sound)")
+	t.check(count(audio,"slash")==before.slash and count(audio,"thrust")==before.thrust and count(audio,"rapid_slash_finish")==before.finish and count(audio,"rapid_slash")==before.rapid_slash+1,"FIX04 one cast plays rapid_slash once and no slash, thrust or finish sound (FIX06 pre-FIX-04 sound)")
 	t.check(player.rapid_pose_column()==3 and skills.combo_beat==-1,"FIX04 pose returns to the existing state when the cast ends")
 	var with_combo := cast(t,n,enemy)
 	skills.presentation.Rapid_combo_beats = 0
