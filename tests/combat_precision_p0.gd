@@ -30,7 +30,7 @@ func run(tree: SceneTree) -> void:
 	print("S8-IMPL-03-C NEW RESULT: %d checks, %d failures" % [t.checks-before,t.failures-failures])
 
 func data_and_imports() -> void:
-	for pair in [["baruka_blink","Strike_interval_sec",0.04],["baruka_blink","Area_radius",894.4],["baruka_blink","Dash_speed",8064],["baruka_blink","Strike_count",20],["baruka_basic","Dash_speed",2340],["baruka_basic","Cooldown_sec",0.63],["ice_elf_basic","Flee_distance",100]]:
+	for pair in [["baruka_blink","Strike_interval_sec",0.04],["baruka_blink","Area_radius",894.4],["baruka_blink","Dash_speed",8064],["baruka_blink","Strike_count",20],["baruka_basic","Dash_speed",1560],["baruka_basic","Cooldown_sec",0.63],["ice_elf_basic","Flee_distance",100]]:
 		t.check(is_equal_approx(float(baruka.store.get_row("boss_action.csv",pair[0])[pair[1]]),float(pair[2])),"S8-I3-C exact fixed value "+pair[0]+"."+pair[1])
 	var attack: Dictionary = baruka.store.get_row("basic_attack.csv","attack_01")
 	t.check(float(attack.Tri_width_ratio)==0.381 and attack.Range==90,"S8-I3-C ratio and unchanged range")
@@ -67,13 +67,14 @@ func dash_checks() -> void:
 	var b: Variant = f.boss
 	f.player.global_position = Vector2(250,0)
 	baruka.start(f,"baruka_basic")
-	baruka.step(f,0.155)
+	baruka.step(f,0.23)
 	f.player.global_position = Vector2(40,0)
 	var hp: int = f.player.hp
-	baruka.step(f,0.02)
+	# BAL-02: speed 2340 -> 1560, so the same 46.8px of travel takes 0.03s instead of 0.02s.
+	baruka.step(f,0.03)
 	t.check(b.dash_hit and f.player.hp==hp-15 and b.is_boss_dashing(),"S8-I3-C basic path damages before arrival")
 	f.player.global_position = Vector2(250,0)
-	baruka.step(f,160.0/2340.0-0.02)
+	baruka.step(f,160.0/1560.0-0.03)
 	t.check(f.player.hp==hp-15 and b.current.is_empty(),"S8-I3-C path and arrival share a single hit")
 	await baruka.base.cleanup(f)
 	f = baruka.fixture()

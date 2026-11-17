@@ -98,11 +98,14 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 
 - 몸체: Body_radius 30, Push_weight 20, Contact_damage 10, Xp_value 0, Max_hp 1750. 현재 HP는 엘프525·베어1100이며 바루카1750은 유지한다. 그 밖의 기존 보스 수치는 보존한다.
 - 일반 이동: boss.csv의 Move_speed_ref_enemy=enemy_01과 Move_speed_mult=1.3을 불러올 때 enemy.csv.Move_speed와 곱해 156으로 계산한다. 기존 보스는 두 열을 비워 기존 이동 속도를 유지한다. 스킬 Dash_speed에는 배율을 적용하지 않는다. 고속 이동은 기존 베어처럼 몸 통과·맵 경계 정지이며 피해 판정은 유지한다.
-- 기본 공격 tri_dash: 사전 표시 시작 시 방향 고정, Telegraph_sec 0.155 동안 실제 도착 지점의 역삼각형을 표시한다. 넓은 변은 도착한 보스 몸 앞(body radius)에 붙고 꼭짓점은 진행 방향을 향한다. Tri_width 160, Tri_length 140, Dash_distance 160, Dash_speed 2340. 돌진 경로와 도착 삼각형 중 먼저 맞은 판정에서 Damage 15를 한 번만 준다. 경로에서 맞았으면 도착 삼각형 피해는 없다. Use_range 220, Cooldown_sec 0.63. 부채꼴·원 판정으로 바꾸지 않는다.
+- 기본 공격 tri_dash: 사전 표시 시작 시 방향 고정, Telegraph_sec 0.23(BAL-02, 이전 0.155) 동안 실제 도착 지점의 역삼각형을 표시한다. 넓은 변은 도착한 보스 몸 앞(body radius)에 붙고 꼭짓점은 진행 방향을 향한다. Tri_width 160, Tri_length 140, Dash_distance 160, Dash_speed 1560(BAL-02, 이전 2340). 돌진 경로와 도착 삼각형 중 먼저 맞은 판정에서 Damage 15를 한 번만 준다. 경로에서 맞았으면 도착 삼각형 피해는 없다. Use_range 220, Cooldown_sec 0.63. 부채꼴·원 판정으로 바꾸지 않는다.
 - 전광석화 blink_strike: 시전 시작 바루카 중심의 Area_radius 894.4 원을 종료까지 고정한다. Telegraph_sec 0.8 뒤 원 안 무작위 목적지로 Strike_count 20회 이동한다. 목적지 선정은 플레이어 위치를 읽지 않는다. 직전 위치에서 Strike_min_distance 120 이상이며 맵 안인 지점을 뽑는다. Dash_speed 8064, 이동 사이 Strike_interval_sec 0.04. 각 이동 경로에서 같은 대상에 Damage 15를 1회 준다. 그림자 텔레포트의 반투명·시간 경과 소멸 잔상 노드를 재사용하며 잔상은 피해·충돌·대상 선정이 없다.
 - 추격 chase: Duration_sec 3 동안 공격 시작마다 플레이어 위치를 확인해 Telegraph_sec 0.25 동안 실제 경로를 표시한다. 고정한 지점까지 최대 Dash_distance 300, Dash_speed 1100으로 이동한다. 이동 중 재조준하지 않는다. 각 공격 경로에 Damage 12를 1회, 공격 사이 Strike_interval_sec 0.4. 지속 시간 경계가 와도 진행 중 공격은 끝까지 마친다.
 - 빙결 ice_zone: 시전 순간 플레이어 중심 Area_radius 350 안에 Zone_count 5개 위치를 무작위로 정한다. 겹침·플레이어 바로 위를 허용한다. Telegraph_sec 0.8 예고 뒤 반경 Zone_radius 60 지대를 Zone_life_sec 4 동안 유지하며 피해는 0이다. 플레이어 중심이 각 지대에 진입하는 순간만 Freeze_sec 1.5를 건다. 계속 서 있으면 재적용하지 않으며 나갔다 다시 들어오면 다시 건다. 빙결 중 다른 지대에 진입하면 남은 시간을 새 Freeze_sec로 갱신하고 누적하지 않는다. 재빙결 제한 시간은 없다.
 - 빙결 중 플레이어 이동·새 기본 공격·키 스킬·스킬 아이콘 강화 클릭을 막는다. 이미 시작한 기본 공격의 남은 타·스킬 효과와 질주는 유지한다. 무적·피해·이동 속도 감소를 추가하지 않는다. 그림자는 계속 행동한다.
+- 표시(BAL-02): 전광석화의 Area_radius 원만 파랑(외곽 Blink_warn_outline, 채움 Blink_warn_color·Blink_warn_alpha, 차오름 Blink_warn_deep_alpha)으로 그린다. 다른 보스 예고는 Boss_warn_* 빨강을 유지한다. 도착 지점은 예고 시간에 정해지지 않으므로(예고가 끝난 뒤 전투 RNG로 뽑는다) 따로 표시하지 않는다.
+- 걷기(BAL-02): enemy.csv의 Walk_cols가 있는 보스(boss_baruka: Sprite_cols 11, Walk_cols 3-10, Walk_fps 11)는 행동이 없고 이동 중일 때 Walk_cols를 Walk_fps로 순환하고, 정지하면 열0이다. 행동 중 포즈(준비 열1·공격 열2)가 우선한다. 게이트에서 걸어 나오는 연출도 같은 걷기 칸을 쓴다. Walk_cols가 빈 보스(boss_ice_bear, boss_ice_elf)는 기존대로 열0이다. 판정·이동·AI는 바뀌지 않는다.
+- 아이스 베어 우두머리 예고 표시(BAL-02): 예고 모양·크기·시간은 그대로이며 예고 단계에서만 다음을 덧그린다. basic(부채꼴)은 바깥으로 훑는 밝은 호 Bear_fan_arc_count줄을 반복하고 진행 Bear_fan_blink_from 이후 외곽선을 Bear_fan_blink_hz로 깜빡인다. dash(통로)는 진행 방향 화살표 Bear_dash_chevron_count개가 앞으로 흐르고 통로 끝에 X를 그린다. slam(원)은 바깥에서 안으로 줄어드는 링, 진행에 따라 길어지는 균열 Bear_slam_crack_count개, 마지막 Bear_slam_flash_sec 동안 흰 번쩍임을 그린다. 노드·재질을 만들지 않는 즉시 그리기다.
 - 준비된 세 스킬을 Pick_weight(각 1)로 선택하고 사용할 때까지 예정으로 고정한다. Cooldown_sec는 전광석화 10·추격 12·빙결 14이며 동작 종료부터 센다. 공포는 행동 즉시 취소·표시 제거·취소 순간 쿨타임 시작이다. 플레이어 은신은 전광석화·빙결을 끝까지 진행시키고 이후 배회하며 추격만 즉시 취소한다. 빙결 중 새 스킬 시작을 막되 진행 중 스킬·기본 공격·이동은 유지한다. 사망 시 행동·표시·이미 생긴 지대를 제거한다.
 
 ### 판단 지점·검증용 기본값
@@ -116,7 +119,7 @@ S8-IMPL-02 사용자 확정 규칙이다. 수치는 아래 표의 플레이 조�
 | boss.csv / boss_final | Enemy_id=boss_baruka, Is_final=1, Detect_range=빈칸, Move_speed_ref_enemy=enemy_01, Move_speed_mult=1.3 |
 | stage_timeline.csv / timeline_final_boss | Time_mmss=530, Boss_id=boss_final |
 | enemy.csv / boss_baruka | Name_ko=바루카, Move_speed=0(일반 이동은 참조 계산), Attack_range_type=melee, Body_radius=30, Push_weight=20, Max_hp=1750, Contact_damage=10, Contact_rehit_sec=1, Death_fade_sec=0.4, Xp_value=0; 원거리 세 열 빈칸 |
-| boss_action.csv / baruka_basic | Kind=tri_dash, Use_range=220, Damage=15, Telegraph_sec=0.155, Recovery_sec=0, Cooldown_sec=0.63, Dash_speed=2340, Dash_distance=160, Tri_width=160, Tri_length=140 |
+| boss_action.csv / baruka_basic | Kind=tri_dash, Use_range=220, Damage=15, Telegraph_sec=0.23, Recovery_sec=0, Cooldown_sec=0.63, Dash_speed=1560, Dash_distance=160, Tri_width=160, Tri_length=140 |
 | boss_action.csv / baruka_blink | Kind=blink_strike, Use_range=400, Damage=15, Telegraph_sec=0.8, Recovery_sec=0, Cooldown_sec=10, Pick_weight=1, Dash_speed=8064, Area_radius=894.4, Strike_count=20, Strike_interval_sec=0.04, Strike_min_distance=120 |
 | boss_action.csv / baruka_chase | Kind=chase, Use_range=300, Damage=12, Telegraph_sec=0.25, Recovery_sec=0, Cooldown_sec=12, Pick_weight=1, Dash_speed=1100, Dash_distance=300, Duration_sec=3, Strike_interval_sec=0.4 |
 | boss_action.csv / baruka_ice | Kind=ice_zone, Use_range=350, Damage=0, Telegraph_sec=0.8, Recovery_sec=0, Cooldown_sec=14, Pick_weight=1, Area_radius=350, Zone_count=5, Zone_radius=60, Zone_life_sec=4, Freeze_sec=1.5 |
@@ -490,3 +493,4 @@ flowchart TD
 - 2026-11-14 S8-IMPL-04-B: 사용자 요청으로 베어3:00·바루카5:00 및 전광석화 속도8064를 적용한다. 엘프 무공격 현상은 선택형 개발 기록과 벽·밀기·그림자·다수 적 재조사만 추가하며 행동은 바꾸지 않는다.
 - 2026-11-14 S8-FIX-04: 엘프 도주가 부동소수점 위치 정밀도로 끝나지 않는 경우를 막기 위해 남은 거리0.01px 이하 또는 벽에 막히지 않은 프레임의 실제 이동0.001px 미만에서 도주를 끝낸다.
 - 2026-11-14 MVP-01: MVP 약6분 흐름에 맞춰 바루카를5:30으로 옮기고 일반 적 강화·생성 경계를60/180/330초로 조정한다. 배율·생성 수·자동 종료 없음은 유지한다.
+- 2026-11-17 BAL-02: 사용자 결정으로 baruka_basic Telegraph_sec 0.155→0.23, Dash_speed 2340→1560(삼각형·통로 판정 형태 유지). 전광석화 범위 원 파랑 표시, 바루카 걷기 칸(Walk_cols 3-10·11fps)과 게이트 걷기, 아이스 베어 우두머리 예고 표시 강화를 반영한다. BT 분기는 바뀌지 않는다.

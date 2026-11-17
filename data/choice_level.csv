@@ -18,3 +18,6 @@ choice_heal_01,choice_heal,1,30,최대 체력의 30%를 회복한다,A단계 검
 choice_igrit_01,choice_igrit,1,1,이그리트 1마리 소환,종류당 1마리 검증용 소환
 choice_charger_test_01,choice_charger_test,1,1,베르 1마리 소환,정식 종류 확정 시 정리할 검증용 임시 데이터
 choice_belion_01,choice_belion,1,1,벨리온 1마리 소환,MVP 세 번째 그림자 시작값
+choice_attack_targets_01,choice_attack_targets,1,1,기본 공격 대상 +1,BAL-02 사용자 결정
+choice_attack_targets_02,choice_attack_targets,2,2,기본 공격 대상 +2,BAL-02 사용자 결정
+choice_attack_targets_03,choice_attack_targets,3,3,기본 공격 대상 +3,BAL-02 사용자 결정

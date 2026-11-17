@@ -59,6 +59,8 @@ func flow(t: SceneTree) -> void:
 	t.check(partial and lead<=0.05,"FIX02 loading bar fills over 5 seconds even after data is ready")
 	var ui: Control = game.ui
 	t.check(ui.notice.text==UI.NOTICE and not UI.NOTICE.contains("글꼴") and UI.NOTICE.ends_with("원작의 저작권은 각 권리자에게 있습니다."),"FIX02 region screen notice drops the font credit")
+	# BAL-02: menu input is blocked until the loading -> menu entry reveal has finished.
+	while ui.menu_locked(): await t.process_frame
 	ui.toggle_settings()
 	await settle(t)
 	var settings_check := content_inside(ui.settings)

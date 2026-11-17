@@ -26,6 +26,8 @@ func run(t: SceneTree) -> void:
 	t.root.add_child(flow)
 	t.check(flow.ui.logo.position.y==380 and flow.ui.logo.size.x==640 and flow.ui.dust.size()==30 and flow.ui.backdrop.stretch_mode==TextureRect.STRETCH_KEEP_ASPECT_COVERED,"UI01 title image crop logo and30 dust")
 	while flow.state=="loading": await t.process_frame
+	# BAL-02: menu input is blocked until the entry reveal has finished.
+	while flow.ui.menu_locked(): await t.process_frame
 	var ui: Control = flow.ui
 	t.check(ui.theme==UI.THEME and ui.notice.text==UI.NOTICE and ui.backdrop.material==ui.art_menu,"UI01 menu theme blurred dark backdrop and fan notice")
 	t.check(not ui.cards[0].visible and ui.cards[1].visible and ui.cards[2].visible and ui.cards[2].scale==Vector2.ONE*0.6 and ui.cards[2].get_node("Lock").visible,"UI01 first region selected/next preview and empty previous")

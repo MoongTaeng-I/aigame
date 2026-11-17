@@ -20,6 +20,8 @@ func run(tree: SceneTree) -> void:
 	t.check(flow.state=="menu" and progress==1 and monotonic,"S9 actual incremental loading/validation reaches menu with monotonic real progress")
 	t.check(flow.loading_elapsed>=5 and flow.loading_minimum==5,"S9 Loading_sec minimum5 real seconds respected (FIX02)")
 	t.check(flow.regions.size()==2 and flow.ui.region_title.text=="1. 얼음 던전" and flow.ui.best_label.text.ends_with("-"),"S9 first region and no session record")
+	# BAL-02: menu input is blocked until the loading -> menu entry reveal has finished.
+	while flow.ui.menu_locked(): await t.process_frame
 	flow.change_region(1)
 	t.check(flow.ui.start_button.disabled and flow.ui.locked_click.visible and flow.ui.locked_label.text=="추후 업데이트 예정","S9 locked region dark/lock/disabled start with notice target")
 	flow.start_region()

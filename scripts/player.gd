@@ -28,6 +28,7 @@ var basic_attack_thrust := false
 var visual_hitstop_remaining := 0.0
 var basic_fx_pool: Array = []
 var current_basic_fx: Node2D
+var basic_extra_targets := 0
 var basic_impacts: Node2D
 var basic_stars_this_hit := 0
 var managed_results := false
@@ -218,10 +219,12 @@ func _update_basic_windup(now: float, enemies: Array) -> void:
         sprite_body.windup_offset = offset
         sprite_body.request_redraw()
 
-func choose_target(enemies: Array, range_override: float = -1.0) -> Variant:
+func choose_target(enemies: Array, range_override: float = -1.0, exclude: Array = []) -> Variant:
     var chosen: Variant = null
     for candidate in enemies:
         if candidate == null or not candidate.is_active or candidate.is_logically_dead:
+            continue
+        if not exclude.is_empty() and exclude.has(candidate):
             continue
         if candidate.has_method("is_auto_targetable") and not candidate.is_auto_targetable():
             continue
@@ -235,10 +238,11 @@ func choose_target(enemies: Array, range_override: float = -1.0) -> Variant:
             chosen = candidate
     return chosen
 
-func apply_choice_modifiers(range_add: float, interval_sub: float, pickup_add: float) -> void:
+func apply_choice_modifiers(range_add: float, interval_sub: float, pickup_add: float, targets_add: int = 0) -> void:
     _attack_data["Range"] = _base_attack_range + range_add
     _attack_data["Interval_sec"] = _base_attack_interval - interval_sub
     pickup_radius = _base_pickup_radius + pickup_add
+    basic_extra_targets = maxi(0,targets_add)
 
 func cancel_basic_attack() -> void:
     _remaining_hits = 0
@@ -268,31 +272,48 @@ func _apply_basic_triangle(target: Variant, enemies: Array) -> void:
         sprite_body.windup_offset = Vector2.ZERO
         sprite_body.request_redraw()
     basic_push_pending = visuals_enabled
-    if visuals_enabled:
-        var effect: Node2D = acquire_basic_fx()
-        current_basic_fx = effect
-        effect.thrust = basic_attack_thrust
-        effect.top_level = true
-        effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
-        effect.color = Color.TRANSPARENT
-        var foot := global_position+Vector2(0,sprite_body.foot_y if sprite_body!=null else 0.0)
-        var mirrored: bool = facing.x<0 or (facing.x==0 and sprite_body!=null and sprite_body.flip_h)
-        effect.base = foot+Vector2(basic_hand.x*(-1.0 if mirrored else 1.0),basic_hand.y)
-        effect.facing = facing
-        effect.length = _attack_cast_range
-        effect.width = width
-        effect.life = float(_attack_data["Hit_effect_sec"])
-        effect.settings = presentation
-        effect.debug_source = get_parent() if get_parent().has_method("set_debug_visible") else null
-        var step_px := float(presentation.get("Basic_thrust_step_px",6)) if basic_attack_thrust and int(presentation.get("Basic_fx_enabled",1))!=0 else float(presentation.get("Basic_step_px",2))
-        if sprite_body!=null: sprite_body.trigger_basic_step(facing,step_px,float(presentation.get("Basic_step_sec",0.1)))
-        effect.activate()
+    if visuals_enabled: current_basic_fx = _emit_basic_fx(base,facing,width,true)
     var struck: Array = []
     # Snapshot the target set before damage signals/knockback can alter it.
     for enemy in enemies:
         if is_instance_valid(enemy) and enemy.is_active and not enemy.is_logically_dead and not struck.has(enemy) and Geometry.in_triangle(enemy.global_position,base,facing,_attack_cast_range,width):
             struck.append(enemy)
+    # BAL-02 extra targets: the same pick rule chooses further distinct targets; each gets the same
+    # triangle and effect, and an enemy inside several triangles is still hit once per strike.
+    if basic_extra_targets>0:
+        var picked: Array = [target]
+        for i in range(basic_extra_targets):
+            var extra: Variant = choose_target(enemies,_attack_cast_range,picked)
+            if extra==null: break
+            picked.append(extra)
+            var extra_facing: Vector2 = global_position.direction_to(extra.global_position)
+            if extra_facing==Vector2.ZERO: extra_facing = last_move_direction
+            var extra_base := global_position+extra_facing*body_radius
+            if visuals_enabled: _emit_basic_fx(extra_base,extra_facing,width,false)
+            for enemy in enemies:
+                if is_instance_valid(enemy) and enemy.is_active and not enemy.is_logically_dead and not struck.has(enemy) and Geometry.in_triangle(enemy.global_position,extra_base,extra_facing,_attack_cast_range,width):
+                    struck.append(enemy)
     for enemy in struck: _apply_basic_hit(enemy)
+
+func _emit_basic_fx(base: Vector2, facing: Vector2, width: float, primary: bool) -> Node2D:
+    var effect: Node2D = acquire_basic_fx()
+    effect.thrust = basic_attack_thrust
+    effect.top_level = true
+    effect.polygon = Geometry.triangle_points(base,facing,_attack_cast_range,width)
+    effect.color = Color.TRANSPARENT
+    var foot := global_position+Vector2(0,sprite_body.foot_y if sprite_body!=null else 0.0)
+    var mirrored: bool = facing.x<0 or (facing.x==0 and sprite_body!=null and sprite_body.flip_h)
+    effect.base = foot+Vector2(basic_hand.x*(-1.0 if mirrored else 1.0),basic_hand.y)
+    effect.facing = facing
+    effect.length = _attack_cast_range
+    effect.width = width
+    effect.life = float(_attack_data["Hit_effect_sec"])
+    effect.settings = presentation
+    effect.debug_source = get_parent() if get_parent().has_method("set_debug_visible") else null
+    var step_px := float(presentation.get("Basic_thrust_step_px",6)) if basic_attack_thrust and int(presentation.get("Basic_fx_enabled",1))!=0 else float(presentation.get("Basic_step_px",2))
+    if primary and sprite_body!=null: sprite_body.trigger_basic_step(facing,step_px,float(presentation.get("Basic_step_sec",0.1)))
+    effect.activate()
+    return effect
 
 func _apply_basic_hit(enemy: Variant) -> void:
     if enemy.has_method("record_damage_presentation"): enemy.record_damage_presentation("player",self)

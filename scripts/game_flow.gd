@@ -66,7 +66,8 @@ func _load_data() -> void:
 	loading_elapsed = (Time.get_ticks_msec()-loading_started)/1000.0
 	regions = data_store.get_table("region.csv").values()
 	regions.sort_custom(func(a: Dictionary,b: Dictionary) -> bool: return String(a.Id)<String(b.Id))
-	show_menu()
+	# BAL-02: the shadow cover starts only after the loading hold has ended; the menu appears under it.
+	ui.enter_menu(show_menu)
 
 func validate_loaded_data() -> String:
 	var validator := Main.new()
@@ -105,7 +106,7 @@ func refresh_region() -> void:
 	ui.show_region(row,float(best_times.get(row.Id,-1)))
 
 func change_region(direction: int) -> void:
-	if state!="menu": return
+	if state!="menu" or ui.menu_locked(): return
 	region_index = posmod(region_index+direction,regions.size())
 	refresh_region()
 

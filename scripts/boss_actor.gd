@@ -24,6 +24,8 @@ var visual_settings: Dictionary = {}
 var visual_strike_until := -1.0
 var visual_shot_until := -1.0
 var visual_facing := Vector2.RIGHT
+# BAL-02: which ice bear telegraph extra the last _draw painted (0 none, 1 fan arcs, 2 dash chevrons, 3 slam ring).
+var warning_extra := 0
 
 func configure_boss(owner_manager: EnemyManager, rows: Array, provider: Callable) -> void:
 	visual_settings = preload("res://scripts/shadow_afterimage.gd").compiled_presentation().duplicate()
@@ -232,6 +234,7 @@ func telegraph_geometry() -> Dictionary:
 	return {"kind":int(current.Kind),"center":origin,"direction":facing,"end":dash_end,"body_radius":body_radius,"range":current.Range,"arc_deg":current.Arc_deg,"slam_radius":current.Slam_radius}
 
 func _draw() -> void:
+	warning_extra = 0
 	if baruka!=null:
 		baruka.draw()
 		return
@@ -300,6 +303,11 @@ func update_boss_visual(delta: float, moving: bool) -> void:
 	if not locked:
 		var target: Node2D = target_provider.call()
 		if is_instance_valid(target): direction = global_position.direction_to(target.global_position)
+	# BAL-02: with no action pose, a boss that has Walk_cols cycles them while moving and rests on column 0.
+	# Bosses without Walk_cols get 0 back, so their poses are unchanged.
+	var walking := moving and not is_feared() and not locked and column==0
+	var walk_column: int = sprite_body.pose_walk_column(0,walking,delta)
+	if walking: column = walk_column
 	sprite_body.advance_explicit_pose(column,direction,moving and not is_feared(),delta,locked)
 	update_sprite_tint()
 	queue_redraw()

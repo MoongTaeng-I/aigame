@@ -83,7 +83,7 @@ func triangle_and_pass_through() -> void:
 	for point in [Vector2(189.99,0),Vector2(330.01,0),Vector2(260,40.01),Vector2(260,-40.01)]:
 		t.check(not v.triangle_contains(point),"S8-I3 triangle outside "+str(point))
 	var hp: int = f.player.hp
-	step(f,0.154)
+	step(f,0.229)
 	t.check(f.player.hp==hp and b.global_position==Vector2.ZERO,"S8-I3 triangle preview does not deal early damage")
 	f.player.global_position = Vector2(0,500)
 	step(f,0.001)
@@ -94,9 +94,9 @@ func triangle_and_pass_through() -> void:
 	f.manager._resolve_contact_pushes()
 	t.check(normal.global_position==position,"S8-I3 high-speed body excluded from both push paths")
 	f.player.global_position = Vector2(250,0)
-	step(f,160.0/2340.0)
+	step(f,160.0/1560.0)
 	t.check(f.player.hp==hp-15 and b.current.is_empty() and b.global_position.is_equal_approx(Vector2(160,0)),"S8-I3 arrival triangle deals15 once")
-	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.155+160.0/2340.0+0.63),"S8-I3 basic cooldown from arrival")
+	t.check(is_equal_approx(b.ready_at.baruka_basic,3.5+0.23+160.0/1560.0+0.63),"S8-I3 basic cooldown from arrival")
 	b.global_position = Vector2(1900,0)
 	f.player.global_position = Vector2(2500,0)
 	start(f,"baruka_basic")

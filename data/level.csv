@@ -1,11 +1,11 @@
 ﻿Id,Level,Xp_to_next,Note
-level_01,1,5,A-stage starting value
-level_02,2,8,A-stage starting value
-level_03,3,11,A-stage starting value
-level_04,4,14,A-stage starting value
-level_05,5,17,A-stage starting value
-level_06,6,20,A-stage starting value
-level_07,7,24,A-stage starting value
-level_08,8,28,A-stage starting value
-level_09,9,32,A-stage starting value
-level_10,10,36,A-stage starting value
+level_01,1,7,A-stage starting value
+level_02,2,12,A-stage starting value
+level_03,3,16,A-stage starting value
+level_04,4,20,A-stage starting value
+level_05,5,25,A-stage starting value
+level_06,6,29,A-stage starting value
+level_07,7,35,A-stage starting value
+level_08,8,40,A-stage starting value
+level_09,9,46,A-stage starting value
+level_10,10,52,A-stage starting value

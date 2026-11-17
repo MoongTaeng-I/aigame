@@ -23,7 +23,7 @@ func step(f: Dictionary, seconds: float) -> void:
 	f.boss.boss_tick(seconds)
 
 func artwork(b: Node, expected: Vector2, height: float, shadow: Vector2) -> void:
-	t.check(b.has_boss_sprite() and b.sprite_body.texture.get_size()==expected and b.sprite_body.columns==3 and b.sprite_body.rows==1,"ART12 boss sheet "+b.enemy_id)
+	t.check(b.has_boss_sprite() and b.sprite_body.texture.get_size()==expected and b.sprite_body.columns==(11 if b.enemy_id=="boss_baruka" else 3) and b.sprite_body.rows==1,"ART12 boss sheet "+b.enemy_id)
 	t.check(absf(b.sprite_body.display_rect().size.y-height)<=1 and b.sprite_body.shadow_size==shadow,"ART12 size and foot shadow "+b.enemy_id)
 	t.check(is_equal_approx(b.health_bar_y(),b.sprite_body.display_rect().position.y-8),"ART12 health bar above sprite "+b.enemy_id)
 	var source := FileAccess.get_file_as_string("res://scripts/boss_actor.gd")
@@ -110,7 +110,7 @@ func baruka() -> void:
 	b.start_action(store.get_row("boss_action.csv","baruka_basic"),f.player.global_position)
 	step(f,0)
 	t.check(b.sprite_body.frame_column==1,"ART12 baruka telegraph1")
-	step(f,0.16)
+	step(f,0.235)
 	t.check(b.sprite_body.frame_column==2 and b.phase=="dash","ART12 baruka dash2")
 	b.baruka.interrupt()
 	b.start_action(store.get_row("boss_action.csv","baruka_ice"),f.player.global_position)
@@ -128,5 +128,5 @@ func baruka() -> void:
 		var previous: int = b.sprite_body.frame_column
 		step(f,0)
 		t.check(b.sprite_body.frame_column==previous,"ART12 baruka interval holds pose")
-	artwork(b,Vector2(1146,339),170,Vector2(70,22))
+	artwork(b,Vector2(4202,339),170,Vector2(70,22))
 	await base.cleanup(f)

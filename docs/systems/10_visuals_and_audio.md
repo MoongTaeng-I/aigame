@@ -1035,3 +1035,36 @@ GameAudio Autoload 하나와 Master/BGM/SFX 버스를 사용한다. AudioStreamP
 | Fear_dim_alpha | 0.25 | 화면 어둡게 알파 |
 
 값을 바꾼 기존 키: Loading_sec 1.5→5, Toast_min_width 533→420(테두리 안 너비 기준), Fear_ring_outer_color #ff2a3c→#c8102e, Fear_ring_inner_color #7a0010→#3a0008, Fear_edge_color #ffb3ba→#c8102e.
+
+## 2026-11-17 BAL-02 — 전광석화 파랑 예고·곰 예고 강화·바루카 걷기·메뉴 진입 연출
+
+판정·피해·시점·AI·생성은 바꾸지 않는다. 예고 덧그림은 보스의 기존 _draw 안에서 예고 단계에만 즉시 그리며(노드·재질 추가 없음), 값은 typed 캐시(boss.visual_settings)에서 읽는다.
+
+combat_presentation.csv 새 키
+
+| Id | 예시 Value | 설명 |
+|---|---|---|
+| Blink_warn_outline | #3a8dff | 전광석화 범위 원 외곽선 색 |
+| Blink_warn_color | #5ab4ff | 전광석화 범위 원 채움 색 |
+| Blink_warn_alpha | 0.18 | 채움 알파 |
+| Blink_warn_deep_alpha | 0.32 | 차오르는 안쪽 원 알파 |
+| Bear_warn_light_color | #ffd0d6 | 곰 예고 덧그림(호·화살표·X·링)의 밝은 색 |
+| Bear_warn_light_alpha | 0.85 | 위 색의 알파 |
+| Bear_fan_arc_count | 3 | 부채꼴 안을 바깥으로 훑는 호 개수 |
+| Bear_fan_sweep_hz | 2 | 호가 중심에서 끝까지 가는 초당 횟수 |
+| Bear_fan_arc_width | 3 | 호 굵기px |
+| Bear_fan_blink_from | 0.7 | 외곽선 깜빡임을 시작하는 예고 진행 비율 |
+| Bear_fan_blink_hz | 2 | 외곽선 깜빡임 초당 횟수 |
+| Bear_dash_chevron_count | 5 | 통로 안 화살표 개수 |
+| Bear_dash_flow_hz | 2 | 화살표가 한 칸 앞으로 흐르는 초당 횟수 |
+| Bear_dash_chevron_width | 4 | 화살표 굵기px |
+| Bear_dash_x_width | 5 | 통로 끝 X 굵기px |
+| Bear_slam_ring_width | 4 | 줄어드는 링 굵기px |
+| Bear_slam_crack_count | 6 | 바닥 균열 선 개수 |
+| Bear_slam_crack_width | 3 | 균열 굵기px |
+| Bear_slam_flash_sec | 0.15 | 예고 끝 흰 번쩍임 길이(초) |
+| Bear_slam_flash_alpha | 0.5 | 흰 번쩍임 최대 알파 |
+
+- 바루카 시트: sd_boss_baruka.png 4202×339, 1행 11칸(칸 382×339). 열0 대기, 열1 준비, 열2 공격, 열3~10 걷기 8칸(enemy.csv Walk_cols 3-10, Walk_fps 11).
+- 기본 공격 대상 선택지(choice_attack_targets)는 추가 대상마다 기존 베기/찌르기 이펙트를 같은 고정 풀(Basic_fx_pool)에서 꺼내 쓴다.
+- 로딩 → 지역 선택 진입은 FX-06 진입 연출(Stage_cover_sec·Stage_reveal_sec, 같은 셰이더 재질 1개)을 그대로 쓴다.

@@ -167,6 +167,8 @@ func flow(t: SceneTree) -> void:
 	var game := preload("res://scripts/game_flow.gd").new()
 	t.root.add_child(game)
 	while game.state=="loading": await t.process_frame
+	# BAL-02: menu input is blocked until the loading -> menu entry reveal has finished.
+	while game.ui.menu_locked(): await t.process_frame
 	var transition: CanvasLayer = game.ui.transition
 	t.check(transition.mode=="idle" and not transition.rect.visible and not transition.is_processing(),"FX06 transition hidden while idle")
 	game.start_region()

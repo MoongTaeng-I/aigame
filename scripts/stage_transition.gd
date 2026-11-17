@@ -1,5 +1,6 @@
 extends CanvasLayer
-# Presentation only: callers keep the existing flow order; this layer never blocks input.
+# Presentation only: callers keep the existing flow order. Input passes through, except while
+# `blocking` is set (loading -> menu entry, BAL-02), when the full-screen rect stops the mouse.
 var rect: ColorRect
 var effect: ShaderMaterial
 var enabled := true
@@ -8,6 +9,7 @@ var reveal_sec := 0.6
 var mode := "idle"
 var age := 0.0
 var on_covered: Callable
+var blocking := false
 
 func _ready() -> void:
 	layer = 128
@@ -54,8 +56,17 @@ func reveal() -> void:
 	age = 0.0
 	_apply(1.0)
 
+# Same as cover(), but menu input stays blocked until the following reveal has finished.
+func cover_blocking(action: Callable) -> void:
+	if enabled:
+		blocking = true
+		rect.mouse_filter = Control.MOUSE_FILTER_STOP
+	cover(action)
+
 func finish() -> void:
 	mode = "idle"
+	blocking = false
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	age = 0.0
 	rect.hide()
 	set_process(false)

@@ -164,8 +164,17 @@ func _ready() -> void:
 	add_child(transition)
 	show_screen("loading")
 
+# Loading -> region select: cover, switch to the menu, then reveal. Menu buttons stay blocked meanwhile.
+func enter_menu(action: Callable) -> void:
+	transition.cover_blocking(func() -> void:
+		action.call()
+		if transition.mode=="covered": transition.reveal())
+
+func menu_locked() -> bool:
+	return transition.blocking
+
 func begin_start() -> void:
-	if transition.busy(): return
+	if transition.busy() or menu_locked(): return
 	transition.cover(func() -> void:
 		owner_flow.start_region()
 		if transition.mode=="covered": transition.reveal())
@@ -230,6 +239,7 @@ func show_region(row: Dictionary, best: float) -> void:
 	queue_redraw()
 
 func toggle_settings() -> void:
+	if menu_locked(): return
 	if not settings.visible:
 		settings.show()
 		return

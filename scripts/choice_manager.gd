@@ -119,7 +119,7 @@ func select(index: int) -> bool:
 			if int(levels[choice_id])==0: continue
 			var effect: int = records[choice_id].Effect
 			totals[effect] = float(totals.get(effect,0.0))+float(level_rows[choice_id][int(levels[choice_id])-1].Value)
-		player.apply_choice_modifiers(float(totals.get(Data.Effect.ATTACK_RANGE_ADD,0.0)),float(totals.get(Data.Effect.ATTACK_INTERVAL_SUB,0.0)),float(totals.get(Data.Effect.PICKUP_RADIUS_ADD,0.0)))
+		player.apply_choice_modifiers(float(totals.get(Data.Effect.ATTACK_RANGE_ADD,0.0)),float(totals.get(Data.Effect.ATTACK_INTERVAL_SUB,0.0)),float(totals.get(Data.Effect.PICKUP_RADIUS_ADD,0.0)),int(totals.get(Data.Effect.ATTACK_TARGETS_ADD,0.0)))
 	pending -= 1
 	if pending>0:
 		cards = draw_cards()
