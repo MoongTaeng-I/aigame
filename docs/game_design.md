@@ -220,12 +220,15 @@ MVP 목표 플레이타임은 한 판 약 6분이며 자동 종료 시각은 없
 
 ## 빌드 방법
 
-Windows 실행 파일 내보내기(REL-01, 2026-11-17).
+Windows 실행 파일 내보내기(REL-01, 2026-11-17; 아이콘·버전·zip은 REL-02, 2026-11-18).
 
 - 필요한 것: Godot 4.7.2 편집기와 같은 버전의 Windows 내보내기 템플릿(`windows_release_x86_64.exe` 포함). 템플릿은 Godot 편집기의 "내보내기 템플릿 관리"로 설치하며, 사용자 설정 폴더의 `Godot/export_templates/4.7.2.stable/` 아래에 있다.
-- 설정: 저장소의 `export_presets.cfg`의 "Windows Desktop" 프리셋을 쓴다. 출력 위치 `../build/SoloSurvival.exe`(저장소 폴더 바로 옆 build 폴더, Git 대상 아님), `.pck` 분리, 제품 이름·파일 설명 "나 혼자만 서바이벌", 파일·제품 버전 1.0.0.0, 회사·저작권·아이콘 비움. include_filter `*.csv, assets/fonts/OFL.txt, assets/audio/CREDITS.txt`로 CSV와 라이선스 파일을 넣고, exclude_filter `tests/*, docs/*`로 검사·문서를 뺀다. 점으로 시작하는 폴더(`.local`, `.claude`)는 Godot가 읽지 않는다.
+- 설정: 저장소의 `export_presets.cfg`의 "Windows Desktop" 프리셋을 쓴다. 출력 위치 `../build/SoloSurvival.exe`(저장소 폴더 바로 옆 build 폴더, Git 대상 아님), `.pck` 분리, 제품 이름·파일 설명 "나 혼자만 서바이벌", 파일·제품 버전 1.1.0.0, 회사·저작권 비움, 아이콘 `res://assets/icon/app_icon.ico`(exe 파일 아이콘). include_filter `*.csv, assets/fonts/OFL.txt, assets/audio/CREDITS.txt, assets/icon/app_icon.ico`로 CSV·라이선스 파일·아이콘을 넣고, exclude_filter `tests/*, docs/*`로 검사·문서를 뺀다. 점으로 시작하는 폴더(`.local`, `.claude`)는 Godot가 읽지 않는다.
 - 명령(저장소 폴더에서): `<Godot 편집기 실행 파일> --headless --path . --export-release "Windows Desktop" ../build/SoloSurvival.exe`. 편집기에서는 프로젝트 → 내보내기 → Windows Desktop → 프로젝트 내보내기(디버그 끔)와 같다. build 폴더가 없으면 먼저 만든다.
 - 결과: `build/SoloSurvival.exe`와 `build/SoloSurvival.pck` 두 파일을 같은 폴더에 함께 배포한다. 실행 확인은 `SoloSurvival.exe --headless --quit-after 1800 --log-file <로그 경로>`로 할 수 있다.
+- 창 아이콘: project.godot의 `application/config/windows_native_icon`이 같은 .ico를 가리켜 창 제목줄·작업 표시줄에도 쓰인다. `config/icon`(icon.svg)은 그대로다. README용 PNG는 `docs/images/app_icon.png`(내보내기 제외)다.
+- 배포 묶음: build 폴더의 `SoloSurvival.exe`·`SoloSurvival.pck`·`README.txt`를 PowerShell `Compress-Archive`로 `../SoloSurvival_v1.1.zip`에 묶어 GitHub Releases에 올린다. zip은 저장소 밖이며 커밋하지 않는다.
+- 자동 검사: `.local/godot_path.txt`에 Godot 편집기 경로를 적고 `python tests/run_headless.py <작업 ID> p0 <회차>`(전체 P0), `python tests/run_headless.py <작업 ID> runtime <회차>`(헤드리스 실행). 결과는 `.local/` 아래에 저장된다.
 
 ## 승인·변경 이력
 

@@ -14,6 +14,7 @@ config/name="나 혼자만 서바이벌"
 run/main_scene="res://scenes/flow.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
+config/windows_native_icon="res://assets/icon/app_icon.ico"
 
 [audio]
 

@@ -1001,6 +1001,10 @@
 
 - 지역별 콘텐츠·연출을 CSV로 고르는 구조를 만들었다. region.csv에 Card_image·Ground_texture·Ground_brightness·Props_texture·Props_cols·World_tint·Weather·Snow_alpha·Fog_strength·Bgm_stage·Bgm_boss·Forest_seed 열을 붙이고 region_01에는 지금까지 코드와 combat_presentation.csv에서 쓰던 값을 그대로 옮겼다(region_02는 잠긴 채 빈칸). spawn.csv·stage_timeline.csv·enemy_scaling.csv 맨 뒤에 Region_id(전부 region_01)를 붙여 실행 시 고른 지역의 행만 쓰고, 열린 지역은 생성 행·시각0 강화 행 1개·최종 보스 타임라인이 있어야 한다. 맵 바닥·장식·눈발·안개·틴트·음악·지역 카드가 지역 값을 읽고, 시작한 지역이 라운드와 다시 하기에 그대로 전달되며 최고 클리어 타임은 지역별이다. 2지역 콘텐츠는 만들지 않았다. 같은 시드로 1지역을 0~340초 구간에서 돌린 결과(생성 수·적 위치 합·보스 등장·HP·처치 수·소리 순서·음악·장식 배치·색)가 변경 전 커밋 623a1cb와 바이트 단위로 같다. 검사 전용 지역(tests/fixtures/region_test, 출시 데이터 아님)을 행 추가만으로 넣어 틴트·날씨 없음·음악·생성 행이 코드 수정 없이 적용됨을 확인했다. CREDITS.txt의 "(출처 채널: 작성 필요)"는 사용자 결정으로 지웠다. 새 지역 추가 절차는 game_design.md '지역 축'. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회, 결과는 `.local/reports/REGION-01.md`. 직접 플레이 확인이 필요하다.
 
+## 2026-11-18 REL-02 — 최종 출시 빌드(아이콘·버전·README)
+
+- 사용자가 만든 아이콘(assets/icon/app_icon.ico)을 exe 파일 아이콘(export_presets.cfg application/icon)과 창 제목줄·작업 표시줄 아이콘(project.godot windows_native_icon)에 연결하고, .ico를 .pck에 넣었다. 파일·제품 버전을 1.1.0.0으로 올렸다. 저장소 루트에 평가자용 README.md(실행·조작·한 판 흐름·만든 방식·구조·검사 명령·라이선스·고지, 이미지 docs/images/app_icon.png)를 새로 쓰고 build/README.txt도 같은 내용으로 다시 썼다. 이전 빌드는 ../build_rel01로 보존하고 새 ../build에 내보낸 뒤 exe·pck·README.txt를 ../SoloSurvival_v1.1.zip으로 묶었다(저장소 밖). 제품 코드·데이터 변경 없음. 검증: 검증 사본(사용자 값 3칸을 이전 값으로 둠)에서 전체 P0 2회 연속과 runtime 1회, 내보내기·.pck 목록·exe 아이콘 추출·exe 헤드리스 1800프레임, 결과는 `.local/reports/REL-02.md`. 실제 창에서 아이콘·실행 확인은 사용자 확인이 필요하다.
+
 ## 다음 기록 양식
 
 - **목표:**
