@@ -36,7 +36,7 @@ AI와 역할을 나눠 15일 동안 만든 2D 생존 액션 게임입니다. 한
 - 구현 AI(Codex → Claude Code)가 구현과 자동 검사를 맡았습니다.
 - 게임 수치는 `data/*.csv`에 있습니다. 자세한 개발 기록은 Notion에 정리합니다.
 
-Notion 포트폴리오: (추가 예정)
+Notion 포트폴리오: https://app.notion.com/p/AI-410ce44d306a80a485daebe4e6faf042
 
 ## 저장소 구조
 
